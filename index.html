@@ -1,0 +1,2398 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="theme-color" content="#f97316"/>
+<title>Hương Diện · Quản lý công việc</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📋%3C/text%3E%3C/svg%3E"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css"/>
+<style>
+*,::after,::before{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --o:#f97316;--o2:#ea580c;--o-dk:#c2410c;--o-lt:#fff7ed;--o-mid:#fed7aa;
+  --bg:#f5f3ef;--card:#fff;--ink:#1a1a1a;--muted:#6b7280;--muted2:#9ca3af;
+  --border:#e9e5df;--border2:#e5e7eb;
+  --grn:#16a34a;--grn-lt:#dcfce7;--red:#dc2626;--red-lt:#fee2e2;--amber:#d97706;--amber-lt:#fef3c7;--blue:#2563eb;--blue-lt:#dbeafe;
+  --sh:0 2px 12px rgba(124,45,18,.06);--sh2:0 8px 30px rgba(124,45,18,.12);
+  --r:12px;--r2:16px;
+}
+body.dark{
+  --bg:#15120e;--card:#211c16;--ink:#f3efe9;--muted:#a89f93;--muted2:#7c7367;
+  --border:#33291f;--border2:#33291f;--o-lt:#2a2014;--o-mid:#5a3a1a;
+  --grn-lt:#14331f;--red-lt:#3a1818;--amber-lt:#33270f;--blue-lt:#16243f;
+  --sh:0 2px 12px rgba(0,0,0,.4);--sh2:0 10px 34px rgba(0,0,0,.5);
+}
+body{font-family:"Be Vietnam Pro",sans-serif;background:var(--bg);color:var(--ink);font-size:14px;-webkit-font-smoothing:antialiased;transition:background .2s,color .2s}
+button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit}
+input,textarea,select{font-family:inherit;font-size:14px}
+::-webkit-scrollbar{height:8px;width:8px}::-webkit-scrollbar-thumb{background:var(--o-mid);border-radius:8px}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+.app{display:flex;min-height:100vh}
+
+/* Sidebar (desktop) */
+.side{width:230px;flex-shrink:0;background:var(--card);border-right:1px solid var(--border);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:18px 14px}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 18px}
+.brand .lic{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--o),var(--o-dk));display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;flex-shrink:0;box-shadow:0 4px 12px rgba(249,115,22,.35)}
+.brand b{font-family:"Baloo 2";font-size:17px;line-height:1.05;color:var(--ink)}
+.brand small{font-size:11px;color:var(--muted);font-weight:500}
+.nav{display:flex;flex-direction:column;gap:3px;margin-top:6px}
+.nav button{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:11px;color:var(--muted);font-weight:500;font-size:13.5px;transition:all .14s;text-align:left;width:100%}
+.nav button i{font-size:20px}
+.nav button:hover{background:var(--o-lt);color:var(--o-dk)}
+.nav button.on{background:linear-gradient(135deg,var(--o),var(--o-dk));color:#fff;box-shadow:0 4px 12px rgba(249,115,22,.3)}
+.nav button .badge{margin-left:auto;background:var(--red);color:#fff;font-size:11px;font-weight:700;min-width:20px;height:20px;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:0 6px}
+.nav button.on .badge{background:rgba(255,255,255,.25)}
+.side-foot{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:14px;border-top:1px solid var(--border)}
+.tgl{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:11px;color:var(--muted);font-size:13px;font-weight:500}
+.tgl:hover{background:var(--o-lt);color:var(--o-dk)}
+.tgl i{font-size:18px}
+
+/* Main */
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{position:sticky;top:0;z-index:40;background:var(--bg);padding:16px 26px 10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.topbar h1{font-family:"Baloo 2";font-size:23px;font-weight:700}
+.topbar .sub{font-size:12.5px;color:var(--muted);margin-top:1px}
+.spacer{flex:1}
+.srch{display:flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--border);border-radius:11px;padding:8px 13px;min-width:180px}
+.srch i{font-size:18px;color:var(--muted2)}
+.srch input{border:0;outline:0;background:none;color:var(--ink);width:100%}
+.btn{display:inline-flex;align-items:center;gap:7px;background:linear-gradient(135deg,var(--o),var(--o-dk));color:#fff;padding:9px 16px;border-radius:11px;font-weight:600;font-size:13.5px;box-shadow:0 4px 12px rgba(249,115,22,.3);transition:transform .12s,box-shadow .12s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(249,115,22,.4)}
+.btn:active{transform:translateY(0)}
+.btn.ghost{background:var(--card);color:var(--ink);border:1px solid var(--border);box-shadow:none}
+.btn.ghost:hover{background:var(--o-lt);color:var(--o-dk);border-color:var(--o-mid)}
+.btn.sm{padding:6px 11px;font-size:12.5px}
+.content{padding:6px 26px 90px;animation:fade .3s ease}
+@media(min-width:1024px){.content{padding-bottom:34px}}
+
+/* Cards & stats */
+.grid-stat{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:22px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:16px 18px;box-shadow:var(--sh);position:relative;overflow:hidden}
+.stat .ic{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:21px;margin-bottom:10px}
+.stat .n{font-family:"Baloo 2";font-size:30px;line-height:1;font-weight:700}
+.stat .l{font-size:12.5px;color:var(--muted);margin-top:3px;font-weight:500}
+.ic.o{background:var(--o-lt);color:var(--o)}.ic.b{background:var(--blue-lt);color:var(--blue)}
+.ic.g{background:var(--grn-lt);color:var(--grn)}.ic.r{background:var(--red-lt);color:var(--red)}.ic.a{background:var(--amber-lt);color:var(--amber)}
+
+.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);box-shadow:var(--sh);margin-bottom:18px}
+.panel-h{display:flex;align-items:center;gap:9px;padding:15px 18px;border-bottom:1px solid var(--border)}
+.panel-h b{font-size:15px;font-family:"Baloo 2";font-weight:700}
+.panel-h i.lead{font-size:20px;color:var(--o)}
+.panel-b{padding:8px 18px 16px}
+
+/* Kanban */
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:start}
+@media(max-width:860px){.board{grid-template-columns:1fr}}
+.col{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:12px;min-height:120px;transition:background .15s,outline .15s}
+.col.drop{outline:2px dashed var(--o);outline-offset:-4px;background:var(--o-lt)}
+.col-h{display:flex;align-items:center;gap:8px;padding:4px 6px 12px;font-weight:700;font-size:13.5px}
+.col-h .dot{width:9px;height:9px;border-radius:50%}
+.col-h .cnt{margin-left:auto;background:var(--bg);color:var(--muted);font-size:12px;font-weight:600;padding:2px 9px;border-radius:9px}
+.tcard{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:10px;cursor:grab;animation:pop .2s ease;transition:box-shadow .14s,transform .1s,border-color .14s}
+.tcard:hover{box-shadow:var(--sh);border-color:var(--o-mid)}
+.tcard:active{cursor:grabbing}
+.tcard.drag{opacity:.4}
+.tcard.over{outline:1px solid var(--o-dk)}
+.tcard .top{display:flex;align-items:flex-start;gap:8px}
+.tcard .tt{font-weight:600;font-size:13.5px;line-height:1.35;flex:1;word-break:break-word}
+.tcard.done .tt{text-decoration:line-through;color:var(--muted)}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 8px;border-radius:7px;white-space:nowrap}
+.metarow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:9px}
+.pri{width:5px;border-radius:6px;align-self:stretch;flex-shrink:0}
+.pri.high{background:var(--red)}.pri.med{background:var(--amber)}.pri.low{background:var(--grn)}
+.due{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:7px;background:var(--bg);color:var(--muted);border:1px solid var(--border)}
+.due.over{background:var(--red-lt);color:var(--red);border-color:transparent}
+.due.soon{background:var(--amber-lt);color:var(--amber);border-color:transparent}
+.prog{height:7px;background:var(--border2);border-radius:6px;overflow:hidden;margin-top:10px}
+.prog>i{display:block;height:100%;background:linear-gradient(90deg,var(--o),var(--o-dk));border-radius:6px;transition:width .3s}
+.prog.full>i{background:linear-gradient(90deg,#22c55e,#16a34a)}
+.cklist{margin-top:9px;display:flex;flex-direction:column;gap:4px}
+.ckitem{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted)}
+.ckitem i{font-size:16px;cursor:pointer}
+.ckitem.done span{text-decoration:line-through;opacity:.7}
+.cardacts{display:flex;gap:4px;margin-top:10px;opacity:.65}
+.cardacts button{padding:5px;border-radius:8px;color:var(--muted);font-size:16px;display:flex}
+.cardacts button:hover{background:var(--card);color:var(--o-dk)}
+.cardacts .mv{margin-left:auto}
+
+/* Projects */
+.projgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.projcard{background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:16px;box-shadow:var(--sh);cursor:pointer;transition:transform .12s,box-shadow .14s}
+.projcard:hover{transform:translateY(-2px);box-shadow:var(--sh2)}
+.projcard .ph{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.projcard .pic{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:21px}
+.projcard .pn{font-weight:700;font-size:14.5px}
+.projcard .pmeta{font-size:12px;color:var(--muted)}
+.ring{position:relative;width:46px;height:46px;flex-shrink:0;margin-left:auto}
+
+/* list rows (calendar/deadlines) */
+.row{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);transition:background .12s}
+.row:last-child{border-bottom:0}
+.row:hover{background:var(--o-lt)}
+.row .chk{width:22px;height:22px;border-radius:7px;border:2px solid var(--muted2);flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .14s}
+.row .chk.done{background:var(--grn);border-color:var(--grn);color:#fff}
+.row .chk i{font-size:15px}
+.row .rt{flex:1;min-width:0}
+.row .rt b{font-weight:600;font-size:13.5px;display:block}
+.row.done .rt b{text-decoration:line-through;color:var(--muted)}
+.row .rt small{color:var(--muted);font-size:12px}
+
+/* daily */
+.dailywrap{display:grid;grid-template-columns:1.4fr 1fr;gap:18px}
+@media(max-width:860px){.dailywrap{grid-template-columns:1fr}}
+.streak{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--amber)}
+
+/* empty */
+.empty{text-align:center;padding:40px 20px;color:var(--muted2)}
+.empty i{font-size:44px;opacity:.5}
+.empty p{margin-top:10px;font-size:13.5px}
+
+/* modal */
+.ov{position:fixed;inset:0;background:rgba(20,14,8,.55);backdrop-filter:blur(3px);z-index:100;display:flex;align-items:flex-end;justify-content:center;padding:0;animation:fade .2s}
+@media(min-width:640px){.ov{align-items:center;padding:20px}}
+.modal{background:var(--card);width:100%;max-width:520px;max-height:92vh;overflow-y:auto;border-radius:20px 20px 0 0;animation:pop .25s ease;box-shadow:var(--sh2)}
+@media(min-width:640px){.modal{border-radius:20px}}
+.modal-h{display:flex;align-items:center;gap:10px;padding:18px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card);z-index:2}
+.modal-h b{font-family:"Baloo 2";font-size:17px;flex:1}
+.modal-h .x{font-size:22px;color:var(--muted);padding:4px;display:flex;border-radius:8px}
+.modal-h .x:hover{background:var(--bg);color:var(--red)}
+.modal-b{padding:18px 20px}
+.fld{margin-bottom:15px}
+.fld label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px}
+.fld input,.fld textarea,.fld select{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--ink);outline:none;transition:border-color .14s}
+.fld input:focus,.fld textarea:focus,.fld select:focus{border-color:var(--o)}
+.fld textarea{resize:vertical;min-height:64px}
+.frow{display:flex;gap:12px}.frow>*{flex:1}
+.chips{display:flex;gap:7px;flex-wrap:wrap}
+.chip{padding:7px 12px;border-radius:9px;background:var(--bg);border:1.5px solid var(--border);font-size:12.5px;font-weight:600;color:var(--muted);transition:all .12s}
+.chip.on{background:var(--o-lt);border-color:var(--o);color:var(--o-dk)}
+.prichip.on.high{background:var(--red-lt);border-color:var(--red);color:var(--red)}
+.prichip.on.med{background:var(--amber-lt);border-color:var(--amber);color:var(--amber)}
+.prichip.on.low{background:var(--grn-lt);border-color:var(--grn);color:var(--grn)}
+.rng{display:flex;align-items:center;gap:12px}
+.rng input[type=range]{flex:1;accent-color:var(--o)}
+.rng b{font-family:"Baloo 2";font-size:16px;min-width:46px;text-align:right;color:var(--o-dk)}
+.ckedit{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.ckedit input{flex:1}
+.ckedit button{color:var(--red);font-size:18px;padding:6px;display:flex}
+.modal-f{display:flex;gap:10px;padding:16px 20px;border-top:1px solid var(--border);position:sticky;bottom:0;background:var(--card)}
+.modal-f .btn{flex:1;justify-content:center;padding:12px}
+.del{color:var(--red);font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:5px}
+
+/* filter bar */
+.filterbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.fpill{padding:7px 13px;border-radius:20px;background:var(--card);border:1px solid var(--border);font-size:12.5px;font-weight:600;color:var(--muted);display:inline-flex;align-items:center;gap:6px;transition:all .12s}
+.fpill.on{background:var(--o);border-color:var(--o);color:#fff}
+.fpill:hover:not(.on){border-color:var(--o-mid);color:var(--o-dk)}
+
+/* mobile nav */
+.mtop{display:none;align-items:center;gap:10px;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
+.mtop .lic{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--o),var(--o-dk));display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px}
+.mtop b{font-family:"Baloo 2";font-size:16px}
+.botnav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);z-index:50;padding:6px 4px 8px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.botnav::-webkit-scrollbar{height:0}
+.botnav button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:var(--muted2);padding:5px 4px;border-radius:10px;flex:0 0 auto;min-width:60px;position:relative}
+.botnav button i{font-size:23px}
+.botnav button.on{color:var(--o)}
+.botnav .badge{position:absolute;top:2px;right:50%;transform:translateX(16px);background:var(--red);color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+.fab{display:none;position:fixed;right:18px;bottom:78px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--o),var(--o-dk));color:#fff;font-size:28px;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(249,115,22,.45);z-index:49}
+@media(max-width:768px){
+  .side{display:none}.mtop{display:flex}.botnav{display:flex}.fab{display:flex}
+  .topbar{display:none}.content{padding:14px 14px 96px}
+  .topbar.mob{display:flex;padding:12px 14px 6px}.topbar.mob h1{font-size:19px}.topbar.mob .btn{display:none}
+}
+.hr{height:1px;background:var(--border);margin:18px 0}
+.toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:linear-gradient(135deg,var(--o),var(--o-dk));color:#fff;padding:12px 22px;border-radius:30px;font-size:14px;z-index:350;display:flex;align-items:center;gap:10px;box-shadow:var(--sh2);animation:pop .25s}
+.toast i{font-size:22px}
+@media(min-width:768px){.toast{bottom:28px}}
+.badgechip{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:64px;padding:10px 6px;border-radius:12px;background:var(--bg);border:1px solid var(--border);text-align:center}
+.badgechip.off{opacity:.4;filter:grayscale(1)}
+.badgechip .be{font-size:24px}
+.badgechip small{font-size:10px;font-weight:600;line-height:1.1;color:var(--muted)}
+.bar{height:24px;border-radius:6px;background:var(--o);min-width:3px;transition:width .4s}
+/* dark: tắt glow cam trên các nút màu */
+body.dark .btn{box-shadow:none}
+body.dark .btn:hover{box-shadow:none;transform:translateY(-1px);filter:brightness(1.06)}
+body.dark .nav button.on{box-shadow:none}
+body.dark .brand .lic{box-shadow:none}
+body.dark .fab{box-shadow:0 6px 18px rgba(0,0,0,.5)}
+body.dark .botnav button.on,body.dark .mtop .lic{box-shadow:none}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+  // chống nháy theme
+  try{ if(localStorage.getItem('hdw.dark')==='1') document.body.classList.add('dark'); }catch(e){}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7/babel.min.js"></script>
+<script type="text/babel" data-presets="react">
+const {useState,useEffect,useMemo,useRef} = React;
+
+/* ---------- storage ---------- */
+const mem={};
+const store={
+  get(k,d){ try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return k in mem?mem[k]:d;} },
+  set(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch(e){mem[k]=v;} }
+};
+
+/* ---------- mảng công việc ---------- */
+const PROJECTS=[
+  {id:'nhap',  name:'Nhập hàng',     icon:'📦', color:'#f97316', bg:'#fff7ed'},
+  {id:'don',   name:'Đơn hàng',      icon:'🛒', color:'#2563eb', bg:'#dbeafe'},
+  {id:'kho',   name:'Kho · Tồn',     icon:'🏷️', color:'#7c3aed', bg:'#ede9fe'},
+  {id:'mkt',   name:'Marketing',     icon:'📣', color:'#db2777', bg:'#fce7f3'},
+  {id:'content',name:'Nội dung',     icon:'✍️', color:'#0891b2', bg:'#cffafe'},
+  {id:'tc',    name:'Tài chính',     icon:'💰', color:'#16a34a', bg:'#dcfce7'},
+  {id:'cs',    name:'Chăm sóc KH',   icon:'💬', color:'#d97706', bg:'#fef3c7'},
+  {id:'ai',    name:'Ứng dụng AI',   icon:'🤖', color:'#4f46e5', bg:'#e0e7ff'},
+  {id:'khac',  name:'Khác',          icon:'📌', color:'#6b7280', bg:'#f3f4f6'},
+];
+const projOf=id=>PROJECTS.find(p=>p.id===id)||PROJECTS[PROJECTS.length-1];
+const STATUS={todo:{name:'Cần làm',dot:'#9ca3af'},doing:{name:'Đang làm',dot:'#f97316'},done:{name:'Hoàn thành',dot:'#16a34a'}};
+const PRI={high:'Cao',med:'Vừa',low:'Thấp'};
+
+/* ---------- date utils ---------- */
+const pad=n=>String(n).padStart(2,'0');
+const dstr=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const today=()=>dstr(new Date());
+const addDays=(n)=>{const d=new Date();d.setDate(d.getDate()+n);return dstr(d);};
+function dueInfo(due){
+  if(!due) return null;
+  const t=today();
+  const a=new Date(due+'T00:00:00'), b=new Date(t+'T00:00:00');
+  const diff=Math.round((a-b)/86400000);
+  let cls='', label;
+  if(diff<0){cls='over';label=`Quá hạn ${-diff} ngày`;}
+  else if(diff===0){cls='soon';label='Hôm nay';}
+  else if(diff===1){cls='soon';label='Ngày mai';}
+  else if(diff<=3){cls='soon';label=`Còn ${diff} ngày`;}
+  else label=fmtDate(due);
+  return {cls,label,diff};
+}
+function fmtDate(s){ if(!s)return''; const[y,m,d]=s.split('-'); return `${d}/${m}`; }
+const uid=()=>'t'+Math.random().toString(36).slice(2,9);
+
+/* ---------- xếp ưu tiên & kế hoạch ngày ---------- */
+// thời lượng ước tính (giờ): lấy từ t.est nếu có, không thì suy từ số subtask
+function estOf(t){ if(t.est) return t.est; const n=(t.checklist&&t.checklist.length)||2; return Math.min(5,Math.max(1,Math.round(n*0.6))); }
+// điểm ưu tiên tổng hợp: mức ưu tiên + độ gấp của hạn + đang làm dở + gần xong
+function scoreTask(t){
+  let s = t.pri==='high'?100 : t.pri==='med'?60 : 30;
+  const di=dueInfo(t.due);
+  if(di){ if(di.diff<0)s+=130; else if(di.diff===0)s+=85; else if(di.diff===1)s+=55; else if(di.diff<=3)s+=35; else if(di.diff<=7)s+=18; }
+  if(t.status==='doing')s+=45;
+  if(t.status!=='done'&&t.progress>=60)s+=20;
+  if(t.frog)s+=1000;   // việc xương nhất → luôn lên đầu
+  return s;
+}
+// lý do "làm trước" (yếu tố nổi trội nhất)
+function planReason(t){
+  const di=dueInfo(t.due);
+  if(t.frog) return {ic:'🐸',tx:'Việc xương nhất — làm đầu tiên'};
+  if(di&&di.diff<0) return {ic:'🔴',tx:'Quá hạn — xử lý gấp'};
+  if(t.status==='doing') return {ic:'▶️',tx:'Đang làm dở — làm cho xong'};
+  if(di&&di.diff===0) return {ic:'⏰',tx:'Đến hạn hôm nay'};
+  if(t.status!=='done'&&t.progress>=60) return {ic:'🏁',tx:'Sắp xong — dứt điểm'};
+  if(di&&di.diff===1) return {ic:'📅',tx:'Mai đến hạn'};
+  if(t.pri==='high') return {ic:'⭐',tx:'Ưu tiên cao'};
+  if(di&&di.diff<=3) return {ic:'📅',tx:'Sắp đến hạn'};
+  if(estOf(t)<=1) return {ic:'⚡',tx:'Việc nhanh, làm gọn'};
+  return {ic:'•',tx:'Theo kế hoạch'};
+}
+
+/* ---------- Gamify: điểm, cấp độ, huy hiệu ---------- */
+function pointsFor(t){ const base=t.pri==='high'?30:t.pri==='med'?20:10; return base+Math.round(estOf(t)*5); }
+const LEVELS=[
+  {min:0,name:'Tập sự',ic:'🌱'},
+  {min:120,name:'Nhân viên cứng',ic:'🧑‍💼'},
+  {min:350,name:'Cửa hàng trưởng',ic:'🏪'},
+  {min:700,name:'Quản lý',ic:'📈'},
+  {min:1200,name:'Ông/Bà chủ',ic:'👑'},
+  {min:2000,name:'Trùm bán lẻ',ic:'🏆'},
+];
+function gamifyStats(tasks){
+  const done=tasks.filter(t=>t.status==='done');
+  const points=done.reduce((a,t)=>a+pointsFor(t),0);
+  const set=new Set(done.map(t=>t.doneAt).filter(Boolean));
+  let streak=0, cur=new Date(today()+'T00:00:00');
+  if(!set.has(dstr(cur))) cur.setDate(cur.getDate()-1);
+  while(set.has(dstr(cur))){ streak++; cur.setDate(cur.getDate()-1); }
+  let l=LEVELS[0],nx=null;
+  for(let i=0;i<LEVELS.length;i++){ if(points>=LEVELS[i].min){l=LEVELS[i];nx=LEVELS[i+1]||null;} }
+  return {points,streak,doneCount:done.length,level:l,next:nx};
+}
+function badgesOf(tasks,g){
+  const projCleared=PROJECTS.some(p=>{const l=tasks.filter(t=>t.proj===p.id);return l.length>=3&&l.every(t=>t.status==='done');});
+  return [
+    {id:'start',ic:'🚀',name:'Khởi động',got:g.doneCount>=1,need:'Xong việc đầu tiên'},
+    {id:'ten',ic:'🔟',name:'Mười việc',got:g.doneCount>=10,need:'Hoàn thành 10 việc'},
+    {id:'fifty',ic:'⭐',name:'Năng suất',got:g.doneCount>=50,need:'Hoàn thành 50 việc'},
+    {id:'s3',ic:'🔥',name:'3 ngày liền',got:g.streak>=3,need:'Làm việc 3 ngày liên tục'},
+    {id:'s7',ic:'💪',name:'Tuần kỷ luật',got:g.streak>=7,need:'7 ngày liên tục'},
+    {id:'clear',ic:'🎯',name:'Dứt điểm mảng',got:projCleared,need:'Xong hết 1 mảng (≥3 việc)'},
+  ];
+}
+
+/* ---------- Việc lặp lại theo tuần/tháng ---------- */
+const WD=['T2','T3','T4','T5','T6','T7','CN'];
+function startOfWeek(){ const d=new Date(today()+'T00:00:00'); const wd=(d.getDay()+6)%7; d.setDate(d.getDate()-wd); return d; }
+function genRecurring(rules,tasks){
+  const add=[]; const ids=new Set(tasks.map(t=>t.id));
+  rules.forEach(rule=>{
+    let period,due;
+    if(rule.every==='week'){
+      const mon=startOfWeek(); period=dstr(mon);
+      const dd=new Date(mon); dd.setDate(mon.getDate()+((rule.day||1)-1)); due=dstr(dd);
+    } else {
+      const d=new Date(today()+'T00:00:00'), y=d.getFullYear(), m=d.getMonth();
+      period=`${y}-${pad(m+1)}`; const last=new Date(y,m+1,0).getDate();
+      due=`${y}-${pad(m+1)}-${pad(Math.min(rule.day||1,last))}`;
+    }
+    const id='r'+rule.id+'-'+period;
+    if(!ids.has(id)) add.push({id,title:rule.title,proj:rule.proj,status:'todo',pri:rule.pri||'med',progress:0,due,note:'🔁 Việc lặp lại tự sinh',checklist:(rule.ck||[]).map(t=>({t,done:false})),created:today(),recur:rule.id,est:rule.est});
+  });
+  return add;
+}
+function recurLabel(rule){ return rule.every==='week'?('Mỗi tuần · '+WD[(rule.day||1)-1]):('Mỗi tháng · ngày '+(rule.day||1)); }
+
+/* ---------- Âm thanh nền tập trung (Web Audio, không cần file) ---------- */
+const Noise=(()=>{
+  let ctx,src,filter,gain,cur=null;
+  function ensure(){
+    if(ctx) return;
+    const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+    ctx=new AC();
+    const n=2*ctx.sampleRate, buf=ctx.createBuffer(1,n,ctx.sampleRate), d=buf.getChannelData(0);
+    let last=0;
+    for(let i=0;i<n;i++){ const w=Math.random()*2-1; last=(last+0.02*w)/1.02; d[i]=last*3.5; } // brown-ish base
+    src=ctx.createBufferSource(); src.buffer=buf; src.loop=true;
+    filter=ctx.createBiquadFilter(); gain=ctx.createGain(); gain.gain.value=0;
+    src.connect(filter); filter.connect(gain); gain.connect(ctx.destination); src.start();
+  }
+  function start(type,vol){
+    ensure(); if(!ctx) return; if(ctx.state==='suspended') ctx.resume(); cur=type;
+    if(type==='white'){ filter.type='highpass'; filter.frequency.value=1000; }
+    else if(type==='brown'){ filter.type='lowpass'; filter.frequency.value=420; }
+    else if(type==='rain'){ filter.type='bandpass'; filter.frequency.value=1400; filter.Q.value=0.6; }
+    gain.gain.setTargetAtTime(vol==null?0.5:vol,ctx.currentTime,0.1);
+  }
+  function stop(){ if(gain&&ctx) gain.gain.setTargetAtTime(0,ctx.currentTime,0.1); cur=null; }
+  function setVol(v){ if(gain&&ctx) gain.gain.setTargetAtTime(v,ctx.currentTime,0.1); }
+  return {start,stop,setVol,current:()=>cur};
+})();
+const SOUNDS=[['off','Tắt','ti-volume-3'],['brown','Tiếng trầm','ti-wave-sine'],['white','Tiếng trắng','ti-wave-square'],['rain','Tiếng mưa','ti-cloud-rain']];
+function SoundBar(){
+  const [cur,setCur]=useState(Noise.current());
+  const pick=(t)=>{ if(t==='off'){Noise.stop();setCur(null);} else {Noise.start(t);setCur(t);} };
+  return (
+    <div style={{display:'flex',gap:6,justifyContent:'center',flexWrap:'wrap'}}>
+      {SOUNDS.map(([k,n,ic])=>{
+        const on=(k==='off'&&!cur)||cur===k;
+        return <button key={k} onClick={()=>pick(k)} style={{display:'flex',alignItems:'center',gap:5,padding:'7px 12px',borderRadius:20,fontSize:12,fontWeight:600,cursor:'pointer',border:'1px solid rgba(255,255,255,.25)',background:on?'rgba(255,255,255,.9)':'rgba(255,255,255,.1)',color:on?'#1a1410':'#fff'}}><i className={'ti '+ic}></i>{n}</button>;
+      })}
+    </div>
+  );
+}
+
+/* ---------- seed ---------- */
+function seed(){
+  return [
+    {id:uid(),title:'Đặt thêm sữa Aptamil số 1 & số 2',proj:'nhap',status:'doing',pri:'high',progress:60,due:addDays(1),note:'NCC báo giá mới, đặt 2 thùng mỗi loại',checklist:[{t:'Xác nhận giá NCC',done:true},{t:'Chốt số lượng',done:true},{t:'Chuyển cọc',done:false}],created:addDays(-2)},
+    {id:uid(),title:'Gói & gửi 8 đơn ship COD hôm nay',proj:'don',status:'todo',pri:'high',progress:0,due:today(),note:'Cut-off bưu tá 16h',checklist:[],created:addDays(-1)},
+    {id:uid(),title:'Kiểm kê tồn bỉm Merries size M, L',proj:'kho',status:'todo',pri:'med',progress:0,due:addDays(2),note:'',checklist:[],created:addDays(-1)},
+    {id:uid(),title:'Soạn bài đăng "Ăn dặm 6 tháng" lên Fanpage',proj:'content',status:'doing',pri:'med',progress:40,due:addDays(3),note:'Kèm 5 ảnh sản phẩm cháo/bột',checklist:[{t:'Viết caption',done:true},{t:'Chọn ảnh',done:false},{t:'Lên lịch đăng',done:false}],created:addDays(-3)},
+    {id:uid(),title:'Chạy ads khuyến mãi cuối tháng',proj:'mkt',status:'todo',pri:'med',progress:0,due:addDays(4),note:'Ngân sách 500k, target mẹ bỉm HN',checklist:[],created:today()},
+    {id:uid(),title:'Đối soát doanh thu tuần & ghi sổ',proj:'tc',status:'todo',pri:'low',progress:0,due:addDays(5),note:'',checklist:[],created:today()},
+    {id:uid(),title:'Trả lời tin nhắn tư vấn tồn đọng',proj:'cs',status:'done',pri:'med',progress:100,due:addDays(-1),note:'',checklist:[],created:addDays(-2),doneAt:addDays(-1)},
+    {id:uid(),title:'Cập nhật giá vitamin D3 trên web',proj:'content',status:'done',pri:'low',progress:100,due:addDays(-2),note:'',checklist:[],created:addDays(-3),doneAt:addDays(-2)},
+  ];
+}
+/* ===== HỘP THƯ TASK TỰ ĐỘNG — sinh từ chat dự án Hương Diện =====
+   Tác vụ theo lịch (scheduled task "huongdien-chat-to-task") sẽ CHÈN các object
+   task mới vào ngay sau dòng đánh dấu __INBOX_INSERT__ bên dưới.
+   Quy ước:
+   - id phải DUY NHẤT & ỔN ĐỊNH, dạng 'hd-YYYY-MM-DD-n' (vd 'hd-2026-06-30-1').
+     KHÔNG bao giờ sửa/đặt lại id cũ → tránh thêm trùng.
+   - Mỗi task: {id,title,proj,status:'todo',pri:'high|med|low',progress:0,
+     due:'YYYY-MM-DD'|'', note, checklist:[{t,done:false}], created:'YYYY-MM-DD', src:'hd-chat'}
+   - proj ∈ nhap|don|kho|mkt|content|tc|cs|ai|khac.
+   App tự gộp các task này vào hdw.tasks ĐÚNG MỘT LẦN (ghi nhớ qua hdw.inboxSeen),
+   nên người dùng xoá/sửa task đã gộp sẽ KHÔNG bị bơm lại. */
+const INBOX_TASKS=[
+  /* __INBOX_INSERT__ (tác vụ theo lịch chèn task mới phía trên dòng này) */
+];
+function mergeInbox(existing){
+  try{
+    const seen=store.get('hdw.inboxSeen',[]);
+    const have=new Set(existing.map(t=>t.id));
+    const seenSet=new Set(seen);
+    const add=INBOX_TASKS.filter(t=>t&&t.id&&!have.has(t.id)&&!seenSet.has(t.id));
+    if(!add.length) return existing;
+    store.set('hdw.inboxSeen',seen.concat(add.map(t=>t.id)));
+    return existing.concat(add.map(t=>({status:'todo',pri:'med',progress:0,note:'',checklist:[],created:today(),src:'hd-chat',...t})));
+  }catch(e){ return existing; }
+}
+/* ---------- Kế hoạch phòng thủ "năm xấu" (từ bài viết) ---------- */
+const DEFENSE_PLAN=[
+  {n:1,title:'Tính điểm hòa vốn THẬT của cửa hàng',proj:'tc',pri:'high',off:2,
+   note:'Biên gộp 15% − thuế 1,5% = 13,5%. Tính theo biên an toàn 12–13% (trừ hao hụt, giảm giá, freeship, hàng lỗi, cận date).',
+   ck:['Chốt tổng chi phí cố định thật/tháng (230tr? 300tr?)','Tính doanh thu hòa vốn tối thiểu theo biên 12–13%','Đặt ngưỡng báo động: DT < 1,8 tỷ mà CP 230tr = nguy hiểm','Quy ra mục tiêu doanh thu/ngày & dán ở quầy']},
+  {n:2,title:'Lập "quỹ oxy" tiền mặt — tối thiểu 1 tháng chi phí',proj:'tc',pri:'high',off:7,
+   note:'Cửa hàng sống năm xấu = không hết tiền mặt khi DT tụt 2–3 tháng. Chưa có quỹ thì CHƯA mở rộng.',
+   ck:['Tách ~230tr tiền mặt riêng, KHÔNG đụng vào nhập hàng','Để quỹ ở tài khoản/sổ riêng, không tiêu lẫn','Đặt lộ trình nâng lên mức an toàn 2 tháng (460–600tr)']},
+  {n:3,title:'Phân loại toàn bộ tồn kho theo TUỔI HÀNG',proj:'kho',pri:'high',off:5,
+   note:'Năm xấu giết cửa hàng mẹ&bé là KẸT TIỀN TRONG HÀNG TỒN, không phải thiếu khách.',
+   ck:['Chia nhóm: 0–30 / 31–60 / 61–90 / >90 ngày / cận date','Xuất danh sách từng nhóm','Đánh dấu riêng hàng cận date để xử lý gấp']},
+  {n:4,title:'Lập báo cáo Top 20 mã hàng "giam tiền" — cập nhật mỗi tuần',proj:'kho',pri:'high',off:7,
+   note:'Không nhìn tổng kho chung chung. Phải biết mã nào nhập nhiều, quay chậm, lãi thấp, cận date.',
+   ck:['Xác định 20 mã giam vốn nhiều nhất','Ghi rõ: nhập bao nhiêu, quay chậm cỡ nào, lãi thật','Đưa vào lịch rà soát hằng tuần']},
+  {n:5,title:'Đặt ngưỡng XẢ SỚM cho hàng quay chậm',proj:'kho',pri:'med',off:10,
+   note:'Sữa, TPBS, vitamin, ăn dặm — không chờ cận date mới xả.',
+   ck:['Quy định: quay chậm sau 45–60 ngày → có chương trình đẩy ngay','Soạn sẵn combo/giảm giá để xả có kiểm soát']},
+  {n:6,title:'Ban hành nguyên tắc NHẬP HÀNG phòng thủ',proj:'nhap',pri:'med',off:7,
+   note:'Bài học tồn High Colostrum: date xa vẫn thành áp lực nếu giam vốn lớn.',
+   ck:['Nguyên tắc: KHÔNG nhập lô mà bán chậm 3 tháng sẽ "mất thở"','Mỗi lô nhập phải có kế hoạch bán ra trước','Ưu tiên hàng chủ lực quay nhanh, có lãi thật']},
+  {n:7,title:'Chia danh mục hàng thành 4 nhóm chiến lược',proj:'kho',pri:'med',off:12,
+   note:'Đủ hàng chủ lực quay nhanh có lãi thật — không cần quá nhiều mã.',
+   ck:['Nhóm KÉO KHÁCH: bỉm, sữa phổ thông, khăn ướt, thiết yếu','Nhóm TẠO LÃI: chăm sóc bé, vitamin, ăn dặm, combo, phụ kiện','Nhóm GIỮ KHÁCH THÂN: hàng mua lặp lại hằng tháng','Nhóm NGUY HIỂM: đắt, chậm quay, date nhạy, theo trend → giảm mạnh']},
+  {n:8,title:'Biến Zalo OA (~900 khách) thành KÊNH BÁN LẠI',proj:'cs',pri:'high',off:14,
+   note:'Năm xấu mà cứ mua khách mới bằng Ads thì rất mệt. Khách thân là tài sản sống còn.',
+   ck:['Phân nhóm khách theo tuổi bé','Bé 6–12 tháng → gửi combo ăn dặm','Bé 12–24 tháng → bỉm, sữa, men, vitamin','Mẹ mới sinh → hút sữa, bình, khăn, tắm gội','Khách mua bỉm → nhắc mua lại sau 20–25 ngày']},
+  {n:9,title:'Lập "bảng điều khiển" 10 số theo dõi mỗi tuần',proj:'tc',pri:'high',off:5,
+   note:'Không quản bằng cảm giác. Thấy "sao tiền hết nhanh thế" thì thường đã muộn.',
+   ck:['1. Doanh thu tuần · 2. Lãi gộp · 3. Biên gộp thực tế','4. Tiền mặt còn lại · 5. Công nợ NCC','6. Tồn tổng · 7. Tồn >60 ngày · 8. Top 20 mã giam tiền','9. Số khách quay lại · 10. Chi phí Ads / DT từ Ads']},
+  {n:10,title:'Soát & cắt CHI PHÍ CỐ ĐỊNH, chuyển sang linh hoạt',proj:'tc',pri:'med',off:14,
+   note:'Năm xấu sợ nhất: lương cứng, mặt bằng, lãi vay, phần mềm, nhập cam kết.',
+   ck:['Liệt kê toàn bộ chi phí cố định hiện tại','Không tuyển thêm nếu chưa chứng minh tạo thêm lãi','Tìm khoản cố định có thể chuyển thành linh hoạt']},
+  {n:11,title:'Gắn KPI hiệu quả cho từng chiến dịch quảng cáo',proj:'mkt',pri:'med',off:10,
+   note:'Không chạy Ads kiểu "hy vọng ra đơn".',
+   ck:['Mỗi chiến dịch ghi rõ: chi bao nhiêu','Ra bao nhiêu đơn, lãi gộp bao nhiêu','Khách có quay lại / lấy được Zalo không']},
+  {n:12,title:'Đào tạo nhân viên ĐA NĂNG',proj:'cs',pri:'low',off:21,
+   note:'Một người: bán hàng + chốt Zalo + kiểm kho + gợi ý combo + chăm khách cũ.',
+   ck:['Checklist kỹ năng cho mỗi nhân viên','Tập chốt Zalo & tư vấn combo theo tuổi bé']},
+  {n:13,title:'Ban hành NGUYÊN TẮC VAY NỢ',proj:'tc',pri:'med',off:7,
+   note:'Cửa hàng đang có áp lực lãi vay → kỷ luật rất quan trọng.',
+   ck:['KHÔNG vay để ôm hàng chậm quay','KHÔNG lấy DT tốt 1–2 tuần làm cớ nhập mạnh','KHÔNG dùng tiền thuế/NCC/lãi NH để bù lỗ vận hành']},
+  {n:14,title:'Soạn sẵn 3 KỊCH BẢN khi doanh thu giảm',proj:'tc',pri:'high',off:7,
+   note:'Cửa hàng sống năm xấu = có sẵn kịch bản TRƯỚC khi xấu xảy ra.',
+   ck:['KB A (giảm 10%): cắt hàng chậm, tăng chăm khách cũ, giảm nhập nhóm rủi ro','KB B (giảm 20%): dừng nhập không thiết yếu, đẩy combo, siết Ads, đàm phán NCC','KB C (giảm 30%): bảo toàn tiền mặt, xả hàng chậm có kiểm soát, dừng mở rộng']},
+  {n:15,title:'Xây 5 lợi thế "không bị chuỗi lớn đè chết"',proj:'cs',pri:'low',off:30,
+   note:'Cửa hàng nhỏ thắng ở chỗ khác, không phải đua giá.',
+   ck:['Tư vấn thật hơn (có trách nhiệm, không đẩy hàng)','Nhớ khách hơn (tuổi bé, bỉm đang dùng, dị ứng)','Giao nhanh khu vực: Ba Đình, Đống Đa, Cầu Giấy, Tây Hồ','Combo thực dụng (tiện + tiết kiệm, không tăng bill vô tội vạ)','Niềm tin cao (chính hãng, đổi trả tử tế)']},
+  {n:16,title:'Xả Sữa Non Pháp (tồn High Colostrum)',proj:'mkt',pri:'high',off:14,
+   note:'Giải phóng vốn đang giam trong tồn sữa non Pháp — đẩy quay vòng tiền qua nhiều kênh.',
+   ck:['Nhắn khách qua Zalo OA','Chạy quảng cáo test các mẫu','Liên hệ các nhà bán buôn','Thuê livestream','Đặt KOL quảng cáo','Đăng sản phẩm lên sàn','Làm video tiktok','Lập nhóm zalo khách quen có nhu cầu','Tuyển CTV','Hoàn thiện bảng giá','Lấy feedback khách hàng']},
+  // ===== Ứng dụng AI (làm trước → làm sau) =====
+  {n:17,title:'AI viết nội dung bán hàng & kiến thức nuôi con',proj:'ai',pri:'high',off:3,
+   note:'ChatGPT/Claude. Nội dung "kiến thức" vừa lên SEO vừa xây uy tín — yếu tố quyết định với mẹ bỉm. Chi phí gần như bằng 0, hiệu quả thấy ngay.',
+   ck:['Mở 1 tài khoản ChatGPT hoặc Claude','Viết caption bán hàng & kịch bản TikTok','Viết bài kiến thức: chọn bỉm chống hăm, pha sữa đúng, lịch tiêm chủng','Lập "thư viện nội dung theo tháng tuổi" (0–6 tháng, ăn dặm, tập đi…)']},
+  {n:18,title:'Tạo ảnh & video sản phẩm bằng AI',proj:'ai',pri:'med',off:7,
+   note:'Đẹp, nhanh, không cần lên hình hay thuê KOL.',
+   ck:['Canva Magic Studio: banner, ảnh SP, tách nền','Google Gemini (Nano Banana): chỉnh/ghép ảnh SP','CapCut + Heygen: video ngắn, người đại diện ảo đọc kịch bản tiếng Việt']},
+  {n:19,title:'Cài chatbot tư vấn 24/7 cho Fanpage + Zalo',proj:'ai',pri:'high',off:7,
+   note:'Tiết kiệm nhân sự nhiều nhất: 70–80% câu hỏi mẹ bỉm là lặp lại (size, giá, còn hàng, ship).',
+   ck:['Cài Pancake / Manychat / Hubota','Kết nối Fanpage + Zalo, trả lời ngoài giờ','Kịch bản: hỏi tháng tuổi bé → gợi ý đúng size bỉm / số sữa','Tự chốt đơn cơ bản']},
+  {n:20,title:'Bật quảng cáo AI đa kênh (Advantage+ / Smart+)',proj:'ai',pri:'med',off:21,
+   note:'AI tự phân bổ ngân sách, tìm tệp khách giống người đã mua — hợp shop nhỏ không có người chạy ads.',
+   ck:['Bật Meta Advantage+','Bật TikTok Smart+','Theo dõi hiệu quả: chi / đơn / khách quay lại']},
+  {n:21,title:'Nhắc mua lại tự động — "mỏ vàng" giữ chân khách',proj:'ai',pri:'high',off:30,
+   note:'Bỉm/sữa hết theo chu kỳ ~3–4 tuần. Một khách mẹ bỉm mua lại hàng chục lần/năm — chăm tốt là lợi nhuận bền nhất.',
+   ck:['Dùng Zalo ZNS hoặc CRM Pancake','Tự nhắc mua lại đúng chu kỳ 3–4 tuần','Nhắc đổi size bỉm khi bé đủ cân nặng','Phân nhóm khách theo tháng tuổi bé']},
+  {n:22,title:'Đưa toàn bộ bán hàng vào 1 phần mềm (dữ liệu sạch)',proj:'ai',pri:'high',off:30,
+   note:'ĐIỀU KIỆN để mọi AI khác chạy tốt. Nếu đơn còn ghi tay/rải rác thì đây là việc đáng làm nhất.',
+   ck:['Chọn KiotViet / Sapo / Nhanh.vn','Gom hết đơn hàng vào một nơi','Bật gợi ý nhập hàng theo tốc độ bán','Bật cảnh báo cận date (sữa, đồ ăn dặm)']},
+  {n:23,title:'Phân tích thị trường & giá bằng AI',proj:'ai',pri:'low',off:45,
+   note:'Định giá hợp lý, bám ngành hàng đang bán chạy.',
+   ck:['Metric.vn: xem ngành mẹ&bé bán chạy trên Shopee/TikTok Shop','Beecost: theo dõi lịch sử giá đối thủ']},
+  {n:24,title:'AI cho vận hành, kế toán & đào tạo nhân viên',proj:'ai',pri:'low',off:45,
+   note:'Làm sau khi nền tảng đã chạy.',
+   ck:['MISA + OCR đọc hóa đơn nhập tự động','ChatGPT phân tích file doanh thu (hàng nào lời nhất, khách nào lâu chưa quay lại)','ChatGPT/Claude soạn kịch bản tư vấn chuẩn cho nhân viên mới','Luyện xử lý tình huống: khách phàn nàn, đổi trả']},
+  // ===== Nội dung "không lộ mặt" + kế hoạch theo kênh =====
+  {n:25,title:'Làm video TikTok/Reels KHÔNG lộ mặt (6 kiểu)',proj:'ai',pri:'high',off:5,
+   note:'Mẹ bỉm tin vào SẢN PHẨM & KIẾN THỨC, không cần thấy mặt người bán. Nhiều shop mẹ&bé doanh thu lớn chưa lên hình giây nào.',
+   ck:['Quay tay cận cảnh: unbox, sờ chất, đo size, so sánh 2 loại','TikTok Photo Mode: slideshow ảnh + chữ + nhạc (làm 5 phút, đang được ưu tiên)','Video chữ chạy + giọng AI đọc (dạng kiến thức)','Avatar AI (Heygen) đọc kịch bản tiếng Việt','Quay cảnh đóng gói/kho góc tay (tạo cảm giác shop thật)','Bắt trend: SP đặt trên bàn + chữ + nhạc hot']},
+  {n:26,title:'Livestream "quay tay" không lộ mặt',proj:'ai',pri:'med',off:14,
+   note:'Dạng live bán chạy nhất ngành mẹ&bé. Nhân viên chỉ cần nói, không lên hình.',
+   ck:['Camera chĩa xuống bàn, tay cầm SP giới thiệu','Dùng GIỌNG THẬT (an toàn nhất với TikTok Shop VN)','Tránh livestream bằng avatar AI hoàn toàn tự động (bị hạn chế)','Giao 1 trong 5 nhân viên phụ trách nói']},
+  {n:27,title:'Chuẩn bị giọng đọc cho video (thật / AI)',proj:'ai',pri:'low',off:7,
+   note:'Tự thu giọng vẫn chân thật nhất, khách thích. Ngại giọng thì dùng AI.',
+   ck:['Ưu tiên tự thu giọng thật nếu nói được','Giọng AI miễn phí: CapCut (giọng Việt)','Giọng AI tự nhiên hơn: ElevenLabs / Vbee']},
+  {n:28,title:'AI cho WEBSITE: mô tả SP hàng loạt + blog SEO',proj:'ai',pri:'high',off:10,
+   note:'Kênh AI giúp nhiều nhất mà ít người tận dụng. Mẹ bỉm search Google rất nhiều → blog SEO kéo khách MIỄN PHÍ, đều đặn.',
+   ck:['Viết mô tả sản phẩm hàng loạt bằng AI','Viết blog kiến thức nuôi con (SEO: "bỉm nào tốt cho bé sơ sinh", "sữa cho bé táo bón")','Gắn chatbot tư vấn ngay trên web','Xác định nền tảng web (Haravan/Sapo/WooCommerce/tự code) để chọn công cụ AI']},
+  {n:29,title:'Khởi động kênh TikTok nhẹ nhàng',proj:'ai',pri:'med',off:14,
+   note:'Bắt đầu từ kiểu ít rủi ro lộ mặt nhất.',
+   ck:['Khởi động bằng Photo Mode + video quay tay','Rồi mới tới video chữ chạy + giọng AI','Giao 1 nhân viên phụ trách','AI lo 80% kịch bản + phụ đề']},
+  {n:30,title:'Phân vai 5 nhân viên có AI hỗ trợ (1 người làm việc của 2)',proj:'ai',pri:'med',off:21,
+   note:'Không cần tuyển thêm để mở 2 kênh mới (TikTok + Zalo).',
+   ck:['1 người chuyên nội dung TikTok/Facebook (AI hỗ trợ)','1–2 người chốt đơn & chăm sóc (chatbot lọc trước)','Còn lại lo kho/đóng gói']},
+  // ===== Lấp gap chủng loại hàng (từ phân tích assortment 425 SP) =====
+  {n:31,title:'Nhập hàng NỘI ĐỊA VN (gap lớn nhất — chỉ 2/425 SP)',proj:'nhap',pri:'high',off:7,
+   note:'Đang bỏ lỡ tệp mass-market lớn nhất. Đây là khoảng trống chiến lược #1.',
+   ck:['Nutifood GrowPLUS+ (Đỏ / Xanh)','Vinamilk Optimum + Dielac','Sữa non ColosBaby Gold','Đàm phán NCC/NPP nội địa, lấy bảng giá sỉ']},
+  {n:32,title:'Mở rộng BỈM TÃ phổ thông (đang chỉ 26 SKU toàn premium Nhật)',proj:'nhap',pri:'high',off:7,
+   note:'Thiếu hẳn bỉm quốc dân giá tốt — nhóm kéo khách quay lại. Khoảng trống chiến lược #2.',
+   ck:['Bobby (bỉm #1 VN): quần M/L/XL + dán NB/S','Huggies: quần + dán','Cân nhắc thêm Goon','Khăn ướt bán kèm theo lốc','Nhập sâu (tiêu hao gọn nhẹ), bán theo lốc']},
+  {n:33,title:'Hoàn thiện nhóm MẸ BẦU & SAU SINH (đang 25 SKU chỉ có sữa)',proj:'nhap',pri:'high',off:10,
+   note:'Thiếu vitamin bầu + đồ nursing. Khoảng trống chiến lược #3.',
+   ck:['Vitamin bầu: Elevit · Procare','Sắt: Chela-Ferr · Canxi+D: NextG / Ostelin','Hút sữa + túi trữ sữa Unimom / Sunmum','Miếng lót thấm sữa Pigeon','Băng vệ sinh sau sinh Caryn','Gộp thành "giỏ đồ đi sinh" để cross-sell']},
+  {n:34,title:'Bổ sung sữa NGOẠI còn thiếu + sữa ĐẶC TRỊ (biên cao)',proj:'nhap',pri:'med',off:14,
+   note:'Sữa đặc trị biên lợi nhuận cao, ít cạnh tranh giá.',
+   ck:['Sữa ngoại thiếu: Friso Gold · Similac · Meiji Nhật','Nan AL110 (tiêu chảy)','Frisolac Comfort (nôn trớ)','Similac Neosure (sinh non)']},
+  {n:35,title:'Bổ sung MEN/SIRO + đồ dùng ADD-ON cross-sell',proj:'nhap',pri:'med',off:14,
+   note:'Hàng tiêu hao gọn nhẹ + bổ trợ tủ sách 496 cuốn.',
+   ck:['Men vi sinh: Optibac trẻ em · BioGaia','Siro ăn ngon: Fitobimbi','Cốc tập uống 360° · nhiệt kế hồng ngoại','Sách vải + flashcard (bổ trợ tủ sách)']},
+  {n:36,title:'Áp NGUYÊN TẮC vận hành tồn kho khi nhập',proj:'nhap',pri:'med',off:14,
+   note:'Tránh ôm tồn vốn lớn, tối ưu cross-sell.',
+   ck:['Hàng cồng kềnh/vốn lớn (máy hút Medela, xe đẩy, ghế to) → trưng mẫu / đặt theo y/c, KHÔNG ôm tồn','Hàng tiêu hao gọn nhẹ (bỉm, khăn ướt, túi trữ, núm ti, men/siro) → nhập sâu, bán theo lốc','Cross-sell: tã ↔ khăn ướt, sách ↔ sách vải/teether']},
+];
+
+const SEED_RECUR=[
+  {id:'rc1',title:'Đối soát doanh thu & ghi sổ tuần',proj:'tc',every:'week',day:6,pri:'high',est:1.5,ck:['Tổng doanh thu tuần','Lãi gộp & biên thực tế','Đối chiếu tiền mặt / công nợ NCC']},
+  {id:'rc2',title:'Cập nhật bảng điều khiển 10 số',proj:'tc',every:'week',day:7,pri:'med',est:1},
+  {id:'rc3',title:'Rà Top 20 mã hàng giam tiền',proj:'kho',every:'week',day:1,pri:'med',est:1},
+  {id:'rc4',title:'Kiểm kê tồn kho đầu tháng',proj:'kho',every:'month',day:1,pri:'high',est:3},
+  {id:'rc5',title:'Lên kế hoạch nội dung tháng',proj:'content',every:'month',day:2,pri:'med',est:2},
+];
+const SEED_NOTEBOOK={
+  sop:[
+    {id:'s1',title:'Quy trình chốt đơn online',body:'1. Xác nhận sản phẩm + size/số\n2. Báo giá + phí ship\n3. Lấy SĐT/Zalo + địa chỉ\n4. Lên đơn trên phần mềm\n5. Đóng gói, dán nhãn, bàn giao bưu tá\n6. Nhắn mã vận đơn cho khách'},
+    {id:'s2',title:'Quy trình nhập hàng',body:'1. Kiểm kế hoạch bán ra trước khi đặt\n2. Đối chiếu giá NCC + chiết khấu\n3. Nhận hàng: kiểm số lượng, date, tình trạng\n4. Nhập kho + cập nhật tồn\n5. Lưu hoá đơn/công nợ'},
+  ],
+  prompts:[
+    {id:'p1',title:'Viết caption bán hàng',body:'Bạn là nhân viên marketing cửa hàng Mẹ&Bé Hương Diện. Viết caption Facebook bán [TÊN SẢN PHẨM] cho mẹ bỉm, giọng thân thiện, nhấn lợi ích cho bé, kèm CTA nhắn tin + 3 hashtag. Dưới 120 từ.'},
+    {id:'p2',title:'Bài kiến thức nuôi con (SEO)',body:'Viết bài blog 600 từ chủ đề "[CHỦ ĐỀ]" cho website cửa hàng Mẹ&Bé, chuẩn SEO, giọng đáng tin, có tiêu đề phụ, kết bài gợi ý sản phẩm phù hợp của shop.'},
+    {id:'p3',title:'Kịch bản TikTok không lộ mặt',body:'Viết kịch bản video TikTok 30 giây kiểu "quay tay cận cảnh" giới thiệu [SẢN PHẨM]. Gồm: hook 3 giây, 3 ý chính (lợi ích), CTA. Kèm gợi ý cảnh quay và phụ đề.'},
+  ],
+  suppliers:[
+    {id:'n1',name:'NCC sữa (mẫu)',phone:'09xx xxx xxx',note:'Chiết khấu theo thùng · giao T2–T6'},
+  ],
+};
+const SEED_DAILY=[
+  {id:'d1',t:'Mở cửa hàng & kiểm tra trưng bày'},
+  {id:'d2',t:'Xem & xác nhận đơn online mới'},
+  {id:'d3',t:'Trả lời tin nhắn / bình luận khách'},
+  {id:'d4',t:'Cập nhật tồn kho bán trong ngày'},
+  {id:'d5',t:'Đăng 1 bài / story lên Fanpage'},
+  {id:'d6',t:'Chốt sổ doanh thu cuối ngày'},
+];
+
+/* ---------- progress ring ---------- */
+function Ring({pct,size=46,color='#f97316'}){
+  const r=(size-6)/2, c=2*Math.PI*r, off=c*(1-pct/100);
+  return (
+    <svg width={size} height={size} className="ring">
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--border2)" strokeWidth="5"/>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth="5" strokeLinecap="round"
+        strokeDasharray={c} strokeDashoffset={off} transform={`rotate(-90 ${size/2} ${size/2})`} style={{transition:'stroke-dashoffset .4s'}}/>
+      <text x="50%" y="52%" dominantBaseline="middle" textAnchor="middle" fontSize={size*0.28} fontWeight="700" fill="var(--ink)" fontFamily="Baloo 2">{pct}</text>
+    </svg>
+  );
+}
+
+/* ===================================================================== */
+function App(){
+  const [tasks,setTasks]=useState(()=>{const t=store.get('hdw.tasks',null);return mergeInbox(t||seed());});
+  const [daily,setDaily]=useState(()=>store.get('hdw.daily',SEED_DAILY));
+  const [recurring,setRecurring]=useState(()=>store.get('hdw.recurring',SEED_RECUR));
+  const [bizmetrics,setBizmetrics]=useState(()=>store.get('hdw.bizmetrics',[]));
+  const [bizconfig,setBizconfig]=useState(()=>store.get('hdw.bizconfig',{breakeven:425}));
+  const [notebook,setNotebook]=useState(()=>store.get('hdw.notebook',SEED_NOTEBOOK));
+  const [focusTask,setFocusTask]=useState(null);
+  const [deepIds,setDeepIds]=useState(null);
+  const [breath,setBreath]=useState(false);
+  const [zen,setZen]=useState(()=>store.get('hdw.zen',{min:0,sessions:0}));
+  const [brainlog,setBrainlog]=useState(()=>store.get('hdw.brainlog',{}));
+  const [carecfg,setCarecfg]=useState(()=>store.get('hdw.carecfg',{water:true,stand:true,eye:false,caffeine:true,caffeineHour:14}));
+  const [learned,setLearned]=useState(()=>store.get('hdw.learned',{}));
+  const [toast,setToast]=useState(null);
+  const [dailyState,setDailyState]=useState(()=>store.get('hdw.dailyState',{date:today(),done:[],streak:0,last:''}));
+  const [view,setView]=useState('dash');
+  const [todayPlan,setTodayPlan]=useState(()=>store.get('hdw.todayPlan',null));
+  const [dark,setDark]=useState(()=>store.get('hdw.dark',0)==1||store.get('hdw.dark',false)===true||localStorage.getItem('hdw.dark')==='1');
+  const [editing,setEditing]=useState(null); // task object or null
+  const [q,setQ]=useState('');
+  const [projFilter,setProjFilter]=useState('all');
+
+  useEffect(()=>store.set('hdw.tasks',tasks),[tasks]);
+  useEffect(()=>store.set('hdw.daily',daily),[daily]);
+  useEffect(()=>store.set('hdw.dailyState',dailyState),[dailyState]);
+  useEffect(()=>store.set('hdw.todayPlan',todayPlan),[todayPlan]);
+  useEffect(()=>store.set('hdw.recurring',recurring),[recurring]);
+  useEffect(()=>store.set('hdw.bizmetrics',bizmetrics),[bizmetrics]);
+  useEffect(()=>store.set('hdw.bizconfig',bizconfig),[bizconfig]);
+  useEffect(()=>store.set('hdw.notebook',notebook),[notebook]);
+  useEffect(()=>store.set('hdw.zen',zen),[zen]);
+  useEffect(()=>store.set('hdw.brainlog',brainlog),[brainlog]);
+  useEffect(()=>store.set('hdw.carecfg',carecfg),[carecfg]);
+  useEffect(()=>store.set('hdw.learned',learned),[learned]);
+  const addZen=(m)=>setZen(z=>({min:(z.min||0)+m,sessions:(z.sessions||0)+1}));
+
+  // Nhắc nhịp chăm sóc: bắn toast nhẹ theo giờ khi app đang mở
+  const careFired=useRef({});
+  useEffect(()=>{
+    const NUDGE={
+      water:{every:60,msg:'💧 Uống một ngụm nước nhé!'},
+      stand:{every:50,msg:'🧍 Đứng dậy vươn vai 1 phút cho máu lên não.'},
+      eye:{every:20,msg:'👀 Nghỉ mắt 20 giây — nhìn ra xa 6 mét (quy tắc 20-20-20).'},
+    };
+    const tick=()=>{
+      const now=Date.now();
+      Object.keys(NUDGE).forEach(k=>{
+        if(!carecfg[k]) return;
+        const last=careFired.current[k]||0;
+        if(now-last >= NUDGE[k].every*60000){ careFired.current[k]=now; setToast({msg:NUDGE[k].msg}); }
+      });
+      if(carecfg.caffeine){
+        const h=new Date().getHours();
+        if(h===(carecfg.caffeineHour||14) && careFired.current.caf!==dstr(new Date())){ careFired.current.caf=dstr(new Date()); setToast({msg:'☕ Đến giờ cắt caffeine — tránh cà phê sau giờ này để ngủ ngon.'}); }
+      }
+    };
+    careFired.current.water=careFired.current.water||Date.now();
+    careFired.current.stand=careFired.current.stand||Date.now();
+    careFired.current.eye=careFired.current.eye||Date.now();
+    const id=setInterval(tick,30000);
+    return ()=>clearInterval(id);
+  },[carecfg]);
+  // tự sinh việc lặp lại cho tuần/tháng hiện tại
+  useEffect(()=>{ const add=genRecurring(recurring,tasks); if(add.length) setTasks(prev=>[...prev,...add]); },[recurring]);
+  // toast tự ẩn
+  useEffect(()=>{ if(!toast) return; const id=setTimeout(()=>setToast(null),2600); return ()=>clearTimeout(id); },[toast]);
+  useEffect(()=>{ document.body.classList.toggle('dark',dark); store.set('hdw.dark',dark?1:0); },[dark]);
+
+  // reset checklist hằng ngày khi sang ngày mới
+  useEffect(()=>{
+    if(dailyState.date!==today()){
+      const all=dailyState.done.length>0 && dailyState.done.length>=daily.length;
+      setDailyState(s=>({date:today(),done:[],
+        streak: all? (s.streak+1):0,
+        last: all? today(): s.last}));
+    }
+  },[]);
+
+  /* task ops */
+  const saveTask=(t)=>{
+    setTasks(prev=>{
+      let arr=prev.find(x=>x.id===t.id)?prev.map(x=>x.id===t.id?t:x):[...prev,t];
+      if(t.frog) arr=arr.map(x=>x.id===t.id?x:(x.frog?{...x,frog:false}:x)); // chỉ 1 việc xương nhất
+      return arr;
+    });
+    setEditing(null);
+  };
+  const delTask=(id)=>{ setTasks(prev=>prev.filter(x=>x.id!==id)); setEditing(null); };
+  const importPlan=()=>{
+    setTasks(prev=>{
+      const have=new Set(prev.map(x=>x.id));
+      const add=DEFENSE_PLAN.filter(p=>!have.has('plan-'+p.n)).map(p=>({
+        id:'plan-'+p.n,title:p.title,proj:p.proj,status:'todo',pri:p.pri,progress:0,
+        due:addDays(p.off),note:p.note,checklist:p.ck.map(t=>({t,done:false})),created:today(),plan:true
+      }));
+      return [...prev,...add];
+    });
+    setView('board');
+  };
+  const planEverLoaded=tasks.some(x=>x.plan);
+  const missingPlan=DEFENSE_PLAN.filter(p=>!tasks.some(x=>x.id==='plan-'+p.n)).length;
+  const planLoaded=missingPlan===0;
+  const celebrate=(t)=>{
+    const before=gamifyStats(tasks), pts=pointsFor(t);
+    const leveledUp=before.next && (before.points+pts)>=before.next.min;
+    setToast({msg:'+'+pts+' điểm! 🎉', sub: leveledUp?('Lên cấp: '+before.next.ic+' '+before.next.name):null});
+  };
+  const moveTask=(id,status)=>{
+    const was=tasks.find(x=>x.id===id);
+    setTasks(prev=>prev.map(x=>{
+      if(x.id!==id) return x;
+      const prog = status==='done'?100 : (x.progress===100?80 : x.progress);
+      return {...x,status,progress: status==='done'?100:(status==='todo'&&x.progress===100?0:prog), doneAt: status==='done'?today():undefined};
+    }));
+    if(status==='done' && was && was.status!=='done') celebrate(was);
+  };
+  const addSpent=(id,mins)=>setTasks(prev=>prev.map(x=>x.id===id?{...x,spent:(x.spent||0)+mins}:x));
+
+  /* Sao lưu & khôi phục */
+  const exportData=()=>{
+    const data={};
+    for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.indexOf('hdw.')===0) data[k]=localStorage.getItem(k); }
+    const blob=new Blob([JSON.stringify({app:'huongdienwork',date:today(),data},null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob), a=document.createElement('a');
+    a.href=url; a.download='huongdien-backup-'+today()+'.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  };
+  const importData=(file)=>{
+    if(!file) return;
+    const r=new FileReader();
+    r.onload=e=>{ try{ const j=JSON.parse(e.target.result); const d=j.data||j;
+        Object.keys(d).forEach(k=>{ if(k.indexOf('hdw.')===0) localStorage.setItem(k, typeof d[k]==='string'?d[k]:JSON.stringify(d[k])); });
+        alert('Khôi phục dữ liệu thành công! Trang sẽ tải lại.'); location.reload();
+      }catch(err){ alert('File sao lưu không hợp lệ.'); } };
+    r.readAsText(file);
+  };
+  const setProgress=(id,p)=>{
+    const was=tasks.find(x=>x.id===id);
+    setTasks(prev=>prev.map(x=>x.id!==id?x:{...x,progress:p,status:p===100?'done':(p>0?'doing':x.status==='done'?'todo':x.status),doneAt:p===100?today():undefined}));
+    if(p===100 && was && was.status!=='done') celebrate(was);
+  };
+  const toggleCk=(id,i)=>setTasks(prev=>prev.map(x=>{
+    if(x.id!==id) return x;
+    const cl=x.checklist.map((c,j)=>j===i?{...c,done:!c.done}:c);
+    const dn=cl.filter(c=>c.done).length, prog=cl.length?Math.round(dn/cl.length*100):x.progress;
+    return {...x,checklist:cl,progress:cl.length?prog:x.progress};
+  }));
+
+  /* kế hoạch hôm nay: xếp theo điểm ưu tiên, lấp đủ quỹ thời gian trong ngày */
+  const rebuildPlan=(cap)=>{
+    const capH=cap || (todayPlan&&todayPlan.cap) || 6;
+    const open=tasks.filter(t=>t.status!=='done');
+    const ranked=open.map(t=>({id:t.id,s:scoreTask(t),h:estOf(t)})).sort((a,b)=>b.s-a.s);
+    const ids=[]; let used=0;
+    for(const r of ranked){ if(used>=capH) break; ids.push(r.id); used+=r.h; }
+    setTodayPlan({date:today(),cap:capH,ids,auto:[]});
+  };
+  useEffect(()=>{ if(!todayPlan || todayPlan.date!==today()) rebuildPlan(); },[]);
+
+  // Tự bù việc: sau khi 1 việc xong, thời gian trống ra → đề xuất thêm việc ưu tiên cao còn lại cho đủ quỹ giờ
+  useEffect(()=>{
+    if(!todayPlan || todayPlan.date!==today()) return;
+    const byId={}; tasks.forEach(t=>byId[t.id]=t);
+    const inPlan=new Set(todayPlan.ids);
+    const activeH=todayPlan.ids.map(id=>byId[id]).filter(t=>t&&t.status!=='done').reduce((a,t)=>a+estOf(t),0);
+    if(activeH>=todayPlan.cap) return;                       // còn đầy việc thì thôi
+    const cands=tasks.filter(t=>t.status!=='done'&&!inPlan.has(t.id))
+      .map(t=>({id:t.id,s:scoreTask(t),h:estOf(t)})).sort((a,b)=>b.s-a.s);
+    if(!cands.length) return;
+    let used=activeH; const add=[];
+    for(const c of cands){ if(used>=todayPlan.cap) break; add.push(c.id); used+=c.h; }
+    if(add.length) setTodayPlan(p=>({...p,ids:[...p.ids,...add],auto:[...(p.auto||[]),...add]}));
+  },[tasks]);
+
+  /* daily */
+  const toggleDaily=(id)=>setDailyState(s=>{
+    const done=s.done.includes(id)?s.done.filter(x=>x!==id):[...s.done,id];
+    return {...s,done};
+  });
+
+  /* derived */
+  const filtered=useMemo(()=>{
+    let r=tasks;
+    if(projFilter!=='all') r=r.filter(t=>t.proj===projFilter);
+    if(q.trim()){const s=q.toLowerCase();r=r.filter(t=>t.title.toLowerCase().includes(s)||(t.note||'').toLowerCase().includes(s));}
+    return r;
+  },[tasks,projFilter,q]);
+
+  const stats=useMemo(()=>{
+    const t=today();
+    const open=tasks.filter(x=>x.status!=='done');
+    return {
+      todayCnt: open.filter(x=>x.due===t).length,
+      doing: tasks.filter(x=>x.status==='doing').length,
+      overdue: open.filter(x=>x.due && x.due<t).length,
+      doneWeek: tasks.filter(x=>x.status==='done' && x.doneAt && x.doneAt>=addDays(-7)).length,
+      open: open.length,
+      total: tasks.length,
+    };
+  },[tasks]);
+
+  const overdueCount=stats.overdue;
+
+  const NAV=[
+    {id:'dash',name:'Tổng quan',icon:'ti-layout-dashboard'},
+    {id:'today',name:'Hôm nay',icon:'ti-target-arrow'},
+    {id:'brain',name:'Não khỏe',icon:'ti-brain'},
+    {id:'board',name:'Bảng việc',icon:'ti-layout-kanban'},
+    {id:'proj',name:'Theo mảng',icon:'ti-folders'},
+    {id:'cal',name:'Lịch · Hạn',icon:'ti-calendar-due',badge:overdueCount},
+    {id:'stats',name:'Thống kê',icon:'ti-chart-histogram'},
+    {id:'kd',name:'Sổ KD',icon:'ti-report-money'},
+    {id:'learn',name:'Kiến thức',icon:'ti-school'},
+    {id:'book',name:'Sổ tay',icon:'ti-book'},
+    {id:'daily',name:'Việc lặp lại',icon:'ti-checkup-list'},
+  ];
+  const viewMeta={
+    dash:{t:'Tổng quan',s:'Tiến độ công việc cửa hàng hôm nay'},
+    today:{t:'Kế hoạch hôm nay',s:'Bộ việc nên làm trong ngày — xếp theo thứ tự ưu tiên'},
+    brain:{t:'Não khỏe',s:'Thói quen, năng lượng & nhịp chăm sóc để tập trung tốt hơn'},
+    board:{t:'Bảng việc',s:'Kéo thẻ giữa các cột hoặc dùng nút mũi tên'},
+    proj:{t:'Công việc theo mảng',s:'Tiến độ từng nhóm việc'},
+    cal:{t:'Lịch · Hạn chót',s:'Sắp xếp theo ngày đến hạn'},
+    stats:{t:'Thống kê hiệu suất',s:'Tổng kết tuần, năng suất, đúng hạn và phân bổ'},
+    kd:{t:'Sổ kinh doanh',s:'Bảng điều khiển 10 số mỗi tuần — buồng lái cửa hàng'},
+    learn:{t:'Kiến thức kinh doanh',s:'Bài học ngắn về tài chính, định giá, khách hàng… cho chủ shop'},
+    book:{t:'Sổ tay vận hành',s:'Quy trình, prompt AI, nhà cung cấp & sao lưu dữ liệu'},
+    daily:{t:'Việc lặp lại',s:'Thói quen mỗi ngày + việc tự sinh theo tuần/tháng'},
+  }[view];
+
+  const openNew=(proj)=>setEditing({id:uid(),title:'',proj:proj||'nhap',status:'todo',pri:'med',progress:0,due:'',note:'',checklist:[],created:today(),_new:true});
+
+  return (
+    <div className="app">
+      {/* sidebar */}
+      <aside className="side">
+        <div className="brand">
+          <div className="lic">📋</div>
+          <div><b>Hương Diện</b><br/><small>Quản lý công việc</small></div>
+        </div>
+        <nav className="nav">
+          {NAV.map(n=>(
+            <button key={n.id} className={view===n.id?'on':''} onClick={()=>setView(n.id)}>
+              <i className={'ti '+n.icon}></i>{n.name}
+              {n.badge>0 && <span className="badge">{n.badge}</span>}
+            </button>
+          ))}
+        </nav>
+        <div className="side-foot">
+          <div style={{padding:'4px 10px'}}>
+            <div style={{fontSize:11,color:'var(--muted)',fontWeight:600,marginBottom:6}}>HOÀN THÀNH TUẦN</div>
+            <div style={{display:'flex',alignItems:'center',gap:10}}>
+              <Ring pct={stats.total?Math.round((tasks.filter(x=>x.status==='done').length)/stats.total*100):0} size={42}/>
+              <div style={{fontSize:12,color:'var(--muted)'}}><b style={{color:'var(--ink)',fontSize:15,fontFamily:'Baloo 2'}}>{stats.doneWeek}</b> việc xong<br/>{stats.open} việc còn lại</div>
+            </div>
+          </div>
+          <button className="tgl" onClick={()=>setBreath(true)}>
+            <i className="ti ti-yoga"></i>Nghỉ & Thở
+          </button>
+          <button className="tgl" onClick={()=>setDark(d=>!d)}>
+            <i className={'ti '+(dark?'ti-sun':'ti-moon')}></i>{dark?'Giao diện sáng':'Giao diện tối'}
+          </button>
+        </div>
+      </aside>
+
+      {/* mobile top */}
+      <div className="main">
+        <div className="mtop">
+          <div className="lic">📋</div><b>Hương Diện</b>
+          <div className="spacer" style={{flex:1}}></div>
+          <button className="tgl" style={{padding:8}} onClick={()=>setDark(d=>!d)}><i className={'ti '+(dark?'ti-sun':'ti-moon')} style={{fontSize:20}}></i></button>
+        </div>
+
+        <div className={"topbar"+(window.innerWidth<=768?' mob':'')}>
+          <div>
+            <h1>{viewMeta.t}</h1>
+            <div className="sub">{viewMeta.s}</div>
+          </div>
+          <div className="spacer"></div>
+          {(view==='board'||view==='proj'||view==='cal')&&(
+            <div className="srch"><i className="ti ti-search"></i><input placeholder="Tìm việc…" value={q} onChange={e=>setQ(e.target.value)}/></div>
+          )}
+          <button className="btn" onClick={()=>openNew(projFilter!=='all'?projFilter:null)}><i className="ti ti-plus"></i>Thêm việc</button>
+        </div>
+
+        <div className="content" key={view}>
+          {view==='dash' && <Dash stats={stats} tasks={tasks} setView={setView} edit={setEditing} daily={daily} dailyState={dailyState} toggleDaily={toggleDaily} importPlan={importPlan} planLoaded={planLoaded} missingPlan={missingPlan} planEverLoaded={planEverLoaded} onBreath={()=>setBreath(true)} zen={zen}/>}
+          {view==='today' && <Today tasks={tasks} plan={todayPlan} rebuild={rebuildPlan} move={moveTask} edit={setEditing} toggleCk={toggleCk} openFocus={setFocusTask} startDeep={setDeepIds}/>}
+          {view==='brain' && <BrainEnergy log={brainlog} setLog={setBrainlog} cfg={carecfg} setCfg={setCarecfg} onBreath={()=>setBreath(true)}/>}
+          {view==='board' && <Board tasks={filtered} all={tasks} projFilter={projFilter} setProjFilter={setProjFilter} move={moveTask} edit={setEditing} toggleCk={toggleCk}/>}
+          {view==='proj' && <Projects tasks={tasks} setView={setView} setProjFilter={setProjFilter}/>}
+          {view==='cal' && <Calendar tasks={filtered} move={moveTask} edit={setEditing}/>}
+          {view==='stats' && <Stats tasks={tasks}/>}
+          {view==='kd' && <BizBook metrics={bizmetrics} setMetrics={setBizmetrics} config={bizconfig} setConfig={setBizconfig}/>}
+          {view==='learn' && <Knowledge learned={learned} setLearned={setLearned}/>}
+          {view==='book' && <Notebook nb={notebook} setNb={setNotebook} onExport={exportData} onImport={importData}/>}
+          {view==='daily' && <Daily daily={daily} setDaily={setDaily} st={dailyState} toggle={toggleDaily} recurring={recurring} setRecurring={setRecurring}/>}
+        </div>
+      </div>
+
+      {/* mobile bottom nav + fab */}
+      <button className="fab" onClick={()=>openNew(projFilter!=='all'?projFilter:null)}><i className="ti ti-plus"></i></button>
+      <nav className="botnav">
+        {NAV.map(n=>(
+          <button key={n.id} className={view===n.id?'on':''} onClick={()=>setView(n.id)}>
+            <i className={'ti '+n.icon}></i>{n.name.split(' ')[0]}
+            {n.badge>0 && <span className="badge">{n.badge}</span>}
+          </button>
+        ))}
+      </nav>
+
+      {editing && <TaskModal task={editing} onSave={saveTask} onDel={delTask} onClose={()=>setEditing(null)}/>}
+      {focusTask && <FocusModal task={focusTask} onClose={()=>setFocusTask(null)} onLog={addSpent} onDone={(id)=>{moveTask(id,'done');setFocusTask(null);}}/>}
+      {deepIds && <DeepWork ids={deepIds} tasks={tasks} onClose={()=>setDeepIds(null)} onLog={addSpent} onComplete={(id)=>moveTask(id,'done')} toggleCk={toggleCk}/>}
+      {breath && <BreathMode onClose={()=>setBreath(false)} onLog={addZen}/>}
+      {toast && <div className="toast"><i className="ti ti-trophy"></i><div><b>{toast.msg}</b>{toast.sub && <div style={{fontSize:11.5,opacity:.92,fontWeight:500}}>{toast.sub}</div>}</div></div>}
+    </div>
+  );
+}
+
+/* ---------- Dashboard ---------- */
+function Dash({stats,tasks,setView,edit,daily,dailyState,toggleDaily,importPlan,planLoaded,missingPlan,planEverLoaded,onBreath,zen}){
+  const t=today();
+  const todayTasks=tasks.filter(x=>x.status!=='done' && (x.due===t || (x.due&&x.due<t))).sort((a,b)=>(a.due||'').localeCompare(b.due||''));
+  const dailyDone=dailyState.done.length, dailyTotal=daily.length;
+  const g=gamifyStats(tasks), badges=badgesOf(tasks,g);
+  const lvPct=g.next?Math.round((g.points-g.level.min)/(g.next.min-g.level.min)*100):100;
+  return (
+    <div>
+      {/* Gamify hero */}
+      <div style={{background:'linear-gradient(135deg,#7c2d12,#c2410c)',borderRadius:18,padding:'16px 18px',marginBottom:18,color:'#fff',boxShadow:'var(--sh)'}}>
+        <div style={{display:'flex',alignItems:'center',gap:14,flexWrap:'wrap'}}>
+          <div style={{fontSize:36,lineHeight:1}}>{g.level.ic}</div>
+          <div style={{flex:1,minWidth:140}}>
+            <div style={{fontSize:11.5,opacity:.85,fontWeight:600}}>CẤP ĐỘ HIỆN TẠI</div>
+            <div style={{fontFamily:'Baloo 2',fontSize:19,fontWeight:700}}>{g.level.name}</div>
+          </div>
+          <div style={{textAlign:'center'}}><div style={{fontFamily:'Baloo 2',fontSize:22,fontWeight:700}}>{g.points}</div><div style={{fontSize:10.5,opacity:.85}}>điểm</div></div>
+          <div style={{textAlign:'center'}}><div style={{fontFamily:'Baloo 2',fontSize:22,fontWeight:700}}>🔥{g.streak}</div><div style={{fontSize:10.5,opacity:.85}}>ngày liền</div></div>
+        </div>
+        {g.next &&
+          <div style={{marginTop:12}}>
+            <div style={{height:8,background:'rgba(255,255,255,.25)',borderRadius:6,overflow:'hidden'}}><i style={{display:'block',height:'100%',width:lvPct+'%',background:'#fff',borderRadius:6}}></i></div>
+            <div style={{fontSize:11,opacity:.9,marginTop:5}}>Còn <b>{g.next.min-g.points}</b> điểm để lên <b>{g.next.ic} {g.next.name}</b></div>
+          </div>}
+        <div style={{display:'flex',gap:8,marginTop:14,overflowX:'auto'}}>
+          {badges.map(b=>(
+            <div key={b.id} className={'badgechip'+(b.got?'':' off')} title={b.need} style={{background:'rgba(255,255,255,.12)',border:'1px solid rgba(255,255,255,.18)',color:'#fff'}}>
+              <span className="be">{b.ic}</span><small style={{color:'#fff',opacity:b.got?1:.7}}>{b.name}</small>
+            </div>
+          ))}
+        </div>
+      </div>
+      {!planLoaded &&
+        <div style={{display:'flex',alignItems:'center',gap:14,background:'linear-gradient(135deg,#fff7ed,#ffedd5)',border:'1px solid var(--o-mid)',borderRadius:16,padding:'16px 18px',marginBottom:18,flexWrap:'wrap'}}>
+          <div style={{fontSize:30,lineHeight:1}}>🛡️</div>
+          <div style={{flex:1,minWidth:180}}>
+            <b style={{fontFamily:'Baloo 2',fontSize:15,color:'var(--o-dk)'}}>Kế hoạch phòng thủ "năm xấu"</b>
+            <div style={{fontSize:12.5,color:'var(--o-dk)',opacity:.85,marginTop:2}}>{planEverLoaded?`Có ${missingPlan} việc mới trong kế hoạch chưa nạp.`:`${missingPlan} việc giúp Hương Diện sống khỏe năm xấu + ứng dụng AI: hòa vốn, quỹ oxy, tồn kho, giữ khách thân, xả tồn, chatbot…`}</div>
+          </div>
+          <button className="btn" onClick={importPlan}><i className="ti ti-download"></i>{planEverLoaded?`Nạp ${missingPlan} việc mới`:`Nạp ${missingPlan} việc vào bảng`}</button>
+        </div>}
+      <div className="grid-stat">
+        <div className="stat"><div className="ic o"><i className="ti ti-calendar-event"></i></div><div className="n">{stats.todayCnt}</div><div className="l">Đến hạn hôm nay</div></div>
+        <div className="stat"><div className="ic b"><i className="ti ti-progress"></i></div><div className="n">{stats.doing}</div><div className="l">Đang làm</div></div>
+        <div className="stat"><div className="ic r"><i className="ti ti-alert-triangle"></i></div><div className="n">{stats.overdue}</div><div className="l">Quá hạn</div></div>
+        <div className="stat"><div className="ic g"><i className="ti ti-circle-check"></i></div><div className="n">{stats.doneWeek}</div><div className="l">Xong trong 7 ngày</div></div>
+      </div>
+
+      {/* Nghỉ & Thở */}
+      <div onClick={onBreath} style={{display:'flex',alignItems:'center',gap:14,background:'linear-gradient(135deg,#0d3b3f,#155e63)',borderRadius:16,padding:'14px 18px',marginBottom:18,color:'#eafaf8',cursor:'pointer',boxShadow:'var(--sh)'}}>
+        <div style={{fontSize:30,lineHeight:1}}>🌿</div>
+        <div style={{flex:1,minWidth:140}}>
+          <b style={{fontFamily:'Baloo 2',fontSize:15}}>Nghỉ một chút?</b>
+          <div style={{fontSize:12.5,opacity:.85,marginTop:1}}>Thở 5–10 phút để lấy lại tập trung{zen&&zen.min>0?` · đã thiền ${zen.min} phút`:''}</div>
+        </div>
+        <span className="btn sm" style={{background:'rgba(255,255,255,.18)',pointerEvents:'none'}}><i className="ti ti-player-play"></i>Bắt đầu</span>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'1.5fr 1fr',gap:18,alignItems:'start'}} className="dashgrid">
+        <div className="panel">
+          <div className="panel-h"><i className="ti ti-flame lead"></i><b>Ưu tiên hôm nay</b><div className="spacer" style={{flex:1}}></div><button className="btn ghost sm" onClick={()=>setView('board')}>Xem bảng</button></div>
+          <div className="panel-b" style={{padding:'4px 0 8px'}}>
+            {todayTasks.length===0 ? <div className="empty"><i className="ti ti-confetti"></i><p>Tuyệt vời! Không có việc nào tới hạn.</p></div> :
+              todayTasks.map(x=>{
+                const di=dueInfo(x.due), p=projOf(x.proj);
+                return (
+                  <div className="row" key={x.id} onClick={()=>edit(x)} style={{cursor:'pointer'}}>
+                    <span className="pri" style={{width:5,height:34,borderRadius:6,background:x.pri==='high'?'var(--red)':x.pri==='med'?'var(--amber)':'var(--grn)'}}></span>
+                    <div className="rt"><b>{x.title}</b><small><span className="tag" style={{background:p.bg,color:p.color,padding:'1px 6px'}}>{p.icon} {p.name}</span></small></div>
+                    {di && <span className={'due '+di.cls}><i className="ti ti-clock"></i>{di.label}</span>}
+                  </div>
+                );
+              })
+            }
+          </div>
+        </div>
+
+        <div className="panel">
+          <div className="panel-h"><i className="ti ti-checkup-list lead"></i><b>Việc hằng ngày</b>
+            <div className="spacer" style={{flex:1}}></div>
+            {dailyState.streak>0 && <span className="streak"><i className="ti ti-flame"></i>{dailyState.streak} ngày</span>}
+          </div>
+          <div className="panel-b" style={{padding:'12px 18px 16px'}}>
+            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
+              <div className="prog full" style={{flex:1,height:9}}><i style={{width:(dailyTotal?dailyDone/dailyTotal*100:0)+'%'}}></i></div>
+              <b style={{fontFamily:'Baloo 2',color:'var(--grn)',fontSize:14}}>{dailyDone}/{dailyTotal}</b>
+            </div>
+            {daily.map(d=>{
+              const on=dailyState.done.includes(d.id);
+              return (
+                <div className={'row'+(on?' done':'')} key={d.id} style={{padding:'9px 0',borderColor:'var(--border)'}} onClick={()=>toggleDaily(d.id)}>
+                  <span className={'chk'+(on?' done':'')}>{on&&<i className="ti ti-check"></i>}</span>
+                  <div className="rt"><b style={{fontWeight:500}}>{d.t}</b></div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+      <style>{`@media(max-width:860px){.dashgrid{grid-template-columns:1fr!important}}`}</style>
+    </div>
+  );
+}
+
+/* ---------- Kanban Board ---------- */
+function Board({tasks,projFilter,setProjFilter,move,edit,toggleCk}){
+  const [dragId,setDragId]=useState(null);
+  const [dropCol,setDropCol]=useState(null);
+  const cols=['todo','doing','done'];
+  const onDrop=(status)=>{ if(dragId){move(dragId,status);} setDragId(null);setDropCol(null); };
+  return (
+    <div>
+      <div className="filterbar">
+        <button className={'fpill'+(projFilter==='all'?' on':'')} onClick={()=>setProjFilter('all')}><i className="ti ti-asterisk"></i>Tất cả</button>
+        {PROJECTS.map(p=>(
+          <button key={p.id} className={'fpill'+(projFilter===p.id?' on':'')} onClick={()=>setProjFilter(p.id)}>{p.icon} {p.name}</button>
+        ))}
+      </div>
+      <div className="board">
+        {cols.map(cs=>{
+          const list=tasks.filter(t=>t.status===cs);
+          return (
+            <div key={cs} className={'col'+(dropCol===cs?' drop':'')}
+              onDragOver={e=>{e.preventDefault();setDropCol(cs);}}
+              onDragLeave={e=>{ if(e.currentTarget===e.target) setDropCol(null); }}
+              onDrop={()=>onDrop(cs)}>
+              <div className="col-h"><span className="dot" style={{background:STATUS[cs].dot}}></span>{STATUS[cs].name}<span className="cnt">{list.length}</span></div>
+              {list.length===0 && <div style={{padding:'16px 8px',color:'var(--muted2)',fontSize:12.5,textAlign:'center'}}>Trống</div>}
+              {list.map(t=>(
+                <TaskCard key={t.id} t={t} cs={cs} cols={cols}
+                  onDragStart={()=>setDragId(t.id)} onDragEnd={()=>{setDragId(null);setDropCol(null);}}
+                  dragging={dragId===t.id} move={move} edit={edit} toggleCk={toggleCk}/>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function TaskCard({t,cs,onDragStart,onDragEnd,dragging,move,edit,toggleCk}){
+  const p=projOf(t.proj), di=dueInfo(t.due);
+  const idx=['todo','doing','done'].indexOf(cs);
+  return (
+    <div className={'tcard'+(dragging?' drag':'')+(t.status==='done'?' done':'')} draggable
+      onDragStart={onDragStart} onDragEnd={onDragEnd} onClick={(e)=>{if(e.target.closest('button')||e.target.closest('.ckitem')||e.target.closest('.cklist'))return;edit(t);}}>
+      <div className="top">
+        <span className={'pri '+t.pri}></span>
+        <div className="tt">{t.frog&&'🐸 '}{t.title}</div>
+      </div>
+      <div className="metarow">
+        <span className="tag" style={{background:p.bg,color:p.color}}>{p.icon} {p.name}</span>
+        {di && <span className={'due '+di.cls}><i className="ti ti-clock"></i>{di.label}</span>}
+      </div>
+      {t.checklist&&t.checklist.length>0 &&
+        <div className="cklist">
+          {t.checklist.map((c,i)=>(
+            <div key={i} className={'ckitem'+(c.done?' done':'')} onClick={()=>toggleCk(t.id,i)}>
+              <i className={'ti '+(c.done?'ti-square-check-filled':'ti-square')} style={{color:c.done?'var(--grn)':'var(--muted2)'}}></i><span>{c.t}</span>
+            </div>
+          ))}
+        </div>}
+      {t.status!=='done' &&
+        <div className="prog"><i style={{width:t.progress+'%'}}></i></div>}
+      <div className="cardacts">
+        <button title="Sửa" onClick={()=>edit(t)}><i className="ti ti-pencil"></i></button>
+        <div className="mv" style={{display:'flex',gap:2}}>
+          {idx>0 && <button title="Lùi" onClick={()=>move(t.id,['todo','doing','done'][idx-1])}><i className="ti ti-arrow-left"></i></button>}
+          {idx<2 && <button title={idx===1?'Hoàn thành':'Tiến'} onClick={()=>move(t.id,['todo','doing','done'][idx+1])}><i className={'ti '+(idx===1?'ti-check':'ti-arrow-right')}></i></button>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Projects ---------- */
+function Projects({tasks,setView,setProjFilter}){
+  const data=PROJECTS.map(p=>{
+    const list=tasks.filter(t=>t.proj===p.id);
+    const done=list.filter(t=>t.status==='done').length;
+    const pct=list.length?Math.round(done/list.length*100):0;
+    const open=list.length-done;
+    const overdue=list.filter(t=>t.status!=='done'&&t.due&&t.due<today()).length;
+    return {p,total:list.length,done,pct,open,overdue};
+  });
+  return (
+    <div className="projgrid">
+      {data.map(({p,total,done,pct,open,overdue})=>(
+        <div className="projcard" key={p.id} onClick={()=>{setProjFilter(p.id);setView('board');}}>
+          <div className="ph">
+            <div className="pic" style={{background:p.bg,color:p.color}}>{p.icon}</div>
+            <div><div className="pn">{p.name}</div><div className="pmeta">{total} việc · {open} còn lại</div></div>
+            <Ring pct={pct} size={46} color={p.color}/>
+          </div>
+          <div className="prog" style={{marginTop:0}}><i style={{width:pct+'%',background:p.color}}></i></div>
+          <div style={{display:'flex',gap:10,marginTop:11,fontSize:12,color:'var(--muted)'}}>
+            <span><i className="ti ti-circle-check" style={{color:'var(--grn)'}}></i> {done} xong</span>
+            {overdue>0 && <span style={{color:'var(--red)',fontWeight:600}}><i className="ti ti-alert-triangle"></i> {overdue} quá hạn</span>}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ---------- Calendar / Deadlines ---------- */
+function Calendar({tasks,move,edit}){
+  const t=today();
+  const groups=useMemo(()=>{
+    const open=tasks.filter(x=>x.status!=='done');
+    const g={overdue:[],today:[],tomorrow:[],week:[],later:[],noDate:[]};
+    open.forEach(x=>{
+      if(!x.due){g.noDate.push(x);return;}
+      const di=dueInfo(x.due);
+      if(di.diff<0)g.overdue.push(x);
+      else if(di.diff===0)g.today.push(x);
+      else if(di.diff===1)g.tomorrow.push(x);
+      else if(di.diff<=7)g.week.push(x);
+      else g.later.push(x);
+    });
+    Object.values(g).forEach(arr=>arr.sort((a,b)=>(a.due||'9').localeCompare(b.due||'9')));
+    return g;
+  },[tasks]);
+  const sections=[
+    {k:'overdue',name:'Quá hạn',icon:'ti-alert-triangle',color:'var(--red)'},
+    {k:'today',name:'Hôm nay',icon:'ti-calendar-event',color:'var(--o)'},
+    {k:'tomorrow',name:'Ngày mai',icon:'ti-calendar',color:'var(--amber)'},
+    {k:'week',name:'Trong tuần',icon:'ti-calendar-week',color:'var(--blue)'},
+    {k:'later',name:'Sau này',icon:'ti-calendar-plus',color:'var(--muted)'},
+    {k:'noDate',name:'Chưa đặt hạn',icon:'ti-calendar-off',color:'var(--muted2)'},
+  ];
+  const any=sections.some(s=>groups[s.k].length);
+  if(!any) return <div className="panel"><div className="empty"><i className="ti ti-calendar-check"></i><p>Không có việc nào cần làm. Nghỉ ngơi thôi!</p></div></div>;
+  return (
+    <div>
+      {sections.map(s=>groups[s.k].length>0 && (
+        <div className="panel" key={s.k}>
+          <div className="panel-h"><i className={'ti '+s.icon+' lead'} style={{color:s.color}}></i><b>{s.name}</b><span className="cnt" style={{marginLeft:'auto',background:'var(--bg)',color:'var(--muted)',fontSize:12,fontWeight:600,padding:'2px 9px',borderRadius:9}}>{groups[s.k].length}</span></div>
+          <div className="panel-b" style={{padding:0}}>
+            {groups[s.k].map(x=>{
+              const p=projOf(x.proj),di=dueInfo(x.due);
+              return (
+                <div className={'row'} key={x.id}>
+                  <span className="chk" onClick={()=>move(x.id,'done')} title="Đánh dấu xong"></span>
+                  <div className="rt" onClick={()=>edit(x)} style={{cursor:'pointer'}}>
+                    <b>{x.title}</b>
+                    <small><span className="tag" style={{background:p.bg,color:p.color,padding:'1px 6px'}}>{p.icon} {p.name}</span> {x.status==='doing'&&<span style={{color:'var(--o)',fontWeight:600}}>· {x.progress}%</span>}</small>
+                  </div>
+                  {di && <span className={'due '+di.cls}><i className="ti ti-clock"></i>{x.due?fmtDate(x.due):''} {di.cls==='over'?'· trễ':''}</span>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ---------- Daily editor ---------- */
+function Daily({daily,setDaily,st,toggle,recurring,setRecurring}){
+  const [nt,setNt]=useState('');
+  const add=()=>{ if(!nt.trim())return; setDaily([...daily,{id:'d'+Date.now(),t:nt.trim()}]); setNt(''); };
+  const del=(id)=>setDaily(daily.filter(d=>d.id!==id));
+  const done=st.done.length, total=daily.length;
+  // form rule lặp lại
+  const [rf,setRf]=useState({title:'',proj:'tc',every:'week',day:1,pri:'med'});
+  const addRule=()=>{ if(!rf.title.trim())return; setRecurring([...recurring,{...rf,title:rf.title.trim(),id:'rc'+Date.now()}]); setRf({title:'',proj:'tc',every:'week',day:1,pri:'med'}); };
+  const delRule=(id)=>setRecurring(recurring.filter(r=>r.id!==id));
+  return (
+    <div>
+    <div className="dailywrap">
+      <div className="panel">
+        <div className="panel-h"><i className="ti ti-checkup-list lead"></i><b>Hôm nay · {done}/{total}</b>
+          <div className="spacer" style={{flex:1}}></div>
+          {st.streak>0 && <span className="streak"><i className="ti ti-flame"></i>Chuỗi {st.streak} ngày</span>}
+        </div>
+        <div className="panel-b" style={{padding:'14px 18px 18px'}}>
+          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14}}>
+            <div className="prog full" style={{flex:1,height:10}}><i style={{width:(total?done/total*100:0)+'%'}}></i></div>
+            <b style={{fontFamily:'Baloo 2',color:'var(--grn)'}}>{total?Math.round(done/total*100):0}%</b>
+          </div>
+          {daily.length===0 && <div className="empty"><i className="ti ti-list"></i><p>Chưa có việc lặp lại nào.</p></div>}
+          {daily.map(d=>{
+            const on=st.done.includes(d.id);
+            return (
+              <div className={'row'+(on?' done':'')} key={d.id} style={{padding:'11px 0'}}>
+                <span className={'chk'+(on?' done':'')} onClick={()=>toggle(d.id)}>{on&&<i className="ti ti-check"></i>}</span>
+                <div className="rt" onClick={()=>toggle(d.id)} style={{cursor:'pointer'}}><b style={{fontWeight:500}}>{d.t}</b></div>
+                <button onClick={()=>del(d.id)} style={{color:'var(--muted2)',padding:6,display:'flex'}} title="Xoá"><i className="ti ti-trash" style={{fontSize:18}}></i></button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div className="panel" style={{alignSelf:'start'}}>
+        <div className="panel-h"><i className="ti ti-plus lead"></i><b>Thêm việc lặp lại</b></div>
+        <div className="panel-b" style={{padding:'16px 18px 18px'}}>
+          <div className="fld" style={{marginBottom:10}}>
+            <input placeholder="VD: Kiểm tra hạn sử dụng sữa…" value={nt} onChange={e=>setNt(e.target.value)} onKeyDown={e=>e.key==='Enter'&&add()}/>
+          </div>
+          <button className="btn" style={{width:'100%',justifyContent:'center'}} onClick={add}><i className="ti ti-plus"></i>Thêm vào danh sách</button>
+          <div style={{marginTop:16,padding:'12px 14px',background:'var(--o-lt)',borderRadius:12,fontSize:12.5,color:'var(--o-dk)',lineHeight:1.5}}>
+            <i className="ti ti-bulb"></i> Danh sách này tự đặt lại mỗi ngày. Hoàn thành đủ tất cả để giữ <b>chuỗi ngày</b> của bạn!
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Việc lặp lại theo tuần/tháng — tự sinh task đúng hạn */}
+    <div className="panel" style={{marginTop:18}}>
+      <div className="panel-h"><i className="ti ti-repeat lead"></i><b>Việc lặp lại theo tuần / tháng</b><span style={{marginLeft:'auto',fontSize:11.5,color:'var(--muted2)'}}>tự tạo task đúng hạn</span></div>
+      <div className="panel-b" style={{padding:'10px 18px 16px'}}>
+        {recurring.length===0 && <div style={{color:'var(--muted2)',fontSize:13,padding:'8px 0'}}>Chưa có việc lặp lại nào.</div>}
+        {recurring.map(r=>{const p=projOf(r.proj);return (
+          <div className="row" key={r.id} style={{padding:'10px 0'}}>
+            <span className="tag" style={{background:p.bg,color:p.color,padding:'3px 8px'}}>{p.icon}</span>
+            <div className="rt"><b>{r.title}</b><small>{recurLabel(r)} · {PRI[r.pri||'med']}{r.est?(' · ~'+r.est+'h'):''}</small></div>
+            <button onClick={()=>delRule(r.id)} style={{color:'var(--muted2)',padding:6,display:'flex'}} title="Xoá"><i className="ti ti-trash" style={{fontSize:18}}></i></button>
+          </div>
+        );})}
+        {/* form thêm */}
+        <div style={{marginTop:14,padding:'14px',background:'var(--bg)',borderRadius:12}}>
+          <input placeholder="Tên việc lặp lại…" value={rf.title} onChange={e=>setRf({...rf,title:e.target.value})} onKeyDown={e=>e.key==='Enter'&&addRule()} style={{width:'100%',background:'var(--card)',border:'1.5px solid var(--border)',borderRadius:10,padding:'10px 12px',color:'var(--ink)',outline:'none',marginBottom:10}}/>
+          <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
+            <select value={rf.proj} onChange={e=>setRf({...rf,proj:e.target.value})} style={selSt}>{PROJECTS.map(p=>(<option key={p.id} value={p.id}>{p.icon} {p.name}</option>))}</select>
+            <select value={rf.every} onChange={e=>setRf({...rf,every:e.target.value,day:1})} style={selSt}><option value="week">Mỗi tuần</option><option value="month">Mỗi tháng</option></select>
+            {rf.every==='week'
+              ? <select value={rf.day} onChange={e=>setRf({...rf,day:+e.target.value})} style={selSt}>{WD.map((w,i)=>(<option key={i} value={i+1}>{w}</option>))}</select>
+              : <select value={rf.day} onChange={e=>setRf({...rf,day:+e.target.value})} style={selSt}>{Array.from({length:28},(_,i)=>i+1).map(d=>(<option key={d} value={d}>Ngày {d}</option>))}</select>}
+            <select value={rf.pri} onChange={e=>setRf({...rf,pri:e.target.value})} style={selSt}>{Object.keys(PRI).map(k=>(<option key={k} value={k}>{PRI[k]}</option>))}</select>
+            <button className="btn sm" onClick={addRule}><i className="ti ti-plus"></i>Thêm</button>
+          </div>
+        </div>
+        <div style={{marginTop:14,padding:'12px 14px',background:'var(--o-lt)',borderRadius:12,fontSize:12.5,color:'var(--o-dk)',lineHeight:1.5}}>
+          <i className="ti ti-bulb"></i> Mỗi tuần/tháng, app tự tạo các việc này thành task có hạn cụ thể trên Bảng việc — bạn không cần nhớ.
+        </div>
+      </div>
+    </div>
+    </div>
+  );
+}
+const selSt={background:'var(--card)',border:'1.5px solid var(--border)',borderRadius:9,padding:'8px 10px',color:'var(--ink)',outline:'none',fontWeight:600,fontSize:12.5};
+
+/* ---------- Kế hoạch hôm nay ---------- */
+function Today({tasks,plan,rebuild,move,edit,toggleCk,openFocus,startDeep}){
+  if(!plan) return <div className="empty"><i className="ti ti-loader"></i><p>Đang dựng kế hoạch…</p></div>;
+  const byId={}; tasks.forEach(t=>byId[t.id]=t);
+  const items=plan.ids.map(id=>byId[id]).filter(Boolean);
+  const active=items.filter(t=>t.status!=='done');
+  const doneItems=items.filter(t=>t.status==='done');
+  const planH=active.reduce((a,t)=>a+estOf(t),0);
+  const rest=tasks.filter(t=>t.status!=='done'&&!plan.ids.includes(t.id))
+    .map(t=>({t,s:scoreTask(t)})).sort((a,b)=>b.s-a.s);
+  const setCap=(d)=>{const c=Math.max(2,Math.min(12,(plan.cap||6)+d));rebuild(c);};
+  const autoSet=new Set(plan.auto||[]);
+  const newCount=active.filter(t=>autoSet.has(t.id)).length;
+  let rank=0;
+  return (
+    <div>
+      {/* thanh điều khiển quỹ thời gian */}
+      <div className="panel" style={{marginBottom:16}}>
+        <div className="panel-b" style={{padding:'14px 18px',display:'flex',alignItems:'center',gap:14,flexWrap:'wrap'}}>
+          <div style={{display:'flex',alignItems:'center',gap:10}}>
+            <i className="ti ti-clock-hour-4" style={{fontSize:22,color:'var(--o)'}}></i>
+            <div>
+              <div style={{fontSize:12.5,color:'var(--muted)',fontWeight:600}}>Quỹ thời gian hôm nay</div>
+              <div style={{fontFamily:'Baloo 2',fontSize:17}}>{plan.cap||6} giờ làm việc</div>
+            </div>
+          </div>
+          <div style={{display:'flex',gap:6}}>
+            <button className="btn ghost sm" onClick={()=>setCap(-1)}><i className="ti ti-minus"></i></button>
+            <button className="btn ghost sm" onClick={()=>setCap(1)}><i className="ti ti-plus"></i></button>
+          </div>
+          <div style={{flex:1}}></div>
+          <div style={{textAlign:'right',fontSize:12.5,color:'var(--muted)'}}>
+            Đã xếp <b style={{color:'var(--ink)'}}>{active.length}</b> việc · ~<b style={{color:'var(--o-dk)'}}>{planH}h</b>
+            {doneItems.length>0 && <span> · <span style={{color:'var(--grn)',fontWeight:600}}>{doneItems.length} xong ✓</span></span>}
+          </div>
+          <button className="btn ghost sm" onClick={()=>rebuild()}><i className="ti ti-refresh"></i>Xếp lại</button>
+          {active.length>0 && <button className="btn sm" style={{background:'linear-gradient(135deg,#7c2d12,#c2410c)'}} onClick={()=>startDeep(active.map(t=>t.id))}><i className="ti ti-flame"></i>Deep Work</button>}
+        </div>
+      </div>
+
+      {active.length===0 && doneItems.length===0 &&
+        <div className="panel"><div className="empty"><i className="ti ti-confetti"></i><p>Không còn việc nào đang mở. Tuyệt vời!</p></div></div>}
+
+      {/* thông báo tự bù việc */}
+      {newCount>0 &&
+        <div style={{display:'flex',alignItems:'center',gap:10,background:'var(--grn-lt)',border:'1px solid var(--grn)',borderRadius:12,padding:'11px 14px',marginBottom:12,fontSize:12.5,color:'var(--grn)'}}>
+          <i className="ti ti-sparkles" style={{fontSize:18}}></i>
+          <span>Bạn vừa hoàn thành việc — đã tự đề xuất thêm <b>{newCount} việc</b> ưu tiên cao còn lại để lấp đủ thời gian trong ngày.</span>
+        </div>}
+
+      {/* hướng dẫn thứ tự */}
+      {active.length>0 &&
+        <div style={{display:'flex',alignItems:'center',gap:8,margin:'0 2px 12px',color:'var(--muted)',fontSize:12.5}}>
+          <i className="ti ti-arrow-down" style={{color:'var(--o)'}}></i> Làm lần lượt <b style={{color:'var(--ink)'}}>từ trên xuống</b> — việc trên cùng nên làm trước.
+        </div>}
+
+      {/* danh sách việc hôm nay */}
+      {active.map(t=>{
+        rank++; const p=projOf(t.proj), di=dueInfo(t.due), r=planReason(t);
+        return (
+          <div className="panel" key={t.id} style={{marginBottom:10}}>
+            <div style={{display:'flex',gap:13,padding:'14px 16px',alignItems:'flex-start'}}>
+              <div style={{width:30,height:30,borderRadius:9,background:'var(--o-lt)',color:'var(--o-dk)',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:'Baloo 2',fontWeight:700,fontSize:15,flexShrink:0}}>{rank}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+                  <b style={{fontSize:14,cursor:'pointer'}} onClick={()=>edit(t)}>{t.title}</b>
+                  {t.frog && <span className="tag" style={{background:'var(--grn-lt)',color:'var(--grn)'}}>🐸 Việc xương nhất</span>}
+                  {autoSet.has(t.id) && <span className="tag" style={{background:'var(--grn-lt)',color:'var(--grn)'}}>✨ Mới đề xuất</span>}
+                </div>
+                <div className="metarow" style={{marginTop:7}}>
+                  <span className="tag" style={{background:'var(--bg)',color:'var(--muted)',border:'1px solid var(--border)'}}>{r.ic} {r.tx}</span>
+                  <span className="tag" style={{background:p.bg,color:p.color}}>{p.icon} {p.name}</span>
+                  <span className="due" style={{background:'var(--bg)'}}><i className="ti ti-hourglass"></i>~{estOf(t)}h</span>
+                  {di && <span className={'due '+di.cls}><i className="ti ti-clock"></i>{di.label}</span>}
+                </div>
+                {t.checklist&&t.checklist.length>0 &&
+                  <div className="cklist" style={{marginTop:9}}>
+                    {t.checklist.map((c,i)=>(
+                      <div key={i} className={'ckitem'+(c.done?' done':'')} onClick={()=>toggleCk(t.id,i)}>
+                        <i className={'ti '+(c.done?'ti-square-check-filled':'ti-square')} style={{color:c.done?'var(--grn)':'var(--muted2)'}}></i><span>{c.t}</span>
+                      </div>
+                    ))}
+                  </div>}
+                {t.status==='doing' && <div className="prog" style={{marginTop:10}}><i style={{width:t.progress+'%'}}></i></div>}
+                <div style={{display:'flex',gap:8,marginTop:12,flexWrap:'wrap'}}>
+                  {t.status==='todo' && <button className="btn ghost sm" onClick={()=>move(t.id,'doing')}><i className="ti ti-player-play"></i>Bắt đầu</button>}
+                  <button className="btn ghost sm" onClick={()=>openFocus(t)}><i className="ti ti-target-arrow"></i>Tập trung</button>
+                  <button className="btn sm" onClick={()=>move(t.id,'done')}><i className="ti ti-check"></i>Đánh dấu xong</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+
+      {/* đã xong hôm nay */}
+      {doneItems.length>0 &&
+        <div className="panel" style={{marginTop:8}}>
+          <div className="panel-h"><i className="ti ti-circle-check lead" style={{color:'var(--grn)'}}></i><b>Đã xong hôm nay ({doneItems.length})</b></div>
+          <div className="panel-b" style={{padding:0}}>
+            {doneItems.map(t=>(
+              <div className="row done" key={t.id}><span className="chk done"><i className="ti ti-check"></i></span><div className="rt"><b>{t.title}</b></div></div>
+            ))}
+          </div>
+        </div>}
+
+      {/* để dành hôm sau */}
+      {rest.length>0 &&
+        <div className="panel" style={{marginTop:16}}>
+          <div className="panel-h"><i className="ti ti-calendar-plus lead" style={{color:'var(--muted)'}}></i><b>Để dành hôm sau ({rest.length})</b><span style={{marginLeft:'auto',fontSize:12,color:'var(--muted2)'}}>xếp theo ưu tiên</span></div>
+          <div className="panel-b" style={{padding:0}}>
+            {rest.slice(0,12).map(({t})=>{
+              const p=projOf(t.proj),di=dueInfo(t.due),r=planReason(t);
+              return (
+                <div className="row" key={t.id} onClick={()=>edit(t)} style={{cursor:'pointer'}}>
+                  <span className="tag" style={{background:p.bg,color:p.color,padding:'2px 7px'}}>{p.icon}</span>
+                  <div className="rt"><b>{t.title}</b><small>{r.ic} {r.tx} · ~{estOf(t)}h</small></div>
+                  {di && <span className={'due '+di.cls}><i className="ti ti-clock"></i>{di.label}</span>}
+                </div>
+              );
+            })}
+            {rest.length>12 && <div style={{padding:'10px 16px',fontSize:12.5,color:'var(--muted2)',textAlign:'center'}}>… và {rest.length-12} việc khác</div>}
+          </div>
+        </div>}
+    </div>
+  );
+}
+
+/* ---------- Thống kê hiệu suất ---------- */
+function Stats({tasks}){
+  const done=tasks.filter(t=>t.status==='done');
+  const WDX=['CN','T2','T3','T4','T5','T6','T7'];
+  const days=[]; for(let i=6;i>=0;i--){ const d=addDays(-i); days.push({d,lbl:WDX[new Date(d+'T00:00:00').getDay()],n:done.filter(t=>t.doneAt===d).length}); }
+  const maxN=Math.max(1,...days.map(x=>x.n));
+  const week=days.reduce((a,x)=>a+x.n,0);
+  const withDue=done.filter(t=>t.due), onTime=withDue.filter(t=>t.doneAt&&t.doneAt<=t.due).length;
+  const onTimeRate=withDue.length?Math.round(onTime/withDue.length*100):100;
+  const byProj=PROJECTS.map(p=>({p,total:tasks.filter(t=>t.proj===p.id).length,done:tasks.filter(t=>t.proj===p.id&&t.status==='done').length})).filter(x=>x.total>0).sort((a,b)=>b.total-a.total);
+  const maxProj=Math.max(1,...byProj.map(x=>x.total));
+  const activeDays=new Set(done.map(t=>t.doneAt).filter(Boolean)).size||1;
+  const avg=(done.length/activeDays).toFixed(1);
+  const spentMin=tasks.reduce((a,t)=>a+(t.spent||0),0);
+  const spentH=(spentMin/60).toFixed(1);
+  // tổng kết tuần
+  const wkStart=dstr(startOfWeek());
+  const lastStart=dstr(new Date(new Date(wkStart+'T00:00:00').getTime()-7*86400000));
+  const wkDone=done.filter(t=>t.doneAt&&t.doneAt>=wkStart);
+  const lastDone=done.filter(t=>t.doneAt&&t.doneAt>=lastStart&&t.doneAt<wkStart);
+  const wkPts=wkDone.reduce((a,t)=>a+pointsFor(t),0);
+  const wkWithDue=wkDone.filter(t=>t.due), wkOnTime=wkWithDue.filter(t=>t.doneAt<=t.due).length;
+  const wkOnTimeR=wkWithDue.length?Math.round(wkOnTime/wkWithDue.length*100):100;
+  const open=tasks.filter(t=>t.status!=='done');
+  const overdue=open.filter(t=>t.due&&t.due<today());
+  const suggest=open.filter(t=>(t.due&&t.due<today())||t.pri==='high').sort((a,b)=>scoreTask(b)-scoreTask(a)).slice(0,5);
+  const trend=wkDone.length-lastDone.length;
+  if(done.length===0 && tasks.length===0) return <div className="panel"><div className="empty"><i className="ti ti-chart-bar"></i><p>Chưa có dữ liệu.</p></div></div>;
+  return (
+    <div>
+      {/* Tổng kết tuần */}
+      <div className="panel">
+        <div className="panel-h"><i className="ti ti-calendar-stats lead"></i><b>Tổng kết tuần này</b><span style={{marginLeft:'auto',fontSize:12,color:'var(--muted)'}}>từ {fmtDate(wkStart)}</span></div>
+        <div className="panel-b" style={{padding:'14px 18px 18px'}}>
+          <div style={{display:'flex',gap:18,flexWrap:'wrap',marginBottom:14}}>
+            <div><div style={{fontFamily:'Baloo 2',fontSize:26,color:'var(--o-dk)'}}>{wkDone.length}</div><div style={{fontSize:11.5,color:'var(--muted)'}}>việc xong {trend!==0&&<b style={{color:trend>0?'var(--grn)':'var(--red)'}}>{trend>0?'▲':'▼'}{Math.abs(trend)}</b>}</div></div>
+            <div><div style={{fontFamily:'Baloo 2',fontSize:26}}>{wkOnTimeR}%</div><div style={{fontSize:11.5,color:'var(--muted)'}}>đúng hạn</div></div>
+            <div><div style={{fontFamily:'Baloo 2',fontSize:26}}>+{wkPts}</div><div style={{fontSize:11.5,color:'var(--muted)'}}>điểm</div></div>
+            <div><div style={{fontFamily:'Baloo 2',fontSize:26,color:overdue.length?'var(--red)':'var(--ink)'}}>{overdue.length}</div><div style={{fontSize:11.5,color:'var(--muted)'}}>đang quá hạn</div></div>
+          </div>
+          <div style={{fontSize:12.5,fontWeight:600,color:'var(--muted)',marginBottom:8}}>👉 Gợi ý ưu tiên tuần sau</div>
+          {suggest.length===0 ? <div style={{fontSize:13,color:'var(--muted2)'}}>Không có việc quá hạn hay ưu tiên cao — tuyệt vời!</div> :
+            suggest.map(t=>{const p=projOf(t.proj),r=planReason(t);return (
+              <div key={t.id} style={{display:'flex',gap:8,alignItems:'center',padding:'6px 0',fontSize:13}}>
+                <span className="tag" style={{background:p.bg,color:p.color,padding:'2px 7px'}}>{p.icon}</span>
+                <span style={{flex:1}}>{t.title}</span>
+                <span style={{fontSize:11,color:'var(--muted)'}}>{r.ic} {r.tx}</span>
+              </div>
+            );})}
+        </div>
+      </div>
+      <div className="grid-stat">
+        <div className="stat"><div className="ic g"><i className="ti ti-circle-check"></i></div><div className="n">{done.length}</div><div className="l">Tổng việc đã xong</div></div>
+        <div className="stat"><div className="ic b"><i className="ti ti-calendar-week"></i></div><div className="n">{week}</div><div className="l">Xong trong 7 ngày</div></div>
+        <div className="stat"><div className="ic o"><i className="ti ti-trending-up"></i></div><div className="n">{avg}</div><div className="l">TB việc/ngày làm</div></div>
+        <div className="stat"><div className={'ic '+(onTimeRate>=80?'g':onTimeRate>=50?'a':'r')}><i className="ti ti-clock-check"></i></div><div className="n">{onTimeRate}%</div><div className="l">Đúng hạn</div></div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-h"><i className="ti ti-chart-bar lead"></i><b>Việc hoàn thành 7 ngày qua</b></div>
+        <div className="panel-b" style={{padding:'18px'}}>
+          <div style={{display:'flex',alignItems:'flex-end',gap:8,height:130}}>
+            {days.map((x,i)=>(
+              <div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:6,height:'100%',justifyContent:'flex-end'}}>
+                <div style={{fontSize:12,fontWeight:700,color:x.n?'var(--o-dk)':'var(--muted2)'}}>{x.n}</div>
+                <div style={{width:'100%',maxWidth:34,height:(x.n/maxN*90)+'px',minHeight:x.n?6:0,background:'linear-gradient(180deg,var(--o),var(--o-dk))',borderRadius:'6px 6px 0 0',transition:'height .4s'}}></div>
+                <div style={{fontSize:11,color:'var(--muted)',fontWeight:600}}>{x.lbl}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-h"><i className="ti ti-folders lead"></i><b>Phân bổ theo mảng</b></div>
+        <div className="panel-b" style={{padding:'14px 18px 18px'}}>
+          {byProj.map(({p,total,done})=>(
+            <div key={p.id} style={{marginBottom:12}}>
+              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:5,fontSize:12.5}}>
+                <span>{p.icon}</span><b style={{flex:1}}>{p.name}</b>
+                <span style={{color:'var(--muted)'}}>{done}/{total} xong</span>
+              </div>
+              <div style={{height:18,background:'var(--bg)',borderRadius:6,overflow:'hidden',position:'relative'}}>
+                <div style={{height:'100%',width:(total/maxProj*100)+'%',background:p.bg,borderRadius:6}}></div>
+                <div style={{position:'absolute',top:0,left:0,height:'100%',width:(done/maxProj*100)+'%',background:p.color,borderRadius:6,transition:'width .4s'}}></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-h"><i className="ti ti-hourglass lead"></i><b>Thời gian tập trung (Pomodoro)</b></div>
+        <div className="panel-b" style={{padding:'16px 18px'}}>
+          {spentMin>0
+            ? <div style={{display:'flex',alignItems:'center',gap:12}}><div style={{fontFamily:'Baloo 2',fontSize:30,color:'var(--o-dk)'}}>{spentH}h</div><div style={{fontSize:12.5,color:'var(--muted)'}}>tổng thời gian đã bấm giờ tập trung cho công việc.<br/>Dùng nút <b>Tập trung</b> ở tab Hôm nay để đo.</div></div>
+            : <div style={{fontSize:13,color:'var(--muted)'}}>Chưa có phiên tập trung nào. Vào tab <b>Hôm nay</b> → bấm <b>Tập trung</b> trên một việc để bắt đầu Pomodoro.</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Pomodoro / Tập trung ---------- */
+function FocusModal({task,onClose,onLog,onDone}){
+  const FOCUS=25*60, BREAK=5*60;
+  const [mode,setMode]=useState('focus');
+  const [left,setLeft]=useState(FOCUS);
+  const [running,setRunning]=useState(false);
+  const [focusedSec,setFocusedSec]=useState(0);
+  useEffect(()=>{
+    if(!running) return;
+    const t=setInterval(()=>{
+      setLeft(l=>{
+        if(l<=1){ setRunning(false); if(mode==='focus'){setMode('break');return BREAK;} setMode('focus'); return FOCUS; }
+        return l-1;
+      });
+      if(mode==='focus') setFocusedSec(s=>s+1);
+    },1000);
+    return ()=>clearInterval(t);
+  },[running,mode]);
+  const total=mode==='focus'?FOCUS:BREAK;
+  const mm=String(Math.floor(left/60)).padStart(2,'0'), ss=String(left%60).padStart(2,'0');
+  const minutes=Math.round(focusedSec/60);
+  const finish=()=>{ if(minutes>0)onLog(task.id,minutes); onClose(); };
+  const R=92, C=2*Math.PI*R, off=C*(1-left/total);
+  return (
+    <div className="ov" onClick={finish}>
+      <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:380}}>
+        <div className="modal-h"><b><i className="ti ti-target-arrow" style={{color:'var(--o)',marginRight:6}}></i>Tập trung</b><button className="x" onClick={finish}><i className="ti ti-x"></i></button></div>
+        <div className="modal-b" style={{textAlign:'center'}}>
+          <div style={{fontSize:13.5,fontWeight:600,color:'var(--muted)',marginBottom:4}}>{mode==='focus'?'🎯 Đang làm':'☕ Nghỉ ngắn'}</div>
+          <div style={{fontSize:14,fontWeight:600,marginBottom:16,minHeight:38}}>{task.title}</div>
+          <div style={{position:'relative',width:210,height:210,margin:'0 auto'}}>
+            <svg width="210" height="210">
+              <circle cx="105" cy="105" r={R} fill="none" stroke="var(--border2)" strokeWidth="10"/>
+              <circle cx="105" cy="105" r={R} fill="none" stroke={mode==='focus'?'var(--o)':'var(--grn)'} strokeWidth="10" strokeLinecap="round" strokeDasharray={C} strokeDashoffset={off} transform="rotate(-90 105 105)" style={{transition:'stroke-dashoffset 1s linear'}}/>
+            </svg>
+            <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
+              <div style={{fontFamily:'Baloo 2',fontSize:46,fontWeight:700,lineHeight:1}}>{mm}:{ss}</div>
+              <div style={{fontSize:12,color:'var(--muted)',marginTop:4}}>đã tập trung ~{minutes}p</div>
+            </div>
+          </div>
+          <div style={{display:'flex',gap:10,justifyContent:'center',marginTop:20}}>
+            <button className="btn" style={{padding:'12px 22px'}} onClick={()=>setRunning(r=>!r)}><i className={'ti '+(running?'ti-player-pause':'ti-player-play')}></i>{running?'Tạm dừng':'Bắt đầu'}</button>
+            <button className="btn ghost" style={{padding:'12px 16px'}} onClick={()=>{setRunning(false);setMode('focus');setLeft(FOCUS);}}><i className="ti ti-rotate"></i></button>
+          </div>
+          {task.est && <div style={{fontSize:12,color:'var(--muted)',marginTop:14}}>Ước tính việc này: ~{task.est}h{task.spent?(' · đã làm tổng '+(task.spent+minutes)+'p'):''}</div>}
+        </div>
+        <div className="modal-f">
+          <button className="btn ghost" style={{flex:'0 0 auto',padding:'12px 16px'}} onClick={finish}>Lưu & đóng</button>
+          <button className="btn" onClick={()=>{if(minutes>0)onLog(task.id,minutes);onDone(task.id);}}><i className="ti ti-check"></i>Hoàn thành việc</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Deep Work (toàn màn hình, không xao nhãng) ---------- */
+function DeepWork({ids,tasks,onClose,onLog,onComplete,toggleCk}){
+  const [phase,setPhase]=useState('setup'); // setup | work | done
+  const [len,setLen]=useState(50);           // độ dài phiên (phút)
+  const [left,setLeft]=useState(50*60);
+  const [running,setRunning]=useState(false);
+  const [seg,setSeg]=useState(0);            // giây trên việc hiện tại
+  const [curId,setCurId]=useState(null);
+  const [doneCnt,setDoneCnt]=useState(0);
+  const [totalSec,setTotalSec]=useState(0);
+  const [asking,setAsking]=useState(false);
+
+  const byId={}; tasks.forEach(t=>byId[t.id]=t);
+  const queue=ids.map(id=>byId[id]).filter(t=>t&&t.status!=='done');
+  const cur=queue.find(t=>t.id===curId)||queue[0]||null;
+
+  useEffect(()=>{ if(cur&&!curId) setCurId(cur.id); });
+  useEffect(()=>{
+    if(!running||phase!=='work') return;
+    const tm=setInterval(()=>{
+      setSeg(s=>s+1); setTotalSec(s=>s+1);
+      setLeft(l=>{ if(l<=1){ setRunning(false); setPhase('done'); return 0; } return l-1; });
+    },1000);
+    return ()=>clearInterval(tm);
+  },[running,phase]);
+
+  const mm=String(Math.floor(left/60)).padStart(2,'0'), ss=String(left%60).padStart(2,'0');
+  const logSeg=()=>{ if(cur){ const m=Math.round(seg/60); if(m>0)onLog(cur.id,m); } setSeg(0); };
+  const start=(mins)=>{ setLen(mins); setLeft(mins*60); setPhase('work'); setRunning(true); };
+  const nextTask=(afterComplete)=>{
+    if(!cur) return;
+    const i=queue.findIndex(t=>t.id===cur.id);
+    const nxt=queue[i+1]||queue.find(t=>t.id!==cur.id)||null;
+    logSeg();
+    if(afterComplete) { onComplete(cur.id); setDoneCnt(c=>c+1); }
+    if(nxt) setCurId(nxt.id); else { setRunning(false); setPhase('done'); }
+  };
+  const exit=()=>{ logSeg(); onClose(); };
+  useEffect(()=>()=>Noise.stop(),[]);
+
+  const bg={position:'fixed',inset:0,zIndex:300,background:'linear-gradient(160deg,#1a1410,#2a1c10 60%,#0f0c09)',color:'#fff',display:'flex',flexDirection:'column',overflowY:'auto'};
+  const lightBtn={background:'rgba(255,255,255,.14)',color:'#fff',border:'1px solid rgba(255,255,255,.2)'};
+
+  // ----- SETUP -----
+  if(phase==='setup') return (
+    <div style={bg}>
+      <div style={{maxWidth:480,margin:'auto',padding:24,textAlign:'center',width:'100%'}}>
+        <div style={{fontSize:48}}>🧘</div>
+        <h1 style={{fontFamily:'Baloo 2',fontSize:26,margin:'10px 0 4px'}}>Deep Work</h1>
+        <p style={{opacity:.7,fontSize:13.5,marginBottom:8}}>Một phiên tập trung sâu, không xao nhãng — đi qua {queue.length} việc đã ưu tiên.</p>
+        {queue.length===0
+          ? <p style={{opacity:.6,marginTop:20}}>Không có việc nào đang mở để tập trung.</p>
+          : <>
+            <div style={{textAlign:'left',background:'rgba(255,255,255,.07)',borderRadius:14,padding:'12px 16px',margin:'14px 0 22px'}}>
+              {queue.slice(0,5).map((t,i)=>(<div key={t.id} style={{display:'flex',gap:8,padding:'5px 0',fontSize:13.5,opacity:i===0?1:.6}}><b style={{color:'var(--o-mid)'}}>{i+1}.</b><span>{t.title}</span></div>))}
+              {queue.length>5 && <div style={{fontSize:12,opacity:.5,paddingTop:4}}>… và {queue.length-5} việc nữa</div>}
+            </div>
+            <div style={{fontSize:12.5,opacity:.7,marginBottom:10,fontWeight:600}}>Chọn độ dài phiên</div>
+            <div style={{display:'flex',gap:10,justifyContent:'center'}}>
+              {[25,50,90].map(m=>(
+                <button key={m} onClick={()=>start(m)} style={{...lightBtn,padding:'16px 20px',borderRadius:14,fontFamily:'Baloo 2',fontSize:20,fontWeight:700,flex:1,cursor:'pointer'}}>{m}<div style={{fontSize:11,fontWeight:500,opacity:.7}}>phút</div></button>
+              ))}
+            </div>
+          </>}
+        <button onClick={onClose} style={{marginTop:24,background:'none',border:0,color:'rgba(255,255,255,.6)',fontSize:13,cursor:'pointer'}}>← Quay lại</button>
+      </div>
+    </div>
+  );
+
+  // ----- DONE -----
+  if(phase==='done') return (
+    <div style={bg}>
+      <div style={{maxWidth:440,margin:'auto',padding:24,textAlign:'center',width:'100%'}}>
+        <div style={{fontSize:48}}>🎉</div>
+        <h1 style={{fontFamily:'Baloo 2',fontSize:24,margin:'10px 0'}}>Hết phiên Deep Work!</h1>
+        <div style={{display:'flex',gap:14,justifyContent:'center',margin:'18px 0'}}>
+          <div><div style={{fontFamily:'Baloo 2',fontSize:30}}>{Math.round(totalSec/60)}</div><div style={{fontSize:11,opacity:.7}}>phút tập trung</div></div>
+          <div><div style={{fontFamily:'Baloo 2',fontSize:30}}>{doneCnt}</div><div style={{fontSize:11,opacity:.7}}>việc hoàn thành</div></div>
+        </div>
+        <div style={{display:'flex',gap:10,justifyContent:'center',flexWrap:'wrap'}}>
+          {queue.length>0 && <button onClick={()=>{setLeft(25*60);setPhase('work');setRunning(true);}} style={{...lightBtn,padding:'12px 18px',borderRadius:12,fontWeight:600,cursor:'pointer'}}><i className="ti ti-plus"></i> Thêm 25 phút</button>}
+          <button onClick={onClose} style={{background:'#fff',color:'#1a1410',padding:'12px 22px',borderRadius:12,fontWeight:700,border:0,cursor:'pointer'}}>Kết thúc</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ----- WORK -----
+  return (
+    <div style={bg}>
+      {/* top bar tối giản */}
+      <div style={{display:'flex',alignItems:'center',padding:'16px 20px',flexShrink:0}}>
+        <div style={{fontSize:12.5,opacity:.6,fontWeight:600,letterSpacing:'.04em'}}>🧘 DEEP WORK · việc {Math.min(doneCnt+1,queue.length)}/{queue.length+doneCnt}</div>
+        <div style={{flex:1}}></div>
+        <button onClick={()=>setAsking(true)} style={{background:'none',border:0,color:'rgba(255,255,255,.55)',fontSize:22,cursor:'pointer',display:'flex'}}><i className="ti ti-x"></i></button>
+      </div>
+
+      {!cur
+        ? <div style={{margin:'auto',textAlign:'center',opacity:.7}}><div style={{fontSize:40}}>✅</div><p style={{marginTop:10}}>Đã xong hết việc trong hàng đợi!</p><button onClick={onClose} style={{...lightBtn,marginTop:16,padding:'10px 18px',borderRadius:12,cursor:'pointer'}}>Kết thúc</button></div>
+        : <div style={{margin:'auto',width:'100%',maxWidth:560,padding:'10px 22px 30px',textAlign:'center'}}>
+            {/* đồng hồ lớn */}
+            <div style={{fontFamily:'Baloo 2',fontSize:'clamp(64px,18vw,108px)',fontWeight:700,lineHeight:1,letterSpacing:'.02em'}}>{mm}:{ss}</div>
+            <div style={{opacity:.55,fontSize:13,marginBottom:26}}>{running?'Đang tập trung — đừng rời đi':'Tạm dừng'}</div>
+
+            {/* việc hiện tại */}
+            <div style={{fontSize:12,opacity:.55,fontWeight:600,marginBottom:6}}>ĐANG LÀM</div>
+            <div style={{fontFamily:'Baloo 2',fontSize:'clamp(20px,5vw,28px)',fontWeight:700,marginBottom:18,lineHeight:1.25}}>{cur.title}</div>
+
+            {cur.checklist&&cur.checklist.length>0 &&
+              <div style={{textAlign:'left',maxWidth:380,margin:'0 auto 22px'}}>
+                {cur.checklist.map((c,i)=>(
+                  <div key={i} onClick={()=>toggleCk(cur.id,i)} style={{display:'flex',gap:10,alignItems:'center',padding:'9px 12px',marginBottom:6,background:'rgba(255,255,255,.06)',borderRadius:10,cursor:'pointer',fontSize:14,opacity:c.done?.5:1}}>
+                    <i className={'ti '+(c.done?'ti-circle-check-filled':'ti-circle')} style={{fontSize:20,color:c.done?'#4ade80':'rgba(255,255,255,.5)'}}></i>
+                    <span style={{textDecoration:c.done?'line-through':'none'}}>{c.t}</span>
+                  </div>
+                ))}
+              </div>}
+
+            {/* điều khiển */}
+            <div style={{display:'flex',gap:10,justifyContent:'center',flexWrap:'wrap'}}>
+              <button onClick={()=>setRunning(r=>!r)} style={{background:'#fff',color:'#1a1410',padding:'13px 26px',borderRadius:30,fontWeight:700,border:0,cursor:'pointer',display:'flex',alignItems:'center',gap:7}}><i className={'ti '+(running?'ti-player-pause':'ti-player-play')}></i>{running?'Tạm dừng':'Tiếp tục'}</button>
+              <button onClick={()=>nextTask(true)} style={{...lightBtn,padding:'13px 20px',borderRadius:30,fontWeight:600,cursor:'pointer',display:'flex',alignItems:'center',gap:7}}><i className="ti ti-check"></i>Xong việc này</button>
+              {queue.length>1 && <button onClick={()=>nextTask(false)} title="Bỏ qua, sang việc sau" style={{...lightBtn,padding:'13px 16px',borderRadius:30,cursor:'pointer'}}><i className="ti ti-player-skip-forward"></i></button>}
+            </div>
+
+            {queue.length>1 && <div style={{marginTop:22,fontSize:12,opacity:.45}}>Tiếp theo: {(queue.find(t=>t.id!==cur.id)||{}).title||'—'}</div>}
+            <div style={{marginTop:26,paddingTop:18,borderTop:'1px solid rgba(255,255,255,.12)'}}>
+              <div style={{fontSize:11,opacity:.5,fontWeight:600,marginBottom:8,letterSpacing:'.04em'}}>🎧 ÂM THANH NỀN</div>
+              <SoundBar/>
+            </div>
+          </div>}
+
+      {/* xác nhận thoát */}
+      {asking &&
+        <div style={{position:'absolute',inset:0,background:'rgba(0,0,0,.6)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:5}} onClick={()=>setAsking(false)}>
+          <div onClick={e=>e.stopPropagation()} style={{background:'#241c14',borderRadius:16,padding:'22px',maxWidth:300,textAlign:'center',border:'1px solid rgba(255,255,255,.12)'}}>
+            <div style={{fontSize:32}}>🚪</div>
+            <p style={{margin:'8px 0 16px',fontSize:14}}>Thoát Deep Work? Thời gian đã làm vẫn được lưu.</p>
+            <div style={{display:'flex',gap:10}}>
+              <button onClick={()=>setAsking(false)} style={{...lightBtn,flex:1,padding:'11px',borderRadius:10,fontWeight:600,cursor:'pointer'}}>Ở lại</button>
+              <button onClick={exit} style={{flex:1,padding:'11px',borderRadius:10,fontWeight:700,background:'#fff',color:'#1a1410',border:0,cursor:'pointer'}}>Thoát</button>
+            </div>
+          </div>
+        </div>}
+    </div>
+  );
+}
+
+/* ---------- Sổ kinh doanh (10 số mỗi tuần) ---------- */
+const BIZF=[
+  {k:'rev',l:'Doanh thu'},{k:'gross',l:'Lãi gộp'},{k:'cash',l:'Tiền mặt'},
+  {k:'debt',l:'Công nợ NCC'},{k:'stock',l:'Tồn kho'},{k:'stockOld',l:'Tồn >60 ngày'},
+  {k:'returns',l:'Khách quay lại',unit:'người'},{k:'adsCost',l:'Chi phí Ads'},{k:'adsRev',l:'DT từ Ads'},
+];
+function BizBook({metrics,setMetrics,config,setConfig}){
+  const wk=dstr(startOfWeek());
+  const [f,setF]=useState(()=>metrics.find(m=>m.week===wk)||{week:wk});
+  const [saved,setSaved]=useState(false);
+  const set=(k,v)=>{setF(p=>({...p,[k]:v===''?undefined:+v}));setSaved(false);};
+  const save=()=>{ setMetrics(prev=>[...prev.filter(m=>m.week!==wk),{...f,week:wk}].sort((a,b)=>a.week<b.week?1:-1)); setSaved(true); };
+  const margin=f.rev?Math.round((f.gross||0)/f.rev*1000)/10:null;
+  const roas=f.adsCost?Math.round((f.adsRev||0)/f.adsCost*10)/10:null;
+  const be=config.breakeven||0;
+  const below=f.rev!==undefined&&be>0&&f.rev<be;
+  const recent=[...metrics].sort((a,b)=>a.week<b.week?1:-1).slice(0,8);
+  const chrono=[...recent].reverse();
+  const maxRev=Math.max(1,...chrono.map(m=>m.rev||0),be);
+  return (
+    <div>
+      <div style={{fontSize:12.5,color:'var(--muted)',marginBottom:14,display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+        <i className="ti ti-info-circle" style={{color:'var(--o)'}}></i> Nhập số mỗi tuần (đơn vị: <b>triệu đồng</b>, riêng "khách quay lại" là số người). Tuần hiện tại: <b style={{color:'var(--ink)'}}>{fmtDate(wk)}</b>.
+        <span style={{flex:1}}></span>
+        <span style={{display:'flex',alignItems:'center',gap:6}}>Hòa vốn/tuần:
+          <input type="number" value={be||''} onChange={e=>setConfig({...config,breakeven:e.target.value===''?0:+e.target.value})} style={{...selSt,width:80,padding:'6px 8px'}}/> tr
+        </span>
+      </div>
+
+      {below &&
+        <div style={{display:'flex',alignItems:'center',gap:10,background:'var(--red-lt)',border:'1px solid var(--red)',borderRadius:12,padding:'12px 14px',marginBottom:16,fontSize:13,color:'var(--red)'}}>
+          <i className="ti ti-alert-triangle" style={{fontSize:20}}></i><span>Doanh thu tuần (<b>{f.rev} tr</b>) <b>dưới ngưỡng hòa vốn {be} tr</b> — cửa hàng đang ở vùng nguy hiểm. Xem lại kế hoạch phòng thủ.</span>
+        </div>}
+
+      <div className="panel">
+        <div className="panel-h"><i className="ti ti-pencil lead"></i><b>Nhập số tuần này</b>
+          {saved && <span style={{marginLeft:'auto',color:'var(--grn)',fontSize:12.5,fontWeight:600}}><i className="ti ti-check"></i> Đã lưu</span>}
+        </div>
+        <div className="panel-b" style={{padding:'16px 18px'}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))',gap:12}}>
+            {BIZF.map(fd=>(
+              <div key={fd.k}>
+                <label style={{display:'block',fontSize:11.5,fontWeight:600,color:'var(--muted)',marginBottom:5}}>{fd.l}{fd.unit?'':' (tr)'}</label>
+                <input type="number" value={f[fd.k]===undefined?'':f[fd.k]} onChange={e=>set(fd.k,e.target.value)} style={{width:'100%',background:'var(--bg)',border:'1.5px solid var(--border)',borderRadius:10,padding:'9px 11px',color:'var(--ink)',outline:'none'}}/>
+              </div>
+            ))}
+          </div>
+          <div style={{display:'flex',gap:10,flexWrap:'wrap',marginTop:14,alignItems:'center'}}>
+            <span className="tag" style={{background:'var(--o-lt)',color:'var(--o-dk)',padding:'6px 11px'}}>Biên gộp thực tế: <b>{margin!==null?margin+'%':'—'}</b></span>
+            <span className="tag" style={{background:'var(--blue-lt)',color:'var(--blue)',padding:'6px 11px'}}>ROAS (DT/Ads): <b>{roas!==null?roas+'×':'—'}</b></span>
+            <span style={{flex:1}}></span>
+            <button className="btn" onClick={save}><i className="ti ti-device-floppy"></i>Lưu tuần này</button>
+          </div>
+        </div>
+      </div>
+
+      {chrono.length>0 &&
+        <div className="panel">
+          <div className="panel-h"><i className="ti ti-chart-line lead"></i><b>Xu hướng doanh thu</b><span style={{marginLeft:'auto',fontSize:12,color:'var(--muted)'}}>{chrono.length} tuần gần nhất</span></div>
+          <div className="panel-b" style={{padding:'18px'}}>
+            <div style={{display:'flex',alignItems:'flex-end',gap:8,height:120,position:'relative'}}>
+              {be>0 && <div style={{position:'absolute',left:0,right:0,bottom:(be/maxRev*100)+'px',borderTop:'2px dashed var(--red)',opacity:.6}}><span style={{position:'absolute',right:0,top:-16,fontSize:10,color:'var(--red)',fontWeight:600}}>hòa vốn {be}</span></div>}
+              {chrono.map((m,i)=>(
+                <div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:5,height:'100%',justifyContent:'flex-end'}}>
+                  <div style={{fontSize:10.5,fontWeight:700,color:'var(--o-dk)'}}>{m.rev||0}</div>
+                  <div style={{width:'100%',maxWidth:30,height:((m.rev||0)/maxRev*86)+'px',minHeight:3,background:(be>0&&(m.rev||0)<be)?'linear-gradient(180deg,#f87171,#dc2626)':'linear-gradient(180deg,var(--o),var(--o-dk))',borderRadius:'5px 5px 0 0'}}></div>
+                  <div style={{fontSize:10,color:'var(--muted)'}}>{fmtDate(m.week)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>}
+
+      {recent.length>0 &&
+        <div className="panel">
+          <div className="panel-h"><i className="ti ti-table lead"></i><b>Lịch sử theo tuần</b></div>
+          <div className="panel-b" style={{padding:0,overflowX:'auto'}}>
+            <table style={{width:'100%',borderCollapse:'collapse',fontSize:12.5,minWidth:480}}>
+              <thead><tr style={{color:'var(--muted)',textAlign:'right'}}>
+                <th style={{textAlign:'left',padding:'10px 14px'}}>Tuần</th><th style={{padding:'10px 8px'}}>Doanh thu</th><th style={{padding:'10px 8px'}}>Biên%</th><th style={{padding:'10px 8px'}}>Tiền mặt</th><th style={{padding:'10px 8px'}}>Tồn &gt;60</th><th style={{padding:'10px 14px'}}>Khách lại</th>
+              </tr></thead>
+              <tbody>
+                {recent.map(m=>{const mg=m.rev?Math.round((m.gross||0)/m.rev*1000)/10:null;const bad=be>0&&(m.rev||0)<be;return (
+                  <tr key={m.week} style={{borderTop:'1px solid var(--border)',textAlign:'right'}}>
+                    <td style={{textAlign:'left',padding:'10px 14px',fontWeight:600}}>{fmtDate(m.week)}</td>
+                    <td style={{padding:'10px 8px',color:bad?'var(--red)':'var(--ink)',fontWeight:bad?700:400}}>{m.rev??'—'}</td>
+                    <td style={{padding:'10px 8px'}}>{mg!==null?mg+'%':'—'}</td>
+                    <td style={{padding:'10px 8px'}}>{m.cash??'—'}</td>
+                    <td style={{padding:'10px 8px'}}>{m.stockOld??'—'}</td>
+                    <td style={{padding:'10px 14px'}}>{m.returns??'—'}</td>
+                  </tr>
+                );})}
+              </tbody>
+            </table>
+          </div>
+        </div>}
+    </div>
+  );
+}
+
+/* ---------- Thư viện prompt AI cho Hương Diện ---------- */
+const PROMPT_LIBRARY=[
+ {cat:'Nội dung & Caption',ic:'✍️',items:[
+   {id:'pl_cap1',t:'3 caption bán hàng Facebook',p:'Bạn là nhân viên marketing cửa hàng Mẹ&Bé Hương Diện (Hà Nội). Viết 3 caption Facebook bán [TÊN SẢN PHẨM] cho mẹ bỉm. Mỗi caption: hook hút mắt ở câu đầu, 2-3 lợi ích cho bé/mẹ, 1 CTA nhắn tin, 3-5 hashtag. Giọng thân thiện, đáng tin. Dưới 120 từ mỗi caption.'},
+   {id:'pl_cap2',t:'Bài chia sẻ kiến thức nuôi con',p:'Viết bài Facebook chia sẻ kiến thức cho mẹ bỉm về "[CHỦ ĐỀ, vd: dấu hiệu bé cần đổi size bỉm]". Cấu trúc: mở bài đồng cảm, 4-5 ý chính dễ hiểu, kết bài nhẹ nhàng gợi ý sản phẩm phù hợp của Hương Diện (không hard-sell). Giọng chuyên gia thân thiện.'},
+   {id:'pl_cap3',t:'7 ý tưởng nội dung cho 1 tuần',p:'Đề xuất 7 ý tưởng bài đăng fanpage Mẹ&Bé cho 1 tuần, đa dạng: kiến thức nuôi con, review sản phẩm, mẹo hay, tương tác (mini game/câu hỏi), khuyến mãi, câu chuyện khách hàng, hậu trường shop. Mỗi ý: tiêu đề + 1 câu mô tả + định dạng (ảnh/video/photo mode).'},
+   {id:'pl_cap4',t:'Lịch nội dung theo tháng tuổi bé',p:'Lập kế hoạch nội dung theo nhóm tháng tuổi bé cho cửa hàng Mẹ&Bé: 0-6 tháng, 6-12 tháng (ăn dặm), 1-2 tuổi, trên 2 tuổi. Mỗi nhóm: 5 chủ đề bài viết + sản phẩm liên quan của shop để gợi ý kèm.'},
+ ]},
+ {cat:'Video & TikTok',ic:'🎬',items:[
+   {id:'pl_vid1',t:'Kịch bản TikTok không lộ mặt',p:'Viết kịch bản video TikTok 30-45 giây kiểu "quay tay cận cảnh" (không lộ mặt) giới thiệu [SẢN PHẨM]. Gồm: hook 3 giây gây tò mò, 3 cảnh quay (mô tả góc máy + hành động tay), lời thoại/phụ đề từng cảnh, CTA cuối. Hợp giọng đọc AI.'},
+   {id:'pl_vid2',t:'5 ý tưởng TikTok Photo Mode',p:'Đề xuất 5 ý tưởng TikTok Photo Mode (slideshow ảnh + chữ) cho cửa hàng Mẹ&Bé, dễ làm trong 5 phút. Mỗi ý: chủ đề, số slide, nội dung chữ từng slide, gợi ý nhạc trend.'},
+   {id:'pl_vid3',t:'Kịch bản video kiến thức (giọng AI)',p:'Viết kịch bản video ngắn 40 giây dạng "chữ chạy + giọng AI đọc" về "[CHỦ ĐỀ, vd: 5 dấu hiệu chọn sai size bỉm]". Chia câu ngắn dễ đọc, có hook đầu và CTA cuối.'},
+   {id:'pl_vid4',t:'10 hook giữ chân 3 giây đầu',p:'Viết 10 câu hook (3 giây đầu) cực hút cho video TikTok bán hàng mẹ&bé, đánh trúng nỗi lo/mong muốn của mẹ bỉm. Ngắn, gây tò mò hoặc giật mình tích cực.'},
+ ]},
+ {cat:'Tư vấn & Chốt đơn',ic:'🤝',items:[
+   {id:'pl_sell1',t:'Kịch bản chatbot theo tháng tuổi bé',p:'Soạn kịch bản chatbot tư vấn cho cửa hàng Mẹ&Bé: hỏi tháng tuổi bé rồi gợi ý đúng size bỉm/số sữa/sản phẩm. Gồm 5 nhánh tuổi (mang thai, 0-6, 6-12, 1-2 tuổi, trên 2 tuổi), mỗi nhánh gợi ý sản phẩm + câu chốt lấy SĐT/Zalo.'},
+   {id:'pl_sell2',t:'Xử lý từ chối của khách',p:'Khách nói "[lời từ chối, vd: đắt quá / để em xem đã / shop khác rẻ hơn]". Viết 3 cách phản hồi khéo cho nhân viên mẹ&bé, nhấn giá trị (chính hãng, tư vấn, an toàn cho bé) thay vì giảm giá, kết bằng câu giữ khách.'},
+   {id:'pl_sell3',t:'Gợi ý combo & bán thêm',p:'Khách đang mua [SẢN PHẨM] cho bé [THÁNG TUỔI]. Gợi ý 3 sản phẩm bán kèm (cross-sell) hợp lý, kèm câu tư vấn tự nhiên để khách thấy tiện chứ không bị ép.'},
+   {id:'pl_sell4',t:'Tư vấn chọn sữa/bỉm theo nhu cầu',p:'Đóng vai chuyên gia tư vấn mẹ&bé. Bé [tháng tuổi, cân nặng, tình trạng: vd hay táo bón/hăm]. Tư vấn loại sữa/bỉm phù hợp, giải thích ngắn gọn lý do, lưu ý khi dùng. Trung thực, không phóng đại.'},
+ ]},
+ {cat:'Chăm sóc & Giữ chân',ic:'❤️',items:[
+   {id:'pl_care1',t:'Tin nhắn nhắc mua lại (Zalo)',p:'Viết tin nhắn Zalo nhắc khách mua lại [SẢN PHẨM, vd bỉm] sau ~[số ngày]. Thân thiện, cá nhân hóa (nhắc tên bé nếu có), hỏi thăm bé, gợi ý đặt lại + hỏi có cần đổi size. Dưới 60 từ.'},
+   {id:'pl_care2',t:'Kéo lại khách lâu không mua',p:'Viết tin nhắn kéo lại khách >45 ngày không quay lại cửa hàng mẹ&bé. Hỏi thăm bé, tạo lý do quay lại (ưu đãi khách quen / sản phẩm mới hợp tuổi bé), giọng quan tâm chân thành, không spam.'},
+   {id:'pl_care3',t:'Chuỗi tin chăm sóc theo giai đoạn bé',p:'Thiết kế chuỗi 4 tin nhắn Zalo chăm sóc khách theo giai đoạn phát triển của bé (cách nhau ~1-2 tháng), mỗi tin gợi ý sản phẩm đúng nhu cầu giai đoạn đó. Mỗi tin ngắn, hữu ích, 1 gợi ý sản phẩm.'},
+   {id:'pl_care4',t:'Mẫu xin đánh giá/feedback',p:'Viết tin nhắn lịch sự xin khách đánh giá sau khi mua hàng tại cửa hàng mẹ&bé, gợi ý nhẹ để lại ảnh/review, kèm 1 ưu đãi nhỏ cho lần sau nếu phù hợp.'},
+ ]},
+ {cat:'SEO & Website',ic:'🔍',items:[
+   {id:'pl_seo1',t:'Bài blog SEO nuôi con',p:'Viết bài blog ~700 từ chuẩn SEO cho website Mẹ&Bé, từ khóa chính "[TỪ KHÓA, vd: sữa cho bé táo bón]". Có tiêu đề hấp dẫn, các H2, nội dung đáng tin, FAQ ngắn cuối bài, gợi ý sản phẩm của shop tự nhiên. Giọng chuyên gia.'},
+   {id:'pl_seo2',t:'Mô tả sản phẩm chuẩn SEO',p:'Viết mô tả bán hàng cho sản phẩm: [TÊN + thông tin]. Gồm: đoạn mở hấp dẫn, gạch đầu dòng lợi ích/thành phần/đối tượng dùng, hướng dẫn sử dụng ngắn, lý do mua ở Hương Diện. Chuẩn SEO, trung thực.'},
+   {id:'pl_seo3',t:'Tiêu đề & meta description',p:'Viết 5 phương án tiêu đề SEO (<60 ký tự) + meta description (<155 ký tự) cho trang sản phẩm "[TÊN]" của cửa hàng mẹ&bé, có từ khóa và kêu gọi click.'},
+   {id:'pl_seo4',t:'30 từ khóa mẹ bỉm hay tìm',p:'Liệt kê 30 từ khóa/câu hỏi mẹ bỉm hay tìm trên Google về [NHÓM SẢN PHẨM, vd: ăn dặm], phân theo ý định (tìm hiểu / so sánh / mua), để làm nội dung SEO.'},
+ ]},
+ {cat:'Quảng cáo',ic:'📣',items:[
+   {id:'pl_ad1',t:'3 mẫu quảng cáo Facebook/TikTok',p:'Viết 3 mẫu quảng cáo (primary text) cho [SẢN PHẨM] nhắm mẹ bỉm ở Hà Nội. Mỗi mẫu một góc: nỗi lo của mẹ / lợi ích cho bé / ưu đãi. Kèm 3 tiêu đề ngắn và gợi ý hình ảnh.'},
+   {id:'pl_ad2',t:'Ý tưởng nhắm đối tượng (targeting)',p:'Gợi ý cách nhắm đối tượng quảng cáo cho cửa hàng mẹ&bé tại [KHU VỰC]: nhóm tuổi, sở thích, hành vi, và tệp khách giống khách đã mua. Kèm gợi ý ngân sách test nhỏ.'},
+   {id:'pl_ad3',t:'4 biến thể A/B test',p:'Tạo 4 biến thể A/B của câu quảng cáo sau để test: "[CÂU GỐC]". Mỗi biến đổi một yếu tố (hook, lợi ích, CTA, cảm xúc).'},
+ ]},
+ {cat:'Phân tích & Kinh doanh',ic:'📊',items:[
+   {id:'pl_biz1',t:'Phân tích doanh thu',p:'Tôi dán dữ liệu bán hàng dưới đây. Hãy phân tích: sản phẩm/nhóm lời nhất, bán chạy nhất, hàng tồn lâu, khách lâu chưa quay lại, và 3 đề xuất hành động cụ thể cho cửa hàng mẹ&bé.\n\n[DÁN DỮ LIỆU]'},
+   {id:'pl_biz2',t:'Tính biên lợi nhuận & gợi ý combo',p:'Tôi có các sản phẩm sau với giá vốn và giá bán: [DÁN]. Hãy tính biên lợi nhuận từng mã, gợi ý mã nên đẩy, mã nên xem lại giá, và 3 combo bán kèm hợp lý cho mẹ&bé.'},
+   {id:'pl_biz3',t:'Kế hoạch nhập hàng theo mùa',p:'Đề xuất kế hoạch nhập hàng cho cửa hàng mẹ&bé theo mùa/dịp trong [THÁNG/QUÝ] tới (lễ tết, mùa, nhu cầu theo tuổi bé): nhóm nào nhập sâu, nhóm nào hạn chế để tránh tồn.'},
+   {id:'pl_biz4',t:'3 kịch bản doanh thu giảm',p:'Cửa hàng mẹ&bé của tôi có chi phí cố định ~[X] triệu/tháng, biên gộp ~[Y]%. Lập kế hoạch hành động cụ thể cho 3 kịch bản: doanh thu giảm 10%, 20%, 30%.'},
+ ]},
+ {cat:'Vận hành & Quản lý',ic:'⚙️',items:[
+   {id:'pl_ops1',t:'Soạn quy trình (SOP)',p:'Viết quy trình chuẩn (SOP) từng bước cho công việc "[TÊN, vd: chốt và đóng gói đơn online]" tại cửa hàng mẹ&bé, đủ chi tiết để nhân viên mới làm theo, kèm lưu ý tránh sai sót.'},
+   {id:'pl_ops2',t:'Kịch bản đào tạo nhân viên mới',p:'Soạn nội dung đào tạo nhân viên bán hàng mới cho cửa hàng mẹ&bé: kiến thức sản phẩm cơ bản (sữa/bỉm theo tuổi), kỹ năng tư vấn, cách chốt Zalo, xử lý tình huống thường gặp. Dạng checklist + ví dụ.'},
+   {id:'pl_ops3',t:'Mẫu đàm phán nhà cung cấp',p:'Viết tin nhắn đàm phán với nhà cung cấp xin chiết khấu tốt hơn / công nợ / đổi trả hàng cận date, cho cửa hàng mẹ&bé nhập số lượng vừa. Lịch sự, có lý lẽ.'},
+   {id:'pl_ops4',t:'Checklist mở & đóng cửa hàng',p:'Tạo checklist công việc đầu ngày (mở cửa) và cuối ngày (đóng cửa) cho cửa hàng mẹ&bé: trưng bày, kiểm đơn online, tồn kho, doanh thu, vệ sinh.'},
+ ]},
+ {cat:'Hình ảnh AI',ic:'🖼️',items:[
+   {id:'pl_img1',t:'Prompt ảnh sản phẩm',p:'(Dùng cho Gemini/Canva/Midjourney) Ảnh sản phẩm [TÊN] cho cửa hàng mẹ&bé: nền sạch màu pastel sáng, ánh sáng mềm, bố cục gọn, đạo cụ nhẹ liên quan (đồ sơ sinh/ăn dặm), phong cách ấm áp tin cậy, chất lượng quảng cáo, tỷ lệ 1:1.'},
+   {id:'pl_img2',t:'Prompt banner khuyến mãi',p:'(Tạo ảnh) Banner khuyến mãi Mẹ&Bé "[NỘI DUNG, vd: Sale cuối tháng]": tông màu cam/pastel thương hiệu, hình minh họa mẹ&bé dễ thương, chừa chỗ cho chữ lớn, phong cách sạch hiện đại, tỷ lệ [16:9 / 9:16].'},
+   {id:'pl_img3',t:'Prompt ảnh nền lifestyle',p:'(Tạo ảnh) Ảnh nền/lifestyle chủ đề [vd: góc ăn dặm của bé / phòng bé sơ sinh] tông ấm pastel, ánh sáng tự nhiên, để ghép sản phẩm lên, không có chữ, tỷ lệ 1:1.'},
+ ]},
+];
+
+/* ---------- Sổ tay vận hành ---------- */
+function Notebook({nb,setNb,onExport,onImport}){
+  const [seg,setSeg]=useState('sop');
+  const [openCat,setOpenCat]=useState(0);
+  const [copied,setCopied]=useState(null);
+  const segs=[{k:'sop',n:'Quy trình',i:'ti-list-check'},{k:'prompts',n:'Prompt AI',i:'ti-sparkles'},{k:'lib',n:'Thư viện prompt',i:'ti-books'},{k:'suppliers',n:'Nhà cung cấp',i:'ti-truck'},{k:'data',n:'Sao lưu',i:'ti-database'}];
+  const upd=(sec,arr)=>setNb({...nb,[sec]:arr});
+  const addItem=(sec,obj)=>upd(sec,[...(nb[sec]||[]),{...obj,id:sec[0]+Date.now()}]);
+  const delItem=(sec,id)=>upd(sec,nb[sec].filter(x=>x.id!==id));
+  const setItem=(sec,id,patch)=>upd(sec,nb[sec].map(x=>x.id===id?{...x,...patch}:x));
+  const copy=(txt,id)=>{ try{navigator.clipboard.writeText(txt);}catch(e){} if(id){setCopied(id);setTimeout(()=>setCopied(c=>c===id?null:c),1500);} };
+  const inp={width:'100%',background:'var(--bg)',border:'1.5px solid var(--border)',borderRadius:10,padding:'9px 11px',color:'var(--ink)',outline:'none'};
+  return (
+    <div>
+      <div className="chips" style={{marginBottom:16}}>
+        {segs.map(s=>(<button key={s.k} className={'chip'+(seg===s.k?' on':'')} onClick={()=>setSeg(s.k)}><i className={'ti '+s.i}></i> {s.n}</button>))}
+      </div>
+
+      {(seg==='sop'||seg==='prompts')&&
+        <div>
+          {(nb[seg]||[]).map(it=>(
+            <div className="panel" key={it.id} style={{marginBottom:12}}>
+              <div className="panel-b" style={{padding:'14px 16px'}}>
+                <div style={{display:'flex',gap:8,alignItems:'center',marginBottom:8}}>
+                  <input value={it.title} onChange={e=>setItem(seg,it.id,{title:e.target.value})} style={{...inp,fontWeight:700,flex:1}}/>
+                  {seg==='prompts'&&<button className="btn ghost sm" onClick={()=>copy(it.body,it.id)}><i className={'ti '+(copied===it.id?'ti-check':'ti-copy')}></i>{copied===it.id?'Đã copy':'Copy'}</button>}
+                  <button onClick={()=>delItem(seg,it.id)} style={{color:'var(--red)',padding:6,display:'flex'}}><i className="ti ti-trash" style={{fontSize:18}}></i></button>
+                </div>
+                <textarea value={it.body} onChange={e=>setItem(seg,it.id,{body:e.target.value})} style={{...inp,minHeight:80,resize:'vertical',fontFamily:'inherit',whiteSpace:'pre-wrap'}}/>
+              </div>
+            </div>
+          ))}
+          <button className="btn ghost" onClick={()=>addItem(seg,{title:seg==='prompts'?'Prompt mới':'Quy trình mới',body:''})}><i className="ti ti-plus"></i>Thêm {seg==='prompts'?'prompt':'quy trình'}</button>
+        </div>}
+
+      {seg==='lib'&&
+        <div>
+          <div style={{fontSize:12.5,color:'var(--muted)',marginBottom:14,display:'flex',gap:8,alignItems:'center'}}><i className="ti ti-bulb" style={{color:'var(--o)'}}></i> {PROMPT_LIBRARY.reduce((a,c)=>a+c.items.length,0)} prompt sẵn dùng — bấm <b>Copy</b>, dán vào ChatGPT/Claude rồi điền chỗ <b>[trong ngoặc]</b>.</div>
+          {PROMPT_LIBRARY.map((c,ci)=>{
+            const open=openCat===ci;
+            return (
+              <div className="panel" key={ci} style={{marginBottom:10}}>
+                <div className="panel-h" style={{cursor:'pointer'}} onClick={()=>setOpenCat(open?-1:ci)}>
+                  <span style={{fontSize:18}}>{c.ic}</span><b style={{fontSize:14.5,fontFamily:'Baloo 2'}}>{c.cat}</b>
+                  <span style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:12,color:'var(--muted2)'}}>{c.items.length}</span><i className={'ti '+(open?'ti-chevron-up':'ti-chevron-down')} style={{color:'var(--muted2)',fontSize:20}}></i></span>
+                </div>
+                {open && <div className="panel-b" style={{padding:'4px 14px 12px'}}>
+                  {c.items.map(it=>(
+                    <div key={it.id} style={{borderTop:'1px solid var(--border)',padding:'12px 2px'}}>
+                      <div style={{display:'flex',gap:8,alignItems:'center',marginBottom:6}}>
+                        <b style={{flex:1,fontSize:13.5}}>{it.t}</b>
+                        <button className={'btn'+(copied===it.id?'':' ghost')+' sm'} onClick={()=>copy(it.p,it.id)}><i className={'ti '+(copied===it.id?'ti-check':'ti-copy')}></i>{copied===it.id?'Đã copy':'Copy'}</button>
+                      </div>
+                      <div style={{fontSize:12.5,color:'var(--muted)',lineHeight:1.6,whiteSpace:'pre-wrap',background:'var(--bg)',borderRadius:9,padding:'10px 12px'}}>{it.p}</div>
+                    </div>
+                  ))}
+                </div>}
+              </div>
+            );
+          })}
+        </div>}
+
+      {seg==='suppliers'&&
+        <div>
+          {(nb.suppliers||[]).map(it=>(
+            <div className="panel" key={it.id} style={{marginBottom:10}}>
+              <div className="panel-b" style={{padding:'12px 16px'}}>
+                <div style={{display:'flex',gap:8,marginBottom:8}}>
+                  <input placeholder="Tên NCC" value={it.name} onChange={e=>setItem('suppliers',it.id,{name:e.target.value})} style={{...inp,fontWeight:700,flex:2}}/>
+                  <input placeholder="SĐT" value={it.phone||''} onChange={e=>setItem('suppliers',it.id,{phone:e.target.value})} style={{...inp,flex:1}}/>
+                  <button onClick={()=>delItem('suppliers',it.id)} style={{color:'var(--red)',padding:6,display:'flex'}}><i className="ti ti-trash" style={{fontSize:18}}></i></button>
+                </div>
+                <input placeholder="Ghi chú (chiết khấu, lịch giao…)" value={it.note||''} onChange={e=>setItem('suppliers',it.id,{note:e.target.value})} style={inp}/>
+              </div>
+            </div>
+          ))}
+          <button className="btn ghost" onClick={()=>addItem('suppliers',{name:'NCC mới',phone:'',note:''})}><i className="ti ti-plus"></i>Thêm nhà cung cấp</button>
+        </div>}
+
+      {seg==='data'&&
+        <div className="panel">
+          <div className="panel-h"><i className="ti ti-database lead"></i><b>Sao lưu & khôi phục dữ liệu</b></div>
+          <div className="panel-b" style={{padding:'16px 18px'}}>
+            <p style={{fontSize:13,color:'var(--muted)',lineHeight:1.6,marginBottom:14}}>Toàn bộ dữ liệu lưu trên trình duyệt máy này — <b>dễ mất khi xoá cache/đổi máy</b>. Hãy xuất file sao lưu định kỳ và cất giữ an toàn.</p>
+            <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+              <button className="btn" onClick={onExport}><i className="ti ti-download"></i>Xuất file sao lưu (.json)</button>
+              <label className="btn ghost" style={{cursor:'pointer'}}><i className="ti ti-upload"></i>Khôi phục từ file
+                <input type="file" accept="application/json,.json" style={{display:'none'}} onChange={e=>{onImport(e.target.files[0]);e.target.value='';}}/>
+              </label>
+            </div>
+            <div style={{marginTop:14,padding:'12px 14px',background:'var(--amber-lt)',borderRadius:12,fontSize:12.5,color:'var(--amber)',lineHeight:1.5}}>
+              <i className="ti ti-alert-triangle"></i> Khôi phục sẽ <b>ghi đè</b> toàn bộ dữ liệu hiện tại bằng dữ liệu trong file.
+            </div>
+          </div>
+        </div>}
+    </div>
+  );
+}
+
+/* ---------- Nghỉ & Thở (thiền có dẫn nhịp) ---------- */
+const BREATH_PAT={
+  box:{name:'Thở hộp · 4-4-4-4',sub:'Cân bằng & tập trung',steps:[['Hít vào',4,'in'],['Giữ',4,'hold'],['Thở ra',4,'out'],['Giữ',4,'hold']]},
+  relax:{name:'Thư giãn · 4-7-8',sub:'Hạ căng thẳng, dễ ngủ',steps:[['Hít vào',4,'in'],['Giữ',7,'hold'],['Thở ra',8,'out']]},
+  calm:{name:'Đều · 5-5',sub:'Nhẹ nhàng, dễ theo',steps:[['Hít vào',5,'in'],['Thở ra',5,'out']]},
+};
+function BreathMode({onClose,onLog}){
+  const [phase,setPhase]=useState('setup'); // setup | run | done
+  const [patKey,setPatKey]=useState('box');
+  const [mins,setMins]=useState(5);
+  const [elapsed,setElapsed]=useState(0);
+  const [paused,setPaused]=useState(false);
+  const [scale,setScale]=useState(0.5);
+  const steps=BREATH_PAT[patKey].steps;
+  const cyc=steps.reduce((a,s)=>a+s[1],0);
+  const sessionLeft=Math.max(0,mins*60-elapsed);
+  const inCyc=elapsed%cyc; let acc=0,idx=0; for(let i=0;i<steps.length;i++){ if(inCyc<acc+steps[i][1]){idx=i;break;} acc+=steps[i][1]; }
+  const [lbl,dur,type]=steps[idx];
+  const stepLeft=acc+dur-inCyc;
+
+  useEffect(()=>{ if(phase!=='run'||paused) return; const t=setInterval(()=>setElapsed(e=>e+1),1000); return ()=>clearInterval(t); },[phase,paused]);
+  useEffect(()=>{ if(phase==='run'&&sessionLeft<=0){ onLog(mins); setPhase('done'); } },[sessionLeft,phase]);
+  useEffect(()=>{ if(phase!=='run')return; if(type==='in')setScale(1); else if(type==='out')setScale(0.45); },[idx,phase]);
+  useEffect(()=>()=>Noise.stop(),[]);
+
+  const mm=String(Math.floor(sessionLeft/60)).padStart(2,'0'), ss=String(sessionLeft%60).padStart(2,'0');
+  const bg={position:'fixed',inset:0,zIndex:300,background:'linear-gradient(160deg,#0c2a2e,#103e43 55%,#07201f)',color:'#eafaf8',display:'flex',flexDirection:'column',overflowY:'auto'};
+  const lightBtn={background:'rgba(255,255,255,.14)',color:'#eafaf8',border:'1px solid rgba(255,255,255,.2)'};
+  const transDur=type==='hold'?0.4:dur;
+
+  if(phase==='setup') return (
+    <div style={bg}>
+      <div style={{maxWidth:440,margin:'auto',padding:24,textAlign:'center',width:'100%'}}>
+        <div style={{fontSize:48}}>🌿</div>
+        <h1 style={{fontFamily:'Baloo 2',fontSize:26,margin:'10px 0 4px'}}>Nghỉ & Thở</h1>
+        <p style={{opacity:.75,fontSize:13.5,marginBottom:20}}>Vài phút thở có nhịp để đầu óc nhẹ lại, rồi quay lại làm việc tỉnh táo hơn.</p>
+        <div style={{fontSize:12,opacity:.7,fontWeight:600,marginBottom:8,textAlign:'left'}}>Kiểu thở</div>
+        <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:20}}>
+          {Object.keys(BREATH_PAT).map(k=>(
+            <button key={k} onClick={()=>setPatKey(k)} style={{...(patKey===k?{background:'rgba(255,255,255,.2)',border:'1.5px solid rgba(255,255,255,.5)'}:lightBtn),padding:'12px 16px',borderRadius:12,textAlign:'left',cursor:'pointer'}}>
+              <b style={{fontSize:14}}>{BREATH_PAT[k].name}</b><div style={{fontSize:11.5,opacity:.75}}>{BREATH_PAT[k].sub}</div>
+            </button>
+          ))}
+        </div>
+        <div style={{fontSize:12,opacity:.7,fontWeight:600,marginBottom:8,textAlign:'left'}}>Thời lượng</div>
+        <div style={{display:'flex',gap:10,marginBottom:24}}>
+          {[1,5,10].map(m=>(
+            <button key={m} onClick={()=>setMins(m)} style={{...(mins===m?{background:'#eafaf8',color:'#0c2a2e'}:lightBtn),flex:1,padding:'14px',borderRadius:12,fontFamily:'Baloo 2',fontSize:18,fontWeight:700,cursor:'pointer'}}>{m}<span style={{fontSize:11,fontWeight:500,opacity:.7}}> phút</span></button>
+          ))}
+        </div>
+        <button onClick={()=>{setElapsed(0);setScale(0.45);setPhase('run');}} style={{background:'#eafaf8',color:'#0c2a2e',padding:'14px 30px',borderRadius:30,fontWeight:700,border:0,cursor:'pointer',fontSize:15,width:'100%'}}><i className="ti ti-player-play"></i> Bắt đầu</button>
+        <button onClick={onClose} style={{marginTop:16,background:'none',border:0,color:'rgba(255,255,255,.6)',fontSize:13,cursor:'pointer'}}>← Quay lại</button>
+      </div>
+    </div>
+  );
+
+  if(phase==='done') return (
+    <div style={bg}>
+      <div style={{margin:'auto',textAlign:'center',padding:24}}>
+        <div style={{fontSize:52}}>🌸</div>
+        <h1 style={{fontFamily:'Baloo 2',fontSize:24,margin:'8px 0'}}>Xong rồi, nhẹ hơn chưa?</h1>
+        <p style={{opacity:.75,fontSize:13.5,marginBottom:20}}>Bạn vừa dành {mins} phút cho chính mình. Quay lại làm việc nhẹ nhàng nhé.</p>
+        <button onClick={onClose} style={{background:'#eafaf8',color:'#0c2a2e',padding:'13px 30px',borderRadius:30,fontWeight:700,border:0,cursor:'pointer'}}>Quay lại làm việc</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={bg}>
+      <div style={{display:'flex',alignItems:'center',padding:'16px 20px'}}>
+        <div style={{fontSize:12.5,opacity:.6,fontWeight:600,letterSpacing:'.04em'}}>🌿 NGHỈ & THỞ · {mm}:{ss}</div>
+        <div style={{flex:1}}></div>
+        <button onClick={()=>{onLog(Math.round(elapsed/60));onClose();}} style={{background:'none',border:0,color:'rgba(255,255,255,.55)',fontSize:22,cursor:'pointer',display:'flex'}}><i className="ti ti-x"></i></button>
+      </div>
+      <div style={{margin:'auto',textAlign:'center',padding:'10px 22px 40px',width:'100%'}}>
+        <div style={{position:'relative',width:260,height:260,margin:'0 auto',display:'flex',alignItems:'center',justifyContent:'center'}}>
+          <div style={{position:'absolute',width:260,height:260,borderRadius:'50%',background:'radial-gradient(circle,rgba(110,231,214,.28),rgba(110,231,214,.05))',transform:'scale('+scale+')',transition:'transform '+transDur+'s ease-in-out'}}></div>
+          <div style={{position:'absolute',width:200,height:200,borderRadius:'50%',border:'2px solid rgba(234,250,248,.35)',transform:'scale('+scale+')',transition:'transform '+transDur+'s ease-in-out'}}></div>
+          <div style={{position:'relative',textAlign:'center'}}>
+            <div style={{fontFamily:'Baloo 2',fontSize:30,fontWeight:700}}>{lbl}</div>
+            <div style={{fontSize:40,fontFamily:'Baloo 2',opacity:.85}}>{stepLeft}</div>
+          </div>
+        </div>
+        <div style={{display:'flex',gap:10,justifyContent:'center',marginTop:32}}>
+          <button onClick={()=>setPaused(p=>!p)} style={{background:'#eafaf8',color:'#0c2a2e',padding:'13px 26px',borderRadius:30,fontWeight:700,border:0,cursor:'pointer',display:'flex',alignItems:'center',gap:7}}><i className={'ti '+(paused?'ti-player-play':'ti-player-pause')}></i>{paused?'Tiếp tục':'Tạm dừng'}</button>
+          <button onClick={()=>{onLog(Math.round(elapsed/60));setPhase('done');}} style={{...lightBtn,padding:'13px 20px',borderRadius:30,fontWeight:600,cursor:'pointer'}}>Kết thúc</button>
+        </div>
+        <div style={{marginTop:20,fontSize:12.5,opacity:.55}}>Theo vòng tròn: phình ra khi hít vào, co lại khi thở ra.</div>
+        <div style={{marginTop:22}}><SoundBar/></div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Não khỏe: thói quen + năng lượng + nhắc nhịp ---------- */
+const BRAIN_HABITS=[
+  {id:'sleep',label:'Ngủ đủ 7h+',ic:'😴'},
+  {id:'water',label:'Uống đủ nước',ic:'💧'},
+  {id:'move',label:'Vận động / đi bộ',ic:'🚶'},
+  {id:'sun',label:'Ra nắng buổi sáng',ic:'☀️'},
+  {id:'nocaf',label:'Không caffeine buổi chiều',ic:'☕'},
+  {id:'eat',label:'Ăn đủ chất, không bỏ bữa',ic:'🥗'},
+];
+const ENERGY=[{v:1,e:'😵',l:'Kiệt'},{v:2,e:'😴',l:'Mệt'},{v:3,e:'😐',l:'Bình thường'},{v:4,e:'🙂',l:'Khỏe'},{v:5,e:'🔥',l:'Sung'}];
+function BrainEnergy({log,setLog,cfg,setCfg,onBreath}){
+  const d=today();
+  const day=log[d]||{habits:{},water:0};
+  const setDay=(patch)=>setLog({...log,[d]:{...day,...patch}});
+  const toggleH=(id)=>setDay({habits:{...day.habits,[id]:!day.habits[id]}});
+  const setEnergy=(v)=>setDay({energy:v});
+  const setWater=(n)=>setDay({water:Math.max(0,n)});
+  const hDone=BRAIN_HABITS.filter(h=>day.habits&&day.habits[h.id]).length;
+  // streak: số ngày liên tiếp (tính tới hôm nay/hôm qua) có ≥1 thói quen
+  let streak=0, cur=new Date(d+'T00:00:00');
+  const has=(ds)=>{const x=log[ds];return x&&((x.habits&&Object.values(x.habits).some(Boolean))||x.energy);};
+  if(!has(d)) cur.setDate(cur.getDate()-1);
+  while(has(dstr(cur))){ streak++; cur.setDate(cur.getDate()-1); }
+  // 7 ngày
+  const days7=[]; for(let i=6;i>=0;i--){ const ds=addDays(-i); const x=log[ds]; const c=x&&x.habits?Object.values(x.habits).filter(Boolean).length:0; days7.push({ds,c,lbl:['CN','T2','T3','T4','T5','T6','T7'][new Date(ds+'T00:00:00').getDay()]}); }
+  const en=day.energy;
+  const advice=!en?null : en<=2?{c:'var(--amber)',bg:'var(--amber-lt)',t:'Năng lượng thấp — làm việc nhẹ, chia nhỏ, và thở 5 phút. Để dành việc khó cho lúc khỏe hơn.'}
+    : en===3?{c:'var(--blue)',bg:'var(--blue-lt)',t:'Ổn định — làm việc vừa sức, xen kẽ nghỉ ngắn theo nhịp.'}
+    : {c:'var(--grn)',bg:'var(--grn-lt)',t:'Năng lượng cao — tấn công ngay việc khó nhất / "việc xương nhất" 🐸 khi não đang đỉnh!'};
+  const cares=[['water','💧 Nhắc uống nước (mỗi 60′)'],['stand','🧍 Nhắc đứng dậy vận động (mỗi 50′)'],['eye','👀 Nhắc nghỉ mắt 20-20-20 (mỗi 20′)'],['caffeine','☕ Nhắc cắt caffeine (theo giờ)']];
+  return (
+    <div>
+      {/* Check-in năng lượng */}
+      <div className="panel">
+        <div className="panel-h"><i className="ti ti-bolt lead"></i><b>Năng lượng não hôm nay</b></div>
+        <div className="panel-b" style={{padding:'16px 18px'}}>
+          <div style={{display:'flex',gap:8,justifyContent:'space-between'}}>
+            {ENERGY.map(x=>(
+              <button key={x.v} onClick={()=>setEnergy(x.v)} style={{flex:1,padding:'10px 4px',borderRadius:12,border:'1.5px solid '+(en===x.v?'var(--o)':'var(--border)'),background:en===x.v?'var(--o-lt)':'var(--bg)',cursor:'pointer'}}>
+                <div style={{fontSize:26}}>{x.e}</div><div style={{fontSize:11,fontWeight:600,color:en===x.v?'var(--o-dk)':'var(--muted)',marginTop:2}}>{x.l}</div>
+              </button>
+            ))}
+          </div>
+          {advice && <div style={{marginTop:14,padding:'12px 14px',borderRadius:12,background:advice.bg,color:advice.c,fontSize:13,fontWeight:500,display:'flex',gap:8,alignItems:'center'}}>
+            <i className="ti ti-bulb" style={{fontSize:18}}></i><span style={{flex:1}}>{advice.t}</span>
+            {en<=2 && <button className="btn sm" style={{flexShrink:0}} onClick={onBreath}>Thở 5′</button>}
+          </div>}
+        </div>
+      </div>
+
+      {/* Thói quen não khỏe */}
+      <div className="panel">
+        <div className="panel-h"><i className="ti ti-checklist lead"></i><b>Thói quen não khỏe</b>
+          <div style={{flex:1}}></div>
+          {streak>0 && <span className="streak"><i className="ti ti-flame"></i>{streak} ngày</span>}
+        </div>
+        <div className="panel-b" style={{padding:'12px 18px 16px'}}>
+          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
+            <div className="prog full" style={{flex:1,height:9}}><i style={{width:(hDone/BRAIN_HABITS.length*100)+'%'}}></i></div>
+            <b style={{fontFamily:'Baloo 2',color:'var(--grn)',fontSize:14}}>{hDone}/{BRAIN_HABITS.length}</b>
+          </div>
+          {BRAIN_HABITS.map(h=>{const on=day.habits&&day.habits[h.id];return (
+            <div key={h.id} className={'row'+(on?' done':'')} style={{padding:'9px 0'}} onClick={()=>toggleH(h.id)}>
+              <span className={'chk'+(on?' done':'')}>{on&&<i className="ti ti-check"></i>}</span>
+              <div className="rt" style={{cursor:'pointer'}}><b style={{fontWeight:500}}>{h.ic} {h.label}</b></div>
+            </div>
+          );})}
+          {/* nước hôm nay */}
+          <div style={{display:'flex',alignItems:'center',gap:10,marginTop:12,padding:'10px 12px',background:'var(--bg)',borderRadius:12}}>
+            <span style={{fontSize:18}}>💧</span><b style={{flex:1,fontSize:13}}>Số ly nước hôm nay</b>
+            <button className="btn ghost sm" onClick={()=>setWater((day.water||0)-1)}><i className="ti ti-minus"></i></button>
+            <b style={{fontFamily:'Baloo 2',fontSize:18,minWidth:30,textAlign:'center'}}>{day.water||0}</b>
+            <button className="btn ghost sm" onClick={()=>setWater((day.water||0)+1)}><i className="ti ti-plus"></i></button>
+          </div>
+          {/* 7 ngày */}
+          <div style={{display:'flex',gap:6,marginTop:16}}>
+            {days7.map((x,i)=>(
+              <div key={i} style={{flex:1,textAlign:'center'}}>
+                <div style={{height:30,borderRadius:7,background:x.c===0?'var(--bg)':'var(--grn-lt)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:700,color:x.c?'var(--grn)':'var(--muted2)',border:x.ds===d?'1.5px solid var(--o)':'1px solid var(--border)'}}>{x.c||''}</div>
+                <div style={{fontSize:10,color:'var(--muted)',marginTop:3}}>{x.lbl}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Nhắc nhịp chăm sóc */}
+      <div className="panel">
+        <div className="panel-h"><i className="ti ti-bell lead"></i><b>Nhắc nhịp chăm sóc</b><span style={{marginLeft:'auto',fontSize:11.5,color:'var(--muted2)'}}>khi app đang mở</span></div>
+        <div className="panel-b" style={{padding:'8px 18px 16px'}}>
+          {cares.map(([k,lbl])=>(
+            <div key={k} className="row" style={{padding:'11px 0'}} onClick={()=>setCfg({...cfg,[k]:!cfg[k]})}>
+              <div className="rt"><b style={{fontWeight:500,fontSize:13.5}}>{lbl}</b></div>
+              <div style={{width:44,height:25,borderRadius:13,background:cfg[k]?'var(--grn)':'var(--border2)',position:'relative',transition:'background .15s',flexShrink:0}}>
+                <div style={{position:'absolute',top:2,left:cfg[k]?22:2,width:21,height:21,borderRadius:'50%',background:'#fff',transition:'left .15s',boxShadow:'0 1px 3px rgba(0,0,0,.3)'}}></div>
+              </div>
+            </div>
+          ))}
+          {cfg.caffeine &&
+            <div style={{display:'flex',alignItems:'center',gap:8,marginTop:8,fontSize:13,color:'var(--muted)'}}>
+              Giờ cắt caffeine:
+              <input type="number" min="10" max="20" value={cfg.caffeineHour||14} onChange={e=>setCfg({...cfg,caffeineHour:+e.target.value})} style={{...selSt,width:64,padding:'6px 8px'}}/> giờ
+            </div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Kiến thức kinh doanh ---------- */
+const KNOWLEDGE=[
+ {id:'fin',name:'Dòng tiền & Tài chính',ic:'💵',color:'#16a34a',bg:'#dcfce7',lessons:[
+   {id:'fin1',t:'Dòng tiền ≠ Lợi nhuận',min:2,body:['Lợi nhuận là con số trên sổ; dòng tiền là tiền THẬT trong két.','Bạn có thể lãi nhưng hết tiền mặt vì vốn kẹt trong hàng tồn & công nợ.','Cửa hàng chết vì hết tiền mặt, không phải vì hết lãi.'],a:'Mỗi tuần ghi "tiền mặt còn lại" vào Sổ KD — đừng để tồn kho nuốt hết tiền.'},
+   {id:'fin2',t:'Điểm hòa vốn — con số sống còn',min:2,body:['Là mức doanh thu vừa đủ bù mọi chi phí, chưa lãi chưa lỗ.','Dưới mức này là đang đốt tiền; trên mức này mới có lãi.'],f:'Hòa vốn = Chi phí cố định ÷ Biên lợi nhuận gộp (%)',a:'CP cố định 230tr, biên 13,5% → hòa vốn ≈ 1,7 tỷ/tháng. Suy ra mục tiêu doanh thu/ngày.'},
+   {id:'fin3',t:'Biên gộp & biên ròng',min:2,body:['Biên gộp = (Giá bán − Giá vốn) ÷ Giá bán — đo sức kiếm lời của hàng.','Biên ròng = lãi sau khi trừ HẾT chi phí (lương, mặt bằng, ads…).','Biên gộp cao chưa chắc lãi ròng nếu bán chậm / chi phí lớn.'],a:'Biết biên gộp từng nhóm hàng để đẩy nhóm lãi thật, bớt nhóm "doanh thu ảo".'},
+   {id:'fin4',t:'Vòng quay vốn & quỹ "oxy"',min:2,body:['Tiền phải chạy: nhập → bán → thu → nhập lại. Quay nhanh, 1 đồng vốn đẻ nhiều lãi.','Tồn nằm lâu = tiền chết.','Giữ "quỹ oxy" ≥ 1 tháng chi phí bằng tiền mặt, không đụng vào nhập hàng.'],a:'Năm xấu: ưu tiên quay vòng nhanh hơn là ôm nhiều hàng.'},
+ ]},
+ {id:'price',name:'Định giá & Lợi nhuận',ic:'🏷️',color:'#f97316',bg:'#fff7ed',lessons:[
+   {id:'pr1',t:'Markup vs Margin — đừng nhầm',min:2,body:['Markup = lãi so với GIÁ VỐN. Margin = lãi so với GIÁ BÁN.','Nhầm là tưởng lãi nhiều mà thực ra mỏng.'],f:'Margin = Markup ÷ (1 + Markup). VD markup 50% → margin chỉ 33%.',a:'Khi tính lời, luôn quy về margin trên giá bán để không ảo tưởng.'},
+   {id:'pr2',t:'3 cách định giá',min:2,body:['Theo chi phí: giá vốn + mức lãi (an toàn nhưng dễ bỏ lỡ giá trị).','Theo thị trường: nhìn đối thủ (dễ vào cuộc đua giá).','Theo giá trị: khách sẵn trả bao nhiêu cho lợi ích họ nhận.'],a:'Hàng thiết yếu (bỉm/sữa) bám giá thị trường; hàng tư vấn/combo định theo giá trị để nâng biên.'},
+   {id:'pr3',t:'Hàng dẫn khách vs hàng tạo lãi',min:2,body:['Hàng dẫn khách (bỉm, sữa phổ thông): biên mỏng nhưng kéo khách đến đều.','Hàng tạo lãi (vitamin, phụ kiện, combo): biên cao, cần tư vấn để bán kèm.'],a:'Đừng kỳ vọng lãi ở hàng dẫn khách — kiếm lời ở hàng bán kèm.'},
+   {id:'pr4',t:'Combo & upsell',min:2,body:['Combo giúp khách tiện + tiết kiệm, đồng thời nâng giá trị đơn và biên.','Upsell = gợi loại tốt hơn; cross-sell = gợi món đi kèm.','Combo phải THỰC DỤNG, không nhồi cho to bill.'],a:'"Giỏ đồ đi sinh", combo ăn dặm theo tháng tuổi bé.'},
+ ]},
+ {id:'inv',name:'Quản lý tồn kho',ic:'📦',color:'#7c3aed',bg:'#ede9fe',lessons:[
+   {id:'inv1',t:'Vòng quay tồn kho',min:2,body:['Đo số lần bán hết & nhập lại trong kỳ. Quay nhanh = vốn khỏe.','Hàng >60 ngày là cảnh báo giam vốn.'],f:'Vòng quay = Giá vốn hàng bán ÷ Tồn kho trung bình',a:'Theo dõi mã quay chậm; hàng >60 ngày phải có kế hoạch xả.'},
+   {id:'inv2',t:'Phân loại ABC',min:2,body:['A: ~20% mã tạo ~80% doanh thu — chăm kỹ, không để hết hàng.','B: mức trung bình. C: nhiều mã nhưng đóng góp ít — giữ gọn nhẹ.'],a:'Dồn vốn & chú ý nhóm A; cắt bớt nhóm C nhập theo cảm tính.'},
+   {id:'inv3',t:'Cận date & nguyên tắc FEFO',min:2,body:['FEFO = hàng hết hạn trước thì bán trước (quan trọng với sữa, ăn dặm).','Đặt ngưỡng xả sớm TRƯỚC khi cận date, đừng chờ sát hạn.'],a:'Chia tồn theo tuổi hàng; cận date → đẩy combo/giảm giá có kiểm soát.'},
+ ]},
+ {id:'cus',name:'Khách hàng & Giữ chân',ic:'❤️',color:'#db2777',bg:'#fce7f3',lessons:[
+   {id:'cus1',t:'Giá trị trọn đời khách (CLV)',min:2,body:['Một khách mẹ bỉm mua lại hàng chục lần/năm trong 2–3 năm.','Giá trị thật không nằm ở 1 đơn, mà ở cả vòng đời mua hàng.'],f:'CLV ≈ Giá trị đơn TB × Số lần mua/năm × Số năm gắn bó',a:'Đầu tư chăm khách thân — đó là lợi nhuận bền nhất.'},
+   {id:'cus2',t:'Chi phí có khách (CAC)',min:2,body:['CAC = tổng chi marketing ÷ số khách mới có được.','Nếu CAC > lãi từ khách đó → đang mua khách lỗ.'],a:'So CAC với CLV; mẹ&bé CLV cao nên đầu tư có khách rồi GIỮ là đáng.'},
+   {id:'cus3',t:'Phân nhóm khách RFM',min:2,body:['R (mua gần đây), F (tần suất), M (giá trị) — chấm khách theo 3 chiều.','Khách mua gần đây + thường xuyên + chi nhiều = nhóm vàng.'],a:'Trên Zalo, gắn nhãn nhóm để nhắc mua lại & ưu đãi đúng người.'},
+   {id:'cus4',t:'Giữ khách rẻ hơn tìm khách mới',min:2,body:['Có khách mới tốn gấp nhiều lần giữ khách cũ.','Tăng nhẹ tỷ lệ giữ chân có thể tăng lợi nhuận đáng kể.'],a:'Nhắc mua lại đúng chu kỳ, chăm theo tuổi bé thay vì chỉ chạy ads.'},
+ ]},
+ {id:'mkt',name:'Marketing thực dụng',ic:'📣',color:'#2563eb',bg:'#dbeafe',lessons:[
+   {id:'mkt1',t:'Phễu khách hàng',min:2,body:['Biết → Thích → Tin → Mua → Quay lại. Mỗi tầng rơi rớt bớt.','Đừng chỉ lo "có đơn", phải lấy thông tin (Zalo) để chăm tiếp.'],a:'Nội dung kiến thức xây "Tin"; Zalo OA lo "Quay lại".'},
+   {id:'mkt2',t:'ROAS — quảng cáo có lời không',min:2,body:['ROAS đo doanh thu thu về trên mỗi đồng quảng cáo.','ROAS phải đủ cao để bù biên mỏng + chi phí khác, nếu không vẫn lỗ.'],f:'ROAS = Doanh thu từ ads ÷ Chi phí ads',a:'Mỗi chiến dịch ghi chi/đơn/lãi & khách có quay lại không — đừng chạy "hy vọng".'},
+   {id:'mkt3',t:'Thương hiệu nhỏ thắng ở đâu',min:2,body:['Không đua giá với chuỗi lớn.','Thắng bằng: tư vấn thật, nhớ khách, giao nhanh khu vực, niềm tin.'],a:'Với mẹ&bé, NIỀM TIN & tư vấn đúng quan trọng hơn rẻ vài nghìn.'},
+ ]},
+ {id:'mind',name:'Tư duy chủ shop',ic:'🧭',color:'#0891b2',bg:'#cffafe',lessons:[
+   {id:'mind1',t:'Quản trị bằng số, không bằng cảm giác',min:2,body:['"Cái gì đo được mới quản được."','Quyết định bằng dữ liệu thật, không bằng cảm giác.'],a:'Dùng Sổ KD & Thống kê hằng tuần thay vì đoán.'},
+   {id:'mind2',t:'Gấp vs Quan trọng (ma trận Eisenhower)',min:2,body:['Quan trọng + gấp: làm ngay.','Quan trọng + không gấp: LÊN LỊCH (quyết định tương lai, dễ bị bỏ quên).','Gấp + không quan trọng: giao bớt. Không gì cả: bỏ.'],a:'Việc "xây hệ thống, chăm khách thân" là quan trọng-không-gấp — đừng để việc vặt nuốt hết.'},
+   {id:'mind3',t:'Quản trị rủi ro & năm xấu',min:2,body:['Chuẩn bị kịch bản TRƯỚC khi xấu xảy ra (DT giảm 10/20/30%).','Năm tốt doanh thu cứu bạn; năm xấu DÒNG TIỀN cứu bạn.'],a:'Giữ quỹ oxy, giảm tồn chậm, giữ khách thân — đã có trong kế hoạch phòng thủ.'},
+ ]},
+ {id:'law',name:'Thuế & Pháp lý hộ KD',ic:'🧾',color:'#0d9488',bg:'#ccfbf1',tag:'CẬP NHẬT 2026',lessons:[
+   {id:'law1',t:'Thuế khoán vs kê khai — đang đổi từ 2026',min:3,body:['Trước đây hộ KD nộp THUẾ KHOÁN (mức cố định ấn định).','Lộ trình 2026: bỏ dần thuế khoán, hộ doanh thu lớn chuyển sang KÊ KHAI theo doanh thu thực + sổ sách.','Thuế GTGT+TNCN ngành bán lẻ hàng hóa khoảng 1,5% doanh thu.'],a:'Dữ liệu bán hàng sạch (1 phần mềm) giúp kê khai dễ. Nên có kế toán/đại lý thuế tư vấn theo quy định mới nhất.'},
+   {id:'law2',t:'Hóa đơn điện tử từ máy tính tiền',min:2,body:['Hộ KD doanh thu lớn phải dùng HÓA ĐƠN ĐIỆN TỬ khởi tạo từ máy tính tiền, kết nối cơ quan thuế.','Phần mềm bán hàng (KiotViet/Sapo…) thường tích hợp sẵn HĐĐT.'],a:'Chọn phần mềm có HĐĐT để vừa quản lý vừa đúng luật, đỡ làm tay.'},
+   {id:'law3',t:'ATTP & nhãn mác hàng mẹ&bé',min:3,body:['Sữa, thực phẩm ăn dặm, TPCN cần công bố/đủ điều kiện ATTP.','Hàng nhập khẩu phải có TEM NHÃN PHỤ tiếng Việt, nguồn gốc, hạn dùng rõ ràng.','Giữ hóa đơn/chứng từ nhập để chứng minh hàng chính hãng.'],a:'Tránh nhập hàng trôi nổi không giấy tờ — rủi ro phạt & mất niềm tin khách.'},
+   {id:'law4',t:'Chính sách đổi trả & quyền lợi khách',min:2,body:['Chính sách đổi trả rõ ràng, công khai làm khách yên tâm mua.','Bán đúng hàng chính hãng, tư vấn trung thực, không nhập nhèm thông tin.'],a:'Niềm tin là lợi thế cạnh tranh lớn nhất của shop mẹ&bé.'},
+ ]},
+ {id:'hr',name:'Nhân sự & Đội nhóm',ic:'👥',color:'#ea580c',bg:'#ffedd5',lessons:[
+   {id:'hr1',t:'Tuyển đúng người',min:2,body:['Với cửa hàng nhỏ: THÁI ĐỘ & sự tin cậy quan trọng hơn kỹ năng (kỹ năng dạy được).','Thử việc rõ ràng: kỳ vọng, tiêu chí đánh giá cụ thể.'],a:'Tuyển người chịu học chốt Zalo, chăm khách, kiểm kho — không chỉ đứng bán.'},
+   {id:'hr2',t:'Đào tạo bằng SOP & đa năng',min:2,body:['Có quy trình chuẩn (SOP) thì người mới vào việc nhanh, ít sai.','1 nhân viên đa năng = bán + chốt Zalo + kiểm kho + gợi ý combo.'],a:'Dùng Sổ tay → mục Quy trình làm tài liệu đào tạo cho nhân viên mới.'},
+   {id:'hr3',t:'Lương + thưởng theo kết quả',min:2,body:['Lương cứng giữ thấp hợp lý; thưởng gắn với doanh số, đơn chốt, khách quay lại.','Thưởng đúng việc tạo ra tiền → nhân viên chủ động hơn.'],a:'VD thưởng theo số đơn chốt qua Zalo / combo bán thêm.'},
+   {id:'hr4',t:'Giữ người giỏi',min:2,body:['Người giỏi rời đi vì môi trường & sự ghi nhận, không chỉ vì lương.','Ghi nhận công khai, lộ trình rõ, đối xử công bằng.'],a:'Giữ được 1 nhân viên cứng = đỡ tốn tuyển + đào tạo lại nhiều lần.'},
+ ]},
+ {id:'omni',name:'Bán hàng đa kênh',ic:'🛒',color:'#9333ea',bg:'#f3e8ff',lessons:[
+   {id:'omni1',t:'Mỗi kênh một vai trò',min:2,body:['TikTok/Facebook: khám phá, kéo khách mới.','Shopee/TikTok Shop: chốt đơn, tiếp cận người săn hàng.','Zalo OA + cửa hàng: giữ chân, bán lại, tư vấn sâu.'],a:'Đừng dồn mọi kỳ vọng vào 1 kênh — phối hợp theo đúng vai trò.'},
+   {id:'omni2',t:'Đồng bộ tồn kho & đơn về 1 nơi',min:2,body:['Bán nhiều kênh dễ bán trùng / hết hàng mà không biết.','Một phần mềm hợp nhất tồn + đơn từ mọi kênh → số liệu sạch.'],a:'Đây cũng là điều kiện để AI & báo cáo hoạt động chính xác.'},
+   {id:'omni3',t:'Trải nghiệm nhất quán',min:2,body:['Giá, thông tin, chăm sóc nên đồng nhất giữa các kênh.','Khách thấy lệch giá/thông tin sẽ mất tin tưởng.'],a:'Thống nhất bảng giá & kịch bản tư vấn dùng chung mọi kênh.'},
+ ]},
+ {id:'ai',name:'AI cho Hương Diện',ic:'🤖',color:'#4f46e5',bg:'#e0e7ff',tag:'CẬP NHẬT 6/2026',lessons:[
+   {id:'ai1',t:'Bộ công cụ AI nền tảng',min:3,body:['Nội dung & phân tích: ChatGPT / Claude (viết bài, caption, phân tích doanh thu).','Ảnh: Google Gemini (Nano Banana), Canva Magic Studio (banner, tách nền).','Video & giọng: CapCut + Heygen (avatar ảo) + ElevenLabs/Vbee (giọng Việt).'],a:'1 tài khoản ChatGPT/Claude + Canva lo ~80% nội dung, chi phí gần 0.'},
+   {id:'ai2',t:'AI Agent bán hàng (xu hướng 2026)',min:3,body:['Khác chatbot cũ: "nhân viên AI" tự tư vấn theo tháng tuổi bé, gửi catalog, hướng dẫn thanh toán, gửi ZNS.','Ví dụ BanHang.AI gắn vào Zalo OA — trả lời tức thì 24/7.','70–80% câu hỏi mẹ bỉm lặp lại (size, giá, còn hàng) → để AI lọc trước.'],a:'Để AI chốt đơn cơ bản & lọc câu hỏi; người chỉ xử lý ca khó. Tiết kiệm nhân sự nhất.'},
+   {id:'ai3',t:'AI Smart Listing & ảnh sản phẩm',min:2,body:['Sàn (Shopee/Lazada/TikTok Shop) có AI tự tối ưu tiêu đề chuẩn SEO, mô tả, đổi nền/tạo ảnh.','Đăng sản phẩm nhanh, ảnh đẹp mà không cần studio.'],a:'Tận dụng AI của sàn để lên hàng nhanh & dễ được tìm thấy.'},
+   {id:'ai4',t:'Tìm kiếm bằng giọng nói & hình ảnh',min:2,body:['Khách ngày càng tìm sản phẩm bằng ảnh chụp / giọng nói.','AI sàn "đọc" tên + mô tả + ảnh để gợi ý hàng của bạn.'],a:'Đặt tên rõ ràng, mô tả đủ từ khoá, ảnh sạch để AI hiểu & đẩy hàng mình.'},
+   {id:'ai5',t:'AI phân tích & dự báo nhập hàng',min:2,body:['Metric.vn: xem ngành hàng mẹ&bé bán chạy trên Shopee/TikTok Shop.','Công cụ analytics AI dự báo nhu cầu theo mùa, gợi ý giá & lượng nhập.'],a:'Nhập đúng hàng đúng mùa, đúng nhóm tháng tuổi bé — bớt tồn, bớt hết hàng.'},
+   {id:'ai6',t:'Marketing & nhắc mua lại tự động',min:2,body:['Meta Advantage+ / TikTok Smart+: AI tự tối ưu ads, tìm tệp giống khách đã mua.','Zalo ZNS + CRM: tự nhắc mua lại đúng chu kỳ (bỉm/sữa hết sau 3–4 tuần).'],a:'"Mỏ vàng" giữ chân: tự động nhắc đổi size & mua lại — doanh thu lặp lại bền.'},
+   {id:'ai8',t:'AI tạo VIDEO sản phẩm từ chữ (2026)',min:3,body:['Google Veo 3.1: video 4K tự kèm tiếng/âm thanh. Kling 3.0: video tới ~2 phút, giá rẻ.','InVideo AI: "studio tự động" — từ 1 prompt ra cả kịch bản, cảnh, lồng tiếng, phụ đề.','HeyGen: avatar ảo + dịch & lip-sync 175 ngôn ngữ (làm video không lộ mặt).','Lưu ý: OpenAI đang đóng Sora — chuyển dùng Veo/Kling/InVideo.'],a:'Làm video quảng cáo/giới thiệu sản phẩm không cần quay, không lộ mặt, không thuê KOL.'},
+   {id:'ai9',t:'AI Agent điều phối & tự động hóa quy trình',min:3,body:['Khác trợ lý hỏi-đáp: AI agent tự CHẠY chuỗi việc nhiều bước (Manus…).','n8n / Make + AI: nối Zalo → bảng tính → nhắc tự động mà không thao tác tay.'],a:'Tự động hóa luồng: đơn mới → ghi sổ → hẹn nhắc mua lại, đỡ tốn người.'},
+   {id:'ai10',t:'AI nghiên cứu sâu (deep research)',min:2,body:['Chế độ research của Claude/ChatGPT tự khảo sát nhiều nguồn, có trích dẫn.','Khảo sát NCC, đối thủ, xu hướng sản phẩm, mặt bằng giá.'],a:'Trước khi nhập dòng hàng mới, cho AI nghiên cứu thị trường + giá để quyết cho chắc.'},
+   {id:'ai11',t:'Cá nhân hóa & gợi ý sản phẩm',min:2,body:['AI gợi ý sản phẩm theo lịch sử mua & tháng tuổi bé của từng khách.','Gợi ý đúng nhu cầu → tăng tỷ lệ mua & giá trị mỗi đơn.'],a:'Trên Zalo/web: gợi combo theo giai đoạn của bé thay vì gửi đại trà.'},
+   {id:'ai7',t:'Lưu ý khi dùng AI',min:2,body:['AI chỉ tốt khi DỮ LIỆU SẠCH & TẬP TRUNG → gom đơn vào 1 phần mềm trước.','Luôn kiểm chứng nội dung AI, nhất là thông tin sản phẩm mẹ&bé nhạy cảm.','AI thay đổi rất nhanh — định kỳ cập nhật công cụ mới.'],a:'Đừng để AI tự đăng thông tin y tế/giá chưa kiểm. Người vẫn là người quyết định cuối.'},
+ ]},
+];
+function Knowledge({learned,setLearned}){
+  const all=KNOWLEDGE.flatMap(t=>t.lessons);
+  const doneN=all.filter(l=>learned[l.id]).length;
+  const next=all.find(l=>!learned[l.id]);
+  const nextTopic=next?KNOWLEDGE.find(t=>t.lessons.some(l=>l.id===next.id)):null;
+  const [openT,setOpenT]=useState(next?nextTopic.id:KNOWLEDGE[0].id);
+  const [openL,setOpenL]=useState(next?next.id:null);
+  const mark=(id)=>setLearned({...learned,[id]:!learned[id]});
+  const goLesson=(tid,lid)=>{ setOpenT(tid); setOpenL(lid); };
+  const Lesson=(l)=>(
+    <div key={l.id} style={{borderTop:'1px solid var(--border)'}}>
+      <div className="row" style={{padding:'11px 4px',cursor:'pointer'}} onClick={()=>setOpenL(openL===l.id?null:l.id)}>
+        <span className={'chk'+(learned[l.id]?' done':'')} onClick={e=>{e.stopPropagation();mark(l.id);}}>{learned[l.id]&&<i className="ti ti-check"></i>}</span>
+        <div className="rt"><b style={{fontWeight:600,fontSize:13.5,textDecoration:learned[l.id]?'line-through':'none',color:learned[l.id]?'var(--muted)':'var(--ink)'}}>{l.t}</b><small>{l.min} phút đọc</small></div>
+        <i className={'ti '+(openL===l.id?'ti-chevron-up':'ti-chevron-down')} style={{color:'var(--muted2)'}}></i>
+      </div>
+      {openL===l.id &&
+        <div style={{padding:'4px 6px 16px',animation:'fade .2s'}}>
+          <ul style={{margin:'0 0 0 4px',paddingLeft:18,fontSize:13.5,lineHeight:1.7,color:'var(--ink)'}}>
+            {l.body.map((b,i)=><li key={i} style={{marginBottom:4}}>{b}</li>)}
+          </ul>
+          {l.f && <div style={{margin:'12px 0',padding:'10px 13px',background:'var(--bg)',borderLeft:'3px solid var(--o)',borderRadius:8,fontSize:13,fontWeight:600}}>📐 {l.f}</div>}
+          <div style={{marginTop:12,padding:'11px 13px',background:'var(--o-lt)',borderRadius:10,fontSize:13,color:'var(--o-dk)',lineHeight:1.55}}><b>Áp dụng cho Hương Diện:</b> {l.a}</div>
+          <button className={'btn'+(learned[l.id]?' ghost':'')+' sm'} style={{marginTop:12}} onClick={()=>mark(l.id)}><i className={'ti '+(learned[l.id]?'ti-rotate':'ti-check')}></i>{learned[l.id]?'Bỏ đánh dấu':'Đánh dấu đã học'}</button>
+        </div>}
+    </div>
+  );
+  return (
+    <div>
+      {/* tiến độ */}
+      <div className="panel">
+        <div className="panel-b" style={{padding:'16px 18px',display:'flex',alignItems:'center',gap:14}}>
+          <Ring pct={all.length?Math.round(doneN/all.length*100):0} size={50} color="#4f46e5"/>
+          <div style={{flex:1}}>
+            <b style={{fontFamily:'Baloo 2',fontSize:16}}>Đã học {doneN}/{all.length} bài</b>
+            <div style={{fontSize:12.5,color:'var(--muted)'}}>{KNOWLEDGE.length} chủ đề cốt lõi cho chủ shop</div>
+          </div>
+        </div>
+      </div>
+
+      {/* gợi ý bài tiếp theo */}
+      {next &&
+        <div onClick={()=>goLesson(nextTopic.id,next.id)} style={{display:'flex',alignItems:'center',gap:13,background:'linear-gradient(135deg,#312e81,#4f46e5)',borderRadius:16,padding:'15px 18px',marginBottom:18,color:'#fff',cursor:'pointer',boxShadow:'var(--sh)'}}>
+          <div style={{fontSize:28}}>{nextTopic.ic}</div>
+          <div style={{flex:1,minWidth:0}}><div style={{fontSize:11.5,opacity:.85,fontWeight:600}}>HỌC TIẾP</div><b style={{fontFamily:'Baloo 2',fontSize:15.5}}>{next.t}</b><div style={{fontSize:12,opacity:.8}}>{nextTopic.name} · {next.min} phút</div></div>
+          <span className="btn sm" style={{background:'rgba(255,255,255,.2)',pointerEvents:'none'}}>Học ngay</span>
+        </div>}
+
+      {/* chủ đề */}
+      {KNOWLEDGE.map(tp=>{
+        const dn=tp.lessons.filter(l=>learned[l.id]).length;
+        const open=openT===tp.id;
+        return (
+          <div className="panel" key={tp.id} style={{marginBottom:12}}>
+            <div className="panel-h" style={{cursor:'pointer'}} onClick={()=>setOpenT(open?null:tp.id)}>
+              <div style={{width:34,height:34,borderRadius:10,background:tp.bg,color:tp.color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:18}}>{tp.ic}</div>
+              <div style={{flex:1}}>
+                <b style={{fontSize:14.5,fontFamily:'Baloo 2'}}>{tp.name} {tp.tag&&<span className="tag" style={{background:'var(--blue-lt)',color:'var(--blue)',marginLeft:4,verticalAlign:'middle'}}>✨ {tp.tag}</span>}</b>
+                <div style={{fontSize:12,color:'var(--muted)'}}>{dn}/{tp.lessons.length} bài đã học</div>
+              </div>
+              <i className={'ti '+(open?'ti-chevron-up':'ti-chevron-down')} style={{color:'var(--muted2)',fontSize:20}}></i>
+            </div>
+            {open && <div className="panel-b" style={{padding:'2px 16px 8px'}}>{tp.lessons.map(Lesson)}</div>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ---------- Task Modal ---------- */
+function TaskModal({task,onSave,onDel,onClose}){
+  const [f,setF]=useState({...task,checklist:task.checklist?[...task.checklist]:[]});
+  const set=(k,v)=>setF(p=>({...p,[k]:v}));
+  const addCk=()=>set('checklist',[...f.checklist,{t:'',done:false}]);
+  const setCk=(i,v)=>set('checklist',f.checklist.map((c,j)=>j===i?{...c,t:v}:c));
+  const delCk=(i)=>set('checklist',f.checklist.filter((_,j)=>j!==i));
+  const submit=()=>{
+    if(!f.title.trim())return;
+    const cl=f.checklist.filter(c=>c.t.trim());
+    let prog=f.progress, status=f.status;
+    if(status==='done')prog=100;
+    delete f._new;
+    onSave({...f,title:f.title.trim(),checklist:cl,progress:prog,status,doneAt:status==='done'?(task.doneAt||today()):undefined});
+  };
+  return (
+    <div className="ov" onClick={onClose}>
+      <div className="modal" onClick={e=>e.stopPropagation()}>
+        <div className="modal-h">
+          <b>{task._new?'Thêm công việc':'Sửa công việc'}</b>
+          <button className="x" onClick={onClose}><i className="ti ti-x"></i></button>
+        </div>
+        <div className="modal-b">
+          <div className="fld">
+            <label>Tên công việc</label>
+            <input autoFocus placeholder="VD: Nhập 5 thùng bỉm Bobby…" value={f.title} onChange={e=>set('title',e.target.value)}/>
+          </div>
+          <button onClick={()=>set('frog',!f.frog)} style={{display:'flex',alignItems:'center',gap:9,width:'100%',padding:'11px 13px',borderRadius:11,marginBottom:15,border:'1.5px solid '+(f.frog?'var(--grn)':'var(--border)'),background:f.frog?'var(--grn-lt)':'var(--bg)',color:f.frog?'var(--grn)':'var(--muted)',fontWeight:600,fontSize:13,cursor:'pointer',textAlign:'left'}}>
+            <span style={{fontSize:20}}>🐸</span><span style={{flex:1}}>Việc xương nhất hôm nay {f.frog?'— đã chọn':''}</span>
+            <i className={'ti '+(f.frog?'ti-checkbox':'ti-square')} style={{fontSize:20}}></i>
+          </button>
+          <div className="fld">
+            <label>Thuộc mảng</label>
+            <div className="chips">
+              {PROJECTS.map(p=>(
+                <button key={p.id} className={'chip'+(f.proj===p.id?' on':'')} onClick={()=>set('proj',p.id)}>{p.icon} {p.name}</button>
+              ))}
+            </div>
+          </div>
+          <div className="frow">
+            <div className="fld">
+              <label>Mức ưu tiên</label>
+              <div className="chips">
+                {Object.keys(PRI).map(k=>(
+                  <button key={k} className={'chip prichip '+k+(f.pri===k?' on':'')} onClick={()=>set('pri',k)}>{PRI[k]}</button>
+                ))}
+              </div>
+            </div>
+            <div className="fld">
+              <label>Hạn chót</label>
+              <input type="date" value={f.due||''} onChange={e=>set('due',e.target.value)}/>
+            </div>
+          </div>
+          <div className="fld">
+            <label>Trạng thái</label>
+            <div className="chips">
+              {Object.keys(STATUS).map(k=>(
+                <button key={k} className={'chip'+(f.status===k?' on':'')} onClick={()=>set('status',k)}>{STATUS[k].name}</button>
+              ))}
+            </div>
+          </div>
+          <div className="fld">
+            <label>Thời lượng ước tính (giờ) — để trống sẽ tự tính</label>
+            <input type="number" min="0.5" step="0.5" placeholder={'Tự tính ~'+estOf(f)+'h'} value={f.est||''} onChange={e=>set('est',e.target.value?+e.target.value:undefined)}/>
+          </div>
+          {f.status!=='done' &&
+          <div className="fld">
+            <label>Tiến độ</label>
+            <div className="rng">
+              <input type="range" min="0" max="100" step="5" value={f.progress} onChange={e=>set('progress',+e.target.value)}/>
+              <b>{f.progress}%</b>
+            </div>
+          </div>}
+          <div className="fld">
+            <label>Ghi chú</label>
+            <textarea placeholder="Chi tiết, ghi chú thêm…" value={f.note||''} onChange={e=>set('note',e.target.value)}></textarea>
+          </div>
+          <div className="fld">
+            <label>Việc nhỏ (checklist)</label>
+            {f.checklist.map((c,i)=>(
+              <div className="ckedit" key={i}>
+                <input placeholder={'Bước '+(i+1)} value={c.t} onChange={e=>setCk(i,e.target.value)}/>
+                <button onClick={()=>delCk(i)}><i className="ti ti-trash"></i></button>
+              </div>
+            ))}
+            <button className="btn ghost sm" onClick={addCk}><i className="ti ti-plus"></i>Thêm bước</button>
+          </div>
+          {!task._new &&
+            <button className="del" onClick={()=>onDel(f.id)}><i className="ti ti-trash"></i>Xoá công việc này</button>}
+        </div>
+        <div className="modal-f">
+          <button className="btn ghost" style={{flex:'0 0 auto',padding:'12px 18px'}} onClick={onClose}>Huỷ</button>
+          <button className="btn" onClick={submit}><i className="ti ti-check"></i>Lưu công việc</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
