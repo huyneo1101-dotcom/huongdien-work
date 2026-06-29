@@ -238,10 +238,30 @@ const {useState,useEffect,useMemo,useRef} = React;
 
 /* ---------- storage ---------- */
 const mem={};
+let _syncHook=null;
 const store={
   get(k,d){ try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return k in mem?mem[k]:d;} },
-  set(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch(e){mem[k]=v;} }
+  set(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch(e){mem[k]=v;} if(_syncHook&&k.indexOf('hdw.')===0&&k!=='hdw.synccode'&&k!=='hdw.synclast')_syncHook(k); }
 };
+
+/* ---------- Đồng bộ đám mây (Supabase, dùng "mã đồng bộ") ---------- */
+const SB_URL='https://ltmlueqkajqmduoqghdf.supabase.co';
+const SB_KEY='sb_publishable_74Lm6cc0CkoOOzy3A4IRrQ_BX0jHQcg';
+const Sync={
+  _timer:null,_status:null,_onStatus:null,
+  code(){ try{return localStorage.getItem('hdw.synccode')||null;}catch(e){return null;} },
+  enabled(){ return !!Sync.code(); },
+  setStatus(s){ Sync._status=s; if(Sync._onStatus)Sync._onStatus(s); },
+  blob(){ const o={}; for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i); if(k&&k.indexOf('hdw.')===0&&k!=='hdw.synccode'&&k!=='hdw.synclast')o[k]=localStorage.getItem(k);} return o; },
+  async call(action,extra){
+    const r=await fetch(SB_URL+'/functions/v1/hdw-sync',{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY},body:JSON.stringify({action,code:Sync.code(),...extra})});
+    return r.json();
+  },
+  async push(){ if(!Sync.enabled())return; Sync.setStatus('pushing'); try{ const res=await Sync.call('push',{data:Sync.blob()}); if(res&&res.ok){ localStorage.setItem('hdw.synclast',res.updated_at); Sync.setStatus('synced'); } else Sync.setStatus('error'); }catch(e){ Sync.setStatus('error'); } },
+  schedule(){ if(!Sync.enabled())return; clearTimeout(Sync._timer); Sync.setStatus('pending'); Sync._timer=setTimeout(()=>Sync.push(),2000); },
+  async pull(){ Sync.setStatus('pulling'); try{ const res=await Sync.call('pull',{}); if(res&&res.data){ let changed=false; Object.keys(res.data).forEach(k=>{ if(k.indexOf('hdw.')!==0)return; const nv=typeof res.data[k]==='string'?res.data[k]:JSON.stringify(res.data[k]); if(localStorage.getItem(k)!==nv){localStorage.setItem(k,nv);changed=true;} }); if(res.updated_at)localStorage.setItem('hdw.synclast',res.updated_at); Sync.setStatus('synced'); return {ok:true,changed}; } Sync.setStatus('synced'); return {ok:true,empty:true}; }catch(e){ Sync.setStatus('error'); return {error:String(e)}; } },
+};
+_syncHook=()=>Sync.schedule();
 
 /* ---------- mảng công việc ---------- */
 const PROJECTS=[
@@ -427,6 +447,8 @@ function seed(){
    App tự gộp các task này vào hdw.tasks ĐÚNG MỘT LẦN (ghi nhớ qua hdw.inboxSeen),
    nên người dùng xoá/sửa task đã gộp sẽ KHÔNG bị bơm lại. */
 const INBOX_TASKS=[
+  {id:'hd-2026-06-29-1',title:'Thay ảnh "mượn" của đối thủ bằng ảnh tự chụp',proj:'content',pri:'high',due:'',note:'Phỏng đoán từ chat Hương Diện 29/06: khi xử lý ảnh sản phẩm phát hiện vài ảnh đang dùng ảnh quảng cáo của đối thủ (anbebe.vn) còn watermark/badge shop khác — rủi ro thương hiệu & pháp lý, cần thay gấp.',checklist:[{t:'Lọc ra các sản phẩm còn dùng ảnh đối thủ (có watermark/badge)',done:false},{t:'Tự chụp lại ảnh nền trắng cho các sản phẩm đó',done:false},{t:'Cập nhật ảnh mới lên web',done:false}],src:'hd-chat'},
+  {id:'hd-2026-06-29-2',title:'Chụp & bổ sung ảnh thật cho ~30 sản phẩm chưa có ảnh',proj:'content',pri:'med',due:'',note:'Phỏng đoán từ chat Hương Diện 29/06: rà ảnh web thấy 29 sản phẩm còn để placeholder "ảnh đang cập nhật" + 1 ảnh tải lỗi (mã 118). Cần chụp ảnh thật nền trắng để trang bán hàng đầy đủ, chuyên nghiệp.',checklist:[{t:'Lập danh sách 30 sản phẩm còn thiếu ảnh',done:false},{t:'Chụp ảnh nền trắng cho từng sản phẩm',done:false},{t:'Cập nhật ảnh lên web, bỏ placeholder',done:false}],src:'hd-chat'},
   /* __INBOX_INSERT__ (tác vụ theo lịch chèn task mới phía trên dòng này) */
 ];
 function mergeInbox(existing){
@@ -666,6 +688,8 @@ function App(){
   useEffect(()=>{ const add=genRecurring(recurring,tasks); if(add.length) setTasks(prev=>[...prev,...add]); },[recurring]);
   // toast tự ẩn
   useEffect(()=>{ if(!toast) return; const id=setTimeout(()=>setToast(null),2600); return ()=>clearTimeout(id); },[toast]);
+  // đồng bộ: kéo dữ liệu mới nhất từ cloud khi mở app
+  useEffect(()=>{ if(Sync.enabled()) Sync.pull().then(r=>{ if(r&&r.changed) location.reload(); }); },[]);
   useEffect(()=>{ document.body.classList.toggle('dark',dark); store.set('hdw.dark',dark?1:0); },[dark]);
 
   // reset checklist hằng ngày khi sang ngày mới
@@ -811,6 +835,7 @@ function App(){
     {id:'cal',name:'Lịch · Hạn',icon:'ti-calendar-due',badge:overdueCount},
     {id:'stats',name:'Thống kê',icon:'ti-chart-histogram'},
     {id:'kd',name:'Sổ KD',icon:'ti-report-money'},
+    {id:'sales',name:'Bán hàng',icon:'ti-shopping-cart'},
     {id:'learn',name:'Kiến thức',icon:'ti-school'},
     {id:'book',name:'Sổ tay',icon:'ti-book'},
     {id:'daily',name:'Việc lặp lại',icon:'ti-checkup-list'},
@@ -824,6 +849,7 @@ function App(){
     cal:{t:'Lịch · Hạn chót',s:'Sắp xếp theo ngày đến hạn'},
     stats:{t:'Thống kê hiệu suất',s:'Tổng kết tuần, năng suất, đúng hạn và phân bổ'},
     kd:{t:'Sổ kinh doanh',s:'Bảng điều khiển 10 số mỗi tuần — buồng lái cửa hàng'},
+    sales:{t:'Bán hàng (KiotViet)',s:'Doanh thu, đơn hàng, sản phẩm bán chạy & tồn kho — đồng bộ tự động từ KiotViet'},
     learn:{t:'Kiến thức kinh doanh',s:'Bài học ngắn về tài chính, định giá, khách hàng… cho chủ shop'},
     book:{t:'Sổ tay vận hành',s:'Quy trình, prompt AI, nhà cung cấp & sao lưu dữ liệu'},
     daily:{t:'Việc lặp lại',s:'Thói quen mỗi ngày + việc tự sinh theo tuần/tháng'},
@@ -893,6 +919,7 @@ function App(){
           {view==='cal' && <Calendar tasks={filtered} move={moveTask} edit={setEditing}/>}
           {view==='stats' && <Stats tasks={tasks}/>}
           {view==='kd' && <BizBook metrics={bizmetrics} setMetrics={setBizmetrics} config={bizconfig} setConfig={setBizconfig}/>}
+          {view==='sales' && <Sales/>}
           {view==='learn' && <Knowledge learned={learned} setLearned={setLearned}/>}
           {view==='book' && <Notebook nb={notebook} setNb={setNotebook} onExport={exportData} onImport={importData}/>}
           {view==='daily' && <Daily daily={daily} setDaily={setDaily} st={dailyState} toggle={toggleDaily} recurring={recurring} setRecurring={setRecurring}/>}
@@ -1705,6 +1732,198 @@ const BIZF=[
   {k:'debt',l:'Công nợ NCC'},{k:'stock',l:'Tồn kho'},{k:'stockOld',l:'Tồn >60 ngày'},
   {k:'returns',l:'Khách quay lại',unit:'người'},{k:'adsCost',l:'Chi phí Ads'},{k:'adsRev',l:'DT từ Ads'},
 ];
+// ===== Bán hàng (KiotViet qua Supabase) =====
+const SUPA_URL='https://ltmlueqkajqmduoqghdf.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0bWx1ZXFrYWpxbWR1b3FnaGRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NTA2NjcsImV4cCI6MjA5NzQyNjY2N30.rvwZsQiaD8a7fFLwBFk5sgSe6o9t9NqbPfVh1hJvxa0';
+const supaGet=(path)=>fetch(`${SUPA_URL}/rest/v1/${path}`,{headers:{apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY}}).then(r=>r.ok?r.json():r.text().then(t=>{throw new Error(t);}));
+const vnd=(n)=>(Math.round(+n||0)).toLocaleString('vi-VN');
+const mio=(n)=>((+n||0)/1e6);
+
+function Sales(){
+  const [rev,setRev]=useState([]);       // kv_daily_revenue
+  const [inv,setInv]=useState([]);       // recent invoices
+  const [top,setTop]=useState([]);       // top products
+  const [stock,setStock]=useState([]);   // low inventory
+  const [log,setLog]=useState(null);     // last sync log
+  const [loading,setLoading]=useState(true);
+  const [err,setErr]=useState('');
+  const [syncing,setSyncing]=useState(false);
+  const [msg,setMsg]=useState('');
+
+  const load=async()=>{
+    setLoading(true); setErr('');
+    try{
+      const [r,iv,tp,pr,st,lg]=await Promise.all([
+        supaGet('kv_daily_revenue?select=day,invoices,revenue&order=day.desc&limit=60'),
+        supaGet('kv_invoices?select=code,purchase_date,customer_name,total_payment,status_value,branch_name&order=purchase_date.desc&limit=20'),
+        supaGet('kv_top_products?select=product_name,qty,revenue&order=qty.desc&limit=12'),
+        supaGet('kv_products?select=id,name'),
+        supaGet('kv_inventory?select=product_id,branch_name,on_hand&order=on_hand.asc&limit=400'),
+        supaGet('kv_sync_log?select=ok,detail,ran_at,counts&order=ran_at.desc&limit=1'),
+      ]);
+      const pmap={}; pr.forEach(p=>pmap[p.id]=p.name);
+      setRev(r); setInv(iv); setTop(tp);
+      setStock(st.map(s=>({...s,name:pmap[s.product_id]||('SP #'+s.product_id)})).slice(0,15));
+      setLog(lg[0]||null);
+    }catch(e){ setErr(String(e.message||e)); }
+    setLoading(false);
+  };
+  useEffect(()=>{ load(); },[]);
+
+  const syncNow=async()=>{
+    setSyncing(true); setMsg('');
+    try{
+      const r=await fetch(`${SUPA_URL}/functions/v1/kiotviet-sync`,{
+        method:'POST',headers:{apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'Content-Type':'application/json'},
+        body:JSON.stringify({days:30})
+      });
+      const j=await r.json();
+      if(!j.ok) throw new Error(j.error||'Đồng bộ lỗi');
+      setMsg('Đồng bộ xong: '+Object.entries(j.counts||{}).map(([k,v])=>`${k} ${v}`).join(' · '));
+      await load();
+    }catch(e){ setMsg('Lỗi: '+String(e.message||e)); }
+    setSyncing(false);
+  };
+
+  // Derived metrics
+  const todayStr=today();
+  const monthPfx=todayStr.slice(0,7);
+  const revToday=rev.find(x=>x.day===todayStr)?.revenue||0;
+  const revMonth=rev.filter(x=>(x.day||'').startsWith(monthPfx)).reduce((s,x)=>s+(+x.revenue||0),0);
+  const ordMonth=rev.filter(x=>(x.day||'').startsWith(monthPfx)).reduce((s,x)=>s+(+x.invoices||0),0);
+  const chart=[...rev].slice(0,14).reverse();
+  const maxRev=Math.max(1,...chart.map(x=>+x.revenue||0));
+  const hasData=rev.length>0||inv.length>0;
+  const secretMissing=log&&!log.ok&&/secret|KV_RETAILER|KV_CLIENT/i.test(log.detail||'');
+
+  return (
+    <div>
+      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14,flexWrap:'wrap'}}>
+        <span style={{fontSize:12.5,color:'var(--muted)'}}>
+          {log? <>Đồng bộ gần nhất: <b style={{color:log.ok?'var(--grn)':'var(--red)'}}>{log.ok?'OK':'Lỗi'}</b> · {fmtDate((log.ran_at||'').slice(0,10))} {(log.ran_at||'').slice(11,16)}</> : 'Chưa có lần đồng bộ nào'}
+        </span>
+        <span style={{flex:1}}></span>
+        {msg && <span style={{fontSize:12,color:msg.startsWith('Lỗi')?'var(--red)':'var(--grn)',fontWeight:600}}>{msg}</span>}
+        <button className="btn" onClick={syncNow} disabled={syncing}>
+          <i className={'ti '+(syncing?'ti-loader-2':'ti-refresh')}></i>{syncing?'Đang đồng bộ…':'Đồng bộ ngay'}
+        </button>
+      </div>
+
+      {secretMissing &&
+        <div style={{display:'flex',alignItems:'flex-start',gap:10,background:'var(--red-lt)',border:'1px solid var(--red)',borderRadius:12,padding:'12px 14px',marginBottom:16,fontSize:13,color:'var(--red)'}}>
+          <i className="ti ti-key" style={{fontSize:20}}></i>
+          <span>Chưa cấu hình khoá KiotViet. Vào <b>Supabase → Edge Functions → kiotviet-sync → Secrets</b> thêm 3 biến: <b>KV_RETAILER</b>, <b>KV_CLIENT_ID</b>, <b>KV_CLIENT_SECRET</b> (lấy trong KiotViet → Thiết lập → Public API), rồi bấm “Đồng bộ ngay”.</span>
+        </div>}
+
+      {err && <div style={{background:'var(--red-lt)',border:'1px solid var(--red)',borderRadius:12,padding:'12px 14px',marginBottom:16,fontSize:13,color:'var(--red)'}}>Lỗi tải dữ liệu: {err}</div>}
+
+      {loading && <div style={{color:'var(--muted)',padding:'30px 0',textAlign:'center'}}><i className="ti ti-loader-2"></i> Đang tải…</div>}
+
+      {!loading && !hasData && !secretMissing &&
+        <div style={{color:'var(--muted)',padding:'30px 0',textAlign:'center',fontSize:13.5}}>
+          Chưa có dữ liệu. Bấm <b>“Đồng bộ ngay”</b> để kéo dữ liệu bán hàng từ KiotViet.
+        </div>}
+
+      {!loading && hasData && <>
+        {/* KPI cards */}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:12,marginBottom:16}}>
+          {[
+            {l:'Doanh thu hôm nay',v:vnd(revToday)+'đ',i:'ti-cash',c:'var(--grn)'},
+            {l:'Doanh thu tháng này',v:mio(revMonth).toLocaleString('vi-VN',{maximumFractionDigits:1})+' tr',i:'ti-calendar-stats',c:'var(--o-dk)'},
+            {l:'Số đơn tháng này',v:ordMonth,i:'ti-receipt',c:'var(--blue)'},
+            {l:'Mã hàng theo dõi',v:top.length?'…':stock.length,i:'ti-box',c:'var(--muted)'},
+          ].map((k,i)=>(
+            <div key={i} className="panel" style={{margin:0}}>
+              <div className="panel-b" style={{padding:'14px 16px'}}>
+                <div style={{fontSize:11.5,color:'var(--muted)',fontWeight:600,marginBottom:6}}><i className={'ti '+k.i}></i> {k.l}</div>
+                <div style={{fontSize:22,fontWeight:800,color:k.c}}>{k.v}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Revenue chart */}
+        {chart.length>0 &&
+          <div className="panel">
+            <div className="panel-h"><i className="ti ti-chart-bar lead"></i><b>Doanh thu 14 ngày gần nhất</b><span style={{marginLeft:'auto',fontSize:12,color:'var(--muted)'}}>đơn vị: triệu đồng</span></div>
+            <div className="panel-b" style={{padding:'18px'}}>
+              <div style={{display:'flex',alignItems:'flex-end',gap:6,height:130}}>
+                {chart.map((m,i)=>(
+                  <div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:4,height:'100%',justifyContent:'flex-end'}}>
+                    <div style={{fontSize:10,fontWeight:700,color:'var(--o-dk)'}}>{mio(m.revenue).toFixed(1)}</div>
+                    <div title={vnd(m.revenue)+'đ'} style={{width:'100%',maxWidth:28,height:((+m.revenue||0)/maxRev*92)+'px',minHeight:3,background:'linear-gradient(180deg,var(--o),var(--o-dk))',borderRadius:'5px 5px 0 0'}}></div>
+                    <div style={{fontSize:9.5,color:'var(--muted)'}}>{fmtDate(m.day)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>}
+
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))',gap:16}}>
+          {/* Top products */}
+          <div className="panel" style={{margin:0}}>
+            <div className="panel-h"><i className="ti ti-trophy lead"></i><b>Sản phẩm bán chạy</b></div>
+            <div className="panel-b" style={{padding:'6px 0'}}>
+              {top.length===0 && <div style={{padding:'16px',color:'var(--muted)',fontSize:13}}>Chưa có dữ liệu.</div>}
+              {top.map((p,i)=>(
+                <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'9px 16px',borderTop:i?'1px solid var(--border)':'none'}}>
+                  <span style={{fontSize:12,fontWeight:700,color:'var(--muted)',width:18}}>{i+1}</span>
+                  <span style={{flex:1,fontSize:13,color:'var(--ink)'}}>{p.product_name||'—'}</span>
+                  <span style={{fontSize:12.5,fontWeight:700,color:'var(--o-dk)'}}>{Math.round(+p.qty||0)}</span>
+                  <span style={{fontSize:11.5,color:'var(--muted)',width:80,textAlign:'right'}}>{vnd(p.revenue)}đ</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Low stock */}
+          <div className="panel" style={{margin:0}}>
+            <div className="panel-h"><i className="ti ti-packages lead"></i><b>Tồn kho thấp nhất</b></div>
+            <div className="panel-b" style={{padding:'6px 0'}}>
+              {stock.length===0 && <div style={{padding:'16px',color:'var(--muted)',fontSize:13}}>Chưa có dữ liệu.</div>}
+              {stock.map((s,i)=>(
+                <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'9px 16px',borderTop:i?'1px solid var(--border)':'none'}}>
+                  <span style={{flex:1,fontSize:13,color:'var(--ink)'}}>{s.name}</span>
+                  {s.branch_name && <span style={{fontSize:11,color:'var(--muted)'}}>{s.branch_name}</span>}
+                  <span style={{fontSize:12.5,fontWeight:700,color:(+s.on_hand<=5)?'var(--red)':'var(--ink)'}}>{Math.round(+s.on_hand||0)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Recent invoices */}
+        <div className="panel">
+          <div className="panel-h"><i className="ti ti-list-details lead"></i><b>Đơn hàng gần đây</b></div>
+          <div className="panel-b" style={{padding:0,overflowX:'auto'}}>
+            <table style={{width:'100%',borderCollapse:'collapse',fontSize:12.5}}>
+              <thead><tr style={{color:'var(--muted)',textAlign:'left'}}>
+                <th style={{padding:'10px 16px',fontWeight:600}}>Mã đơn</th>
+                <th style={{padding:'10px 16px',fontWeight:600}}>Ngày</th>
+                <th style={{padding:'10px 16px',fontWeight:600}}>Khách</th>
+                <th style={{padding:'10px 16px',fontWeight:600,textAlign:'right'}}>Thành tiền</th>
+                <th style={{padding:'10px 16px',fontWeight:600}}>Trạng thái</th>
+              </tr></thead>
+              <tbody>
+                {inv.length===0 && <tr><td colSpan={5} style={{padding:'16px',color:'var(--muted)'}}>Chưa có đơn.</td></tr>}
+                {inv.map((v,i)=>(
+                  <tr key={i} style={{borderTop:'1px solid var(--border)'}}>
+                    <td style={{padding:'9px 16px',fontWeight:600,color:'var(--ink)'}}>{v.code}</td>
+                    <td style={{padding:'9px 16px',color:'var(--muted)'}}>{fmtDate((v.purchase_date||'').slice(0,10))}</td>
+                    <td style={{padding:'9px 16px',color:'var(--ink)'}}>{v.customer_name||'Khách lẻ'}</td>
+                    <td style={{padding:'9px 16px',textAlign:'right',fontWeight:700,color:'var(--o-dk)'}}>{vnd(v.total_payment)}đ</td>
+                    <td style={{padding:'9px 16px',color:'var(--muted)'}}>{v.status_value||'—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </>}
+    </div>
+  );
+}
+
 function BizBook({metrics,setMetrics,config,setConfig}){
   const wk=dstr(startOfWeek());
   const [f,setF]=useState(()=>metrics.find(m=>m.week===wk)||{week:wk});
@@ -1855,12 +2074,69 @@ const PROMPT_LIBRARY=[
  ]},
 ];
 
+/* ---------- Đồng bộ đám mây ---------- */
+function SyncPanel(){
+  const [code,setCode]=useState(Sync.code()||'');
+  const [on,setOn]=useState(Sync.enabled());
+  const [status,setStatus]=useState(Sync._status);
+  const [busy,setBusy]=useState(false);
+  useEffect(()=>{ Sync._onStatus=setStatus; return ()=>{ if(Sync._onStatus===setStatus) Sync._onStatus=null; }; },[]);
+  const lastStr=(()=>{ try{const v=localStorage.getItem('hdw.synclast'); return v?new Date(v).toLocaleString('vi-VN'):null;}catch(e){return null;} })();
+  const STT={pending:['Chờ đồng bộ…','var(--amber)'],pushing:['Đang lưu lên cloud…','var(--blue)'],pulling:['Đang tải về…','var(--blue)'],synced:['Đã đồng bộ ✓','var(--grn)'],error:['Lỗi kết nối — thử lại','var(--red)']};
+  const st=status&&STT[status];
+  const inp={width:'100%',background:'var(--bg)',border:'1.5px solid var(--border)',borderRadius:10,padding:'11px 13px',color:'var(--ink)',outline:'none',fontSize:15};
+  const enable=async(mode)=>{
+    const c=code.trim(); if(c.length<6){alert('Mã đồng bộ cần ít nhất 6 ký tự. Hãy dùng mã khó đoán (vd: huongdien-bimsua-2026).');return;}
+    localStorage.setItem('hdw.synccode',c); setBusy(true);
+    if(mode==='pull'){ const r=await Sync.pull(); setBusy(false);
+      if(r&&r.ok&&!r.empty){ alert('Đã tải dữ liệu từ cloud về máy này. Trang sẽ tải lại.'); location.reload(); }
+      else if(r&&r.empty){ await Sync.push(); setOn(true); alert('Cloud chưa có dữ liệu cho mã này — đã ĐẨY dữ liệu máy này lên cloud.\nTrên thiết bị kia: nhập ĐÚNG mã này rồi bấm "Bật & tải về".'); }
+      else { localStorage.removeItem('hdw.synccode'); alert('Lỗi kết nối, thử lại.'); } }
+    else { await Sync.push(); setBusy(false); setOn(true); alert('Đã bật đồng bộ và đẩy dữ liệu máy này lên cloud.'); }
+  };
+  const pullNow=async()=>{ setBusy(true); const r=await Sync.pull(); setBusy(false); if(r&&r.ok&&!r.empty){ if(r.changed)location.reload(); else alert('Đang là bản mới nhất.'); } else if(r&&r.empty) alert('Cloud chưa có dữ liệu.'); };
+  const pushNow=async()=>{ setBusy(true); await Sync.push(); setBusy(false); };
+  const off=()=>{ if(confirm('Tắt đồng bộ trên máy này? Dữ liệu trên cloud vẫn còn, dữ liệu máy này giữ nguyên.')){ localStorage.removeItem('hdw.synccode'); setOn(false); setStatus(null); } };
+  return (
+    <div className="panel">
+      <div className="panel-h"><i className="ti ti-cloud lead"></i><b>Đồng bộ nhiều thiết bị</b>{on&&<span className="tag" style={{marginLeft:'auto',background:'var(--grn-lt)',color:'var(--grn)'}}>Đang bật</span>}</div>
+      <div className="panel-b" style={{padding:'16px 18px'}}>
+        <p style={{fontSize:13,color:'var(--muted)',lineHeight:1.6,marginBottom:14}}>Nhập <b>một mã đồng bộ</b> giống nhau trên máy tính & điện thoại để dùng chung dữ liệu. Mã chính là "chìa khóa" — ai có mã sẽ xem được dữ liệu, nên đặt mã khó đoán.</p>
+        <div className="fld" style={{marginBottom:12}}>
+          <label style={{display:'block',fontSize:12.5,fontWeight:600,color:'var(--muted)',marginBottom:6}}>Mã đồng bộ (≥ 6 ký tự)</label>
+          <input value={code} onChange={e=>setCode(e.target.value)} placeholder="vd: huongdien-bimsua-2026" disabled={on} style={{...inp,opacity:on?.6:1}}/>
+        </div>
+        {!on
+          ? <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+              <button className="btn" disabled={busy} onClick={()=>enable('pull')}><i className="ti ti-cloud-download"></i>Bật & tải về (thiết bị phụ)</button>
+              <button className="btn ghost" disabled={busy} onClick={()=>enable('push')}><i className="ti ti-cloud-up"></i>Bật & đẩy lên (thiết bị chính)</button>
+            </div>
+          : <div>
+              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14,fontSize:13}}>
+                <span style={{width:9,height:9,borderRadius:'50%',background:st?st[1]:'var(--muted2)'}}></span>
+                <b style={{color:st?st[1]:'var(--muted)'}}>{st?st[0]:'Sẵn sàng'}</b>
+                {lastStr&&<span style={{marginLeft:'auto',color:'var(--muted2)',fontSize:12}}>Lần cuối: {lastStr}</span>}
+              </div>
+              <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+                <button className="btn" disabled={busy} onClick={pushNow}><i className="ti ti-cloud-up"></i>Đẩy lên ngay</button>
+                <button className="btn ghost" disabled={busy} onClick={pullNow}><i className="ti ti-cloud-download"></i>Tải về từ cloud</button>
+                <button className="btn ghost" onClick={off} style={{color:'var(--red)'}}><i className="ti ti-cloud-off"></i>Tắt</button>
+              </div>
+            </div>}
+        <div style={{marginTop:16,padding:'12px 14px',background:'var(--o-lt)',borderRadius:12,fontSize:12.5,color:'var(--o-dk)',lineHeight:1.6}}>
+          <i className="ti ti-bulb"></i> <b>Cách dùng:</b> Trên <b>máy chính</b> (có dữ liệu) → nhập mã → "Bật & đẩy lên". Trên <b>điện thoại</b> → nhập <b>cùng mã</b> → "Bật & tải về". Sau đó mọi thay đổi tự lưu lên cloud; mở app ở thiết bị kia sẽ tự cập nhật.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ---------- Sổ tay vận hành ---------- */
 function Notebook({nb,setNb,onExport,onImport}){
-  const [seg,setSeg]=useState('sop');
+  const [seg,setSeg]=useState('sync');
   const [openCat,setOpenCat]=useState(0);
   const [copied,setCopied]=useState(null);
-  const segs=[{k:'sop',n:'Quy trình',i:'ti-list-check'},{k:'prompts',n:'Prompt AI',i:'ti-sparkles'},{k:'lib',n:'Thư viện prompt',i:'ti-books'},{k:'suppliers',n:'Nhà cung cấp',i:'ti-truck'},{k:'data',n:'Sao lưu',i:'ti-database'}];
+  const segs=[{k:'sync',n:'Đồng bộ',i:'ti-cloud'},{k:'sop',n:'Quy trình',i:'ti-list-check'},{k:'prompts',n:'Prompt AI',i:'ti-sparkles'},{k:'lib',n:'Thư viện prompt',i:'ti-books'},{k:'suppliers',n:'Nhà cung cấp',i:'ti-truck'},{k:'data',n:'Sao lưu',i:'ti-database'}];
   const upd=(sec,arr)=>setNb({...nb,[sec]:arr});
   const addItem=(sec,obj)=>upd(sec,[...(nb[sec]||[]),{...obj,id:sec[0]+Date.now()}]);
   const delItem=(sec,id)=>upd(sec,nb[sec].filter(x=>x.id!==id));
@@ -1872,6 +2148,8 @@ function Notebook({nb,setNb,onExport,onImport}){
       <div className="chips" style={{marginBottom:16}}>
         {segs.map(s=>(<button key={s.k} className={'chip'+(seg===s.k?' on':'')} onClick={()=>setSeg(s.k)}><i className={'ti '+s.i}></i> {s.n}</button>))}
       </div>
+
+      {seg==='sync'&&<SyncPanel/>}
 
       {(seg==='sop'||seg==='prompts')&&
         <div>
