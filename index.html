@@ -449,6 +449,14 @@ function seed(){
 const INBOX_TASKS=[
   {id:'hd-2026-06-29-1',title:'Thay ảnh "mượn" của đối thủ bằng ảnh tự chụp',proj:'content',pri:'high',due:'',note:'Phỏng đoán từ chat Hương Diện 29/06: khi xử lý ảnh sản phẩm phát hiện vài ảnh đang dùng ảnh quảng cáo của đối thủ (anbebe.vn) còn watermark/badge shop khác — rủi ro thương hiệu & pháp lý, cần thay gấp.',checklist:[{t:'Lọc ra các sản phẩm còn dùng ảnh đối thủ (có watermark/badge)',done:false},{t:'Tự chụp lại ảnh nền trắng cho các sản phẩm đó',done:false},{t:'Cập nhật ảnh mới lên web',done:false}],src:'hd-chat'},
   {id:'hd-2026-06-29-2',title:'Chụp & bổ sung ảnh thật cho ~30 sản phẩm chưa có ảnh',proj:'content',pri:'med',due:'',note:'Phỏng đoán từ chat Hương Diện 29/06: rà ảnh web thấy 29 sản phẩm còn để placeholder "ảnh đang cập nhật" + 1 ảnh tải lỗi (mã 118). Cần chụp ảnh thật nền trắng để trang bán hàng đầy đủ, chuyên nghiệp.',checklist:[{t:'Lập danh sách 30 sản phẩm còn thiếu ảnh',done:false},{t:'Chụp ảnh nền trắng cho từng sản phẩm',done:false},{t:'Cập nhật ảnh lên web, bỏ placeholder',done:false}],src:'hd-chat'},
+  {id:'hd-2026-07-03-1',title:'Chạy 10 lượt Metric.vn đúng ngách trước khi hết hạn (demo 3 ngày)',proj:'mkt',pri:'high',due:'',note:'Phỏng đoán từ chat Hương Diện 03/07: có bản demo Metric.vn chỉ 10 lượt phân tích, hết hạn sau 3 ngày. Cần chạy gọn trong 1 buổi, bám đúng ngách sữa nhập khẩu + TPCN + sữa non, lưu ngay từng báo cáo vì hết hạn là mất truy cập.',checklist:[{t:'Chốt 10 truy vấn (theo brand: Pediasure/Sustagen/Alula/Meiji/Aptamil... + đối thủ Con Cưng/Kids Plaza/Baby King)',done:false},{t:'Chạy hết 10 lượt trong 1 buổi, để khoảng thời gian 30 ngày cho đồng nhất',done:false},{t:'Chụp/lưu ngay mỗi báo cáo: doanh số ngành, top SP + giá, khoảng giá ra đơn nhiều, top shop',done:false}],src:'hd-chat'},
+  {id:'hd-2026-07-03-2',title:'Xử lý dòng váng sữa đang LỖ (biên −16%)',proj:'kho',pri:'high',due:'',note:'Phỏng đoán từ chat Hương Diện 03/07: phân tích báo cáo lợi nhuận KiotViet H1/2026 cho thấy nhóm váng sữa bán khối lượng lớn nhưng biên âm (~−16%) → đang chôn vốn & lỗ. Cần chặn rò rỉ này.',checklist:[{t:'Rà lại giá vốn/giá bán từng mã váng sữa, xác định mã lỗ nặng nhất',done:false},{t:'Đàm phán lại giá nhập với NCC hoặc tăng giá bán/giảm khuyến mãi',done:false},{t:'Nếu không cải thiện được biên: ngừng nhập & xả tồn dứt điểm',done:false}],src:'hd-chat'},
+  {id:'hd-2026-07-03-3',title:'Ưu tiên đẩy nhóm "ngôi sao lợi nhuận" (biên ≥30%)',proj:'mkt',pri:'med',due:'',note:'Phỏng đoán từ chat Hương Diện 03/07: máy in tiền thật là TPCN/Vitamin (biên 29%), sữa non Avenir (27%) và vài dòng sữa biên cao — KHÔNG phải các brand nổi tiếng biên mỏng. Nên tập trung nguồn lực bán/trưng bày vào nhóm này.',checklist:[{t:'Chốt danh sách SP biên ≥30%: Sustagen Optimum, Healthy Care, Uvedose D3, Canxi Glucosamine, sữa hạt Organic Kids, Alula Gold',done:false},{t:'Ưu tiên trưng bày + nội dung + combo/upsell cho các SP này',done:false},{t:'Giữ hàng đủ, không để hết tồn nhóm biên cao',done:false}],src:'hd-chat'},
+  {id:'hd-2026-07-03-4',title:'Điền bảng câu hỏi hồ sơ Hương Diện để chốt kế hoạch Metric',proj:'mkt',pri:'low',due:'',note:'Phỏng đoán từ chat Hương Diện 03/07: đã tạo file HuongDien-BangCauHoi.xlsx (24 câu, 6 nhóm). Trả lời phần quan trọng nhất (kênh bán/sàn, đối thủ cụ thể, mục tiêu 3–6 tháng) để chốt 10 truy vấn Metric đúng thực tế.',checklist:[{t:'Điền nhóm A (kênh bán) & B (sản phẩm, nguồn hàng)',done:false},{t:'Ghi rõ 1–2 đối thủ cụ thể muốn soi',done:false},{t:'Ghi mục tiêu 3–6 tháng (nhập thêm hãng gì / có lên sàn không)',done:false}],src:'hd-chat'},
+  {id:'hd-2026-07-03-5',title:'Quyết định & chuẩn bị lên sàn Sữa non Pháp (Avenir)',proj:'mkt',pri:'high',due:'',note:'Phỏng đoán từ chat Hương Diện 03/07: shop Shopee (huongdienshop) đã nghỉ vì phí sàn cao, không làm TikTok. Kết luận từ số liệu: chỉ Sữa non Avenir (biên ~27%) và vài TPCN biên ≥30% mới đủ biên gánh phí sàn — nên nếu lên sàn thì chỉ lên nhóm này, KHÔNG lên lại sữa bột commodity (biên ~13%, lên là lỗ).',checklist:[{t:'Đợi kết quả 10 lượt Metric về sữa non (cầu + giá + đã có ai bán Avenir chưa)',done:false},{t:'Tính phí sàn Shopee cụ thể cho Avenir + vài TPCN biên ≥30%, xem còn lãi không',done:false},{t:'Quyết: có mở lại shop Shopee cho riêng nhóm sữa non/TPCN biên cao không',done:false}],src:'hd-chat'},
+  {id:'hd-2026-07-03-6',title:'Xả hàng ngoài ngách đang chôn vốn (nước hoa, máy khử khuẩn, trà...)',proj:'kho',pri:'med',due:'',note:'Phỏng đoán từ chat Hương Diện 03/07: phân tích doanh thu/lợi nhuận cho thấy ngoài váng sữa lỗ, còn nhóm hàng ngoài ngách (nước hoa, máy khử khuẩn, trà...) bán chậm, chôn vốn. Nên dọn để dồn vốn cho nhóm sữa nhập khẩu + TPCN biên cao.',checklist:[{t:'Lọc các mã hàng ngoài ngách (không phải sữa/TPCN/đồ mẹ bé) đang tồn lâu',done:false},{t:'Xả tồn (giảm giá/combo) để thu hồi vốn',done:false},{t:'Ngừng nhập nhóm ngoài ngách, dồn vốn cho SP biên cao',done:false}],src:'hd-chat'},
+  {id:'hd-2026-07-04-1',title:'Chuẩn bị ảnh thật & nội dung cho trang landing Sữa non Avenir',proj:'content',pri:'med',due:'',note:'Phỏng đoán từ chat Hương Diện 04/07: đã dựng xong trang landing riêng cho Sữa non Pháp Avenir trên web (page-avenir, mở bằng menu/banner). Trang đang tái dùng ảnh sản phẩm cũ; cần ảnh banner/lifestyle thật + nội dung bán thuyết phục (nỗi lo của mẹ, cam kết, review thật) để chốt đơn tốt hơn.',checklist:[{t:'Chụp/chuẩn bị 2-3 ảnh banner + ảnh dùng thực tế cho Avenir',done:false},{t:'Viết nội dung bán: công dụng, cách dùng, cam kết, so sánh',done:false},{t:'Xin vài review/hình phản hồi thật của khách đã mua',done:false}],src:'hd-chat'},
+  {id:'hd-2026-07-04-2',title:'Kéo khách vào trang landing Avenir (Zalo, tư vấn, bài đăng)',proj:'mkt',pri:'med',due:'',note:'Phỏng đoán từ chat Hương Diện 04/07: trang landing Avenir đã lên web và có link chia sẻ trực tiếp (#avenir). Nên chủ động đưa khách vào trang này để tăng chuyển đổi cho dòng biên cao.',checklist:[{t:'Gửi link trang Avenir cho khách quan tâm qua Zalo/tư vấn',done:false},{t:'Đăng bài giới thiệu Avenir kèm link landing lên kênh của shop',done:false},{t:'Gắn link Avenir vào chữ ký/tin nhắn mẫu để dùng lại',done:false}],src:'hd-chat'},
   /* __INBOX_INSERT__ (tác vụ theo lịch chèn task mới phía trên dòng này) */
 ];
 function mergeInbox(existing){
@@ -2671,6 +2679,35 @@ function TaskModal({task,onSave,onDel,onClose}){
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+
+<!-- pwa-update-banner: tự phát hiện bản mới (so ETag/Last-Modified index.html) -->
+<script>
+(function(){
+  if('serviceWorker' in navigator){
+    window.addEventListener('load',function(){
+      navigator.serviceWorker.register('sw.js').then(function(reg){
+        setInterval(function(){ try{ reg.update(); }catch(e){} }, 300000);
+      }).catch(function(){});
+    });
+  }
+  if(location.protocol==='file:') return;
+  var pageUrl=location.href.split('#')[0].split('?')[0], baseTag=null, shown=false;
+  function getTag(cb){ fetch(pageUrl,{method:'HEAD',cache:'no-store'}).then(function(r){ cb(r.headers.get('etag')||r.headers.get('last-modified')||null); }).catch(function(){ cb(null); }); }
+  function showBanner(){
+    if(shown||!document.body) return; shown=true;
+    var b=document.createElement('div');
+    b.textContent='🔄 Có bản Quản lý CV mới — chạm để cập nhật';
+    b.style.cssText='position:fixed;left:10px;right:10px;top:calc(10px + env(safe-area-inset-top));z-index:2147483647;background:#111827;color:#fff;padding:11px 16px;border-radius:13px;text-align:center;font-family:system-ui,-apple-system,sans-serif;font-size:14px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.3);cursor:pointer;line-height:1.35';
+    b.setAttribute('role','button');
+    b.onclick=function(){ b.textContent='Đang cập nhật…'; try{ if(navigator.serviceWorker&&navigator.serviceWorker.getRegistration){ navigator.serviceWorker.getRegistration().then(function(reg){ try{ if(reg) reg.update(); }catch(e){} setTimeout(function(){ location.reload(); },500); }); return; } }catch(e){} location.reload(); };
+    document.body.appendChild(b);
+  }
+  getTag(function(t){ baseTag=t; });
+  function check(){ if(baseTag==null){ getTag(function(t){ baseTag=t; }); return; } getTag(function(t){ if(t&&t!==baseTag) showBanner(); }); }
+  setInterval(check, 180000);
+  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') check(); });
+})();
 </script>
 </body>
 </html>
