@@ -641,7 +641,7 @@ function App(){
   const [breath,setBreath]=useState(false);
   const [zen,setZen]=useState(()=>store.get('hdw.zen',{min:0,sessions:0}));
   const [brainlog,setBrainlog]=useState(()=>store.get('hdw.brainlog',{}));
-  const [carecfg,setCarecfg]=useState(()=>store.get('hdw.carecfg',{water:true,stand:true,eye:false,caffeine:true,caffeineHour:14}));
+  const [carecfg,setCarecfg]=useState(()=>store.get('hdw.carecfg',{water:true,stand:true,eye:false,caffeine:true,caffeineHour:14,taskReminder:true}));
   const [learned,setLearned]=useState(()=>store.get('hdw.learned',{}));
   const [toast,setToast]=useState(null);
   const [dailyState,setDailyState]=useState(()=>store.get('hdw.dailyState',{date:today(),done:[],streak:0,last:''}));
@@ -666,7 +666,19 @@ function App(){
   useEffect(()=>store.set('hdw.learned',learned),[learned]);
   const addZen=(m)=>setZen(z=>({min:(z.min||0)+m,sessions:(z.sessions||0)+1}));
 
-  // Nhắc nhịp chăm sóc: bắn toast nhẹ theo giờ khi app đang mở
+  // Thông báo: dùng Notification thật khi tab đang ẩn (nếu đã cấp quyền), ngược lại bắn toast trong app
+  const ping=(msg,tag)=>{
+    let shown=false;
+    try{
+      if(document.hidden && 'Notification' in window && Notification.permission==='granted'){
+        new Notification('Hương Diện · Quản lý công việc',{body:msg,tag});
+        shown=true;
+      }
+    }catch(e){}
+    if(!shown) setToast({msg});
+  };
+
+  // Nhắc nhịp chăm sóc: theo giờ khi app đang mở/chạy nền
   const careFired=useRef({});
   useEffect(()=>{
     const NUDGE={
@@ -679,11 +691,11 @@ function App(){
       Object.keys(NUDGE).forEach(k=>{
         if(!carecfg[k]) return;
         const last=careFired.current[k]||0;
-        if(now-last >= NUDGE[k].every*60000){ careFired.current[k]=now; setToast({msg:NUDGE[k].msg}); }
+        if(now-last >= NUDGE[k].every*60000){ careFired.current[k]=now; ping(NUDGE[k].msg,'hdw-care-'+k); }
       });
       if(carecfg.caffeine){
         const h=new Date().getHours();
-        if(h===(carecfg.caffeineHour||14) && careFired.current.caf!==dstr(new Date())){ careFired.current.caf=dstr(new Date()); setToast({msg:'☕ Đến giờ cắt caffeine — tránh cà phê sau giờ này để ngủ ngon.'}); }
+        if(h===(carecfg.caffeineHour||14) && careFired.current.caf!==dstr(new Date())){ careFired.current.caf=dstr(new Date()); ping('☕ Đến giờ cắt caffeine — tránh cà phê sau giờ này để ngủ ngon.','hdw-care-caffeine'); }
       }
     };
     careFired.current.water=careFired.current.water||Date.now();
@@ -833,6 +845,20 @@ function App(){
   },[tasks]);
 
   const overdueCount=stats.overdue;
+
+  // Nhắc việc quá hạn / hôm nay còn tồn — mỗi 45 phút, ưu tiên báo quá hạn trước
+  const taskFired=useRef(0);
+  useEffect(()=>{
+    if(!carecfg.taskReminder) return;
+    const tick=()=>{
+      const now=Date.now();
+      if(now-taskFired.current < 45*60000) return;
+      if(stats.overdue>0){ taskFired.current=now; ping(`⏰ Có ${stats.overdue} việc đã quá hạn — mở app để xử lý.`,'hdw-overdue'); }
+      else if(stats.todayCnt>0){ taskFired.current=now; ping(`📌 Còn ${stats.todayCnt} việc cần làm hôm nay.`,'hdw-today'); }
+    };
+    const id=setInterval(tick,60000);
+    return ()=>clearInterval(id);
+  },[carecfg.taskReminder, stats.overdue, stats.todayCnt]);
 
   const NAV=[
     {id:'dash',name:'Tổng quan',icon:'ti-layout-dashboard'},
@@ -2363,7 +2389,9 @@ function BrainEnergy({log,setLog,cfg,setCfg,onBreath}){
   const advice=!en?null : en<=2?{c:'var(--amber)',bg:'var(--amber-lt)',t:'Năng lượng thấp — làm việc nhẹ, chia nhỏ, và thở 5 phút. Để dành việc khó cho lúc khỏe hơn.'}
     : en===3?{c:'var(--blue)',bg:'var(--blue-lt)',t:'Ổn định — làm việc vừa sức, xen kẽ nghỉ ngắn theo nhịp.'}
     : {c:'var(--grn)',bg:'var(--grn-lt)',t:'Năng lượng cao — tấn công ngay việc khó nhất / "việc xương nhất" 🐸 khi não đang đỉnh!'};
-  const cares=[['water','💧 Nhắc uống nước (mỗi 60′)'],['stand','🧍 Nhắc đứng dậy vận động (mỗi 50′)'],['eye','👀 Nhắc nghỉ mắt 20-20-20 (mỗi 20′)'],['caffeine','☕ Nhắc cắt caffeine (theo giờ)']];
+  const cares=[['water','💧 Nhắc uống nước (mỗi 60′)'],['stand','🧍 Nhắc đứng dậy vận động (mỗi 50′)'],['eye','👀 Nhắc nghỉ mắt 20-20-20 (mỗi 20′)'],['caffeine','☕ Nhắc cắt caffeine (theo giờ)'],['taskReminder','⏰ Nhắc việc quá hạn / hôm nay (mỗi 45′)']];
+  const [notifPerm,setNotifPerm]=useState(()=>('Notification' in window?Notification.permission:'unsupported'));
+  const askNotif=()=>{ try{ Notification.requestPermission().then(p=>setNotifPerm(p)); }catch(e){} };
   return (
     <div>
       {/* Check-in năng lượng */}
@@ -2417,6 +2445,20 @@ function BrainEnergy({log,setLog,cfg,setCfg,onBreath}){
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Thông báo trình duyệt */}
+      <div className="panel">
+        <div className="panel-h"><i className="ti ti-bell-ringing lead"></i><b>Thông báo trình duyệt</b></div>
+        <div className="panel-b" style={{padding:'12px 18px 16px'}}>
+          {notifPerm==='unsupported' && <div style={{fontSize:13,color:'var(--muted)'}}>Trình duyệt này không hỗ trợ thông báo.</div>}
+          {notifPerm==='granted' && <div style={{display:'flex',alignItems:'center',gap:8,fontSize:13,color:'var(--grn)',fontWeight:600}}><i className="ti ti-circle-check"></i>Đã bật — sẽ nhận nhắc dù đang ở tab khác (khi app còn mở/chạy nền).</div>}
+          {notifPerm==='denied' && <div style={{fontSize:13,color:'var(--muted)'}}>Thông báo đang bị chặn. Vào cài đặt trình duyệt cho site này → cho phép Thông báo, rồi tải lại trang.</div>}
+          {notifPerm==='default' && <>
+            <div style={{fontSize:13,color:'var(--muted)',marginBottom:10}}>Bật để nhận nhắc việc/chăm sóc ngay cả khi đang lướt tab khác (app cần vẫn đang mở).</div>
+            <button className="btn sm" onClick={askNotif}><i className="ti ti-bell-plus"></i>Bật thông báo</button>
+          </>}
         </div>
       </div>
 
