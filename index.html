@@ -662,6 +662,7 @@ function App(){
   const [view,setView]=useState('dash');
   const [moreOpen,setMoreOpen]=useState(false);
   const [todayPlan,setTodayPlan]=useState(()=>store.get('hdw.todayPlan',null));
+  const [threeWins,setThreeWins]=useState(()=>store.get('hdw.threewins',null));
   const [dark,setDark]=useState(()=>store.get('hdw.dark',0)==1||store.get('hdw.dark',false)===true||localStorage.getItem('hdw.dark')==='1');
   const [editing,setEditing]=useState(null); // task object or null
   const [q,setQ]=useState('');
@@ -671,6 +672,7 @@ function App(){
   useEffect(()=>store.set('hdw.daily',daily),[daily]);
   useEffect(()=>store.set('hdw.dailyState',dailyState),[dailyState]);
   useEffect(()=>store.set('hdw.todayPlan',todayPlan),[todayPlan]);
+  useEffect(()=>store.set('hdw.threewins',threeWins),[threeWins]);
   useEffect(()=>store.set('hdw.recurring',recurring),[recurring]);
   useEffect(()=>store.set('hdw.bizmetrics',bizmetrics),[bizmetrics]);
   useEffect(()=>store.set('hdw.bizconfig',bizconfig),[bizconfig]);
@@ -832,6 +834,22 @@ function App(){
     if(add.length) setTodayPlan(p=>({...p,ids:[...p.ids,...add],auto:[...(p.auto||[]),...add]}));
   },[tasks]);
 
+  /* 3 việc thắng lớn/ngày: 1 kiếm tiền ngay · 1 xây hệ thống · 1 nâng trình cá nhân — reset mỗi ngày mới */
+  const wins=(threeWins&&threeWins.date===today())?threeWins:{date:today(),money:null,system:null,growth:null};
+  const setWinSlot=(key,val)=>setThreeWins(w=>{
+    const base=(w&&w.date===today())?w:{date:today(),money:null,system:null,growth:null};
+    return {...base,[key]:{...val,done:false}};
+  });
+  const clearWinSlot=(key)=>setThreeWins(w=>{
+    const base=(w&&w.date===today())?w:{date:today(),money:null,system:null,growth:null};
+    return {...base,[key]:null};
+  });
+  const toggleWinText=(key)=>setThreeWins(w=>{
+    const base=(w&&w.date===today())?w:{date:today(),money:null,system:null,growth:null};
+    const cur=base[key];
+    return cur?{...base,[key]:{...cur,done:!cur.done}}:base;
+  });
+
   /* daily */
   const toggleDaily=(id)=>setDailyState(s=>{
     const done=s.done.includes(id)?s.done.filter(x=>x!==id):[...s.done,id];
@@ -967,7 +985,7 @@ function App(){
 
         <div className="content" key={view}>
           {view==='dash' && <Dash stats={stats} tasks={tasks} setView={setView} edit={setEditing} daily={daily} dailyState={dailyState} toggleDaily={toggleDaily} importPlan={importPlan} planLoaded={planLoaded} missingPlan={missingPlan} planEverLoaded={planEverLoaded} onBreath={()=>setBreath(true)} zen={zen}/>}
-          {view==='today' && <Today tasks={tasks} plan={todayPlan} rebuild={rebuildPlan} move={moveTask} edit={setEditing} toggleCk={toggleCk} openFocus={setFocusTask} startDeep={setDeepIds}/>}
+          {view==='today' && <Today tasks={tasks} plan={todayPlan} rebuild={rebuildPlan} move={moveTask} edit={setEditing} toggleCk={toggleCk} openFocus={setFocusTask} startDeep={setDeepIds} wins={wins} setWinSlot={setWinSlot} clearWinSlot={clearWinSlot} toggleWinText={toggleWinText}/>}
           {view==='brain' && <BrainEnergy log={brainlog} setLog={setBrainlog} cfg={carecfg} setCfg={setCarecfg} onBreath={()=>setBreath(true)}/>}
           {view==='board' && <Board tasks={filtered} all={tasks} projFilter={projFilter} setProjFilter={setProjFilter} move={moveTask} edit={setEditing} toggleCk={toggleCk}/>}
           {view==='proj' && <Projects tasks={tasks} setView={setView} setProjFilter={setProjFilter}/>}
@@ -1365,8 +1383,89 @@ function Daily({daily,setDaily,st,toggle,recurring,setRecurring}){
 }
 const selSt={background:'var(--card)',border:'1.5px solid var(--border)',borderRadius:9,padding:'8px 10px',color:'var(--ink)',outline:'none',fontWeight:600,fontSize:12.5};
 
+/* ---------- 3 việc thắng lớn/ngày (1 tiền · 1 hệ thống · 1 cá nhân) ---------- */
+const WIN_SLOTS=[
+  {key:'money',ic:'💰',label:'Kiếm tiền ngay',hint:'đẩy combo, gọi khách cũ, xử lý tồn, chăm Zalo, chạy ads, tối ưu Shopee…',color:'grn'},
+  {key:'system',ic:'🧱',label:'Xây hệ thống',hint:'viết quy trình, tạo form đơn hàng, cập nhật bảng tồn, chuẩn hoá dữ liệu, sửa chatbot…',color:'blue'},
+  {key:'growth',ic:'🌱',label:'Nâng trình cá nhân',hint:'tập bi-a đúng bài, học AI, tập thể lực, đọc một bài phân tích sâu…',color:'o'},
+];
+function WinPicker({slot,tasks,onPick,onClose}){
+  const [q,setQ]=useState('');
+  const [text,setText]=useState('');
+  const open=tasks.filter(t=>t.status!=='done');
+  const filtered=(q.trim()?open.filter(t=>t.title.toLowerCase().includes(q.trim().toLowerCase())):open).slice(0,50);
+  return (
+    <div className="ov" onClick={onClose}>
+      <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:480}}>
+        <div className="modal-h"><span style={{fontSize:19}}>{slot.ic}</span><b>Chọn việc — {slot.label}</b>
+          <button className="btn ghost sm" style={{marginLeft:'auto'}} onClick={onClose}><i className="ti ti-x"></i></button>
+        </div>
+        <div className="modal-b">
+          <div className="srch" style={{marginBottom:12}}><i className="ti ti-search"></i><input placeholder="Tìm trong việc đang mở…" value={q} onChange={e=>setQ(e.target.value)} autoFocus/></div>
+          <div style={{maxHeight:250,overflowY:'auto',display:'flex',flexDirection:'column',gap:6}}>
+            {filtered.length===0 && <div style={{fontSize:12.5,color:'var(--muted)',padding:'10px 2px'}}>Không tìm thấy việc nào đang mở.</div>}
+            {filtered.map(t=>(
+              <button key={t.id} className="btn ghost sm" style={{justifyContent:'flex-start',textAlign:'left',width:'100%',height:'auto',padding:'9px 12px'}} onClick={()=>onPick({taskId:t.id})}>{t.title}</button>
+            ))}
+          </div>
+          <div className="hr"></div>
+          <div style={{fontSize:12,color:'var(--muted)',marginBottom:8,fontWeight:600}}>Hoặc nhập việc khác (không cần có trong Bảng việc — hợp cho việc cá nhân):</div>
+          <div style={{display:'flex',gap:8}}>
+            <input value={text} onChange={e=>setText(e.target.value)} placeholder={slot.hint} style={{...selSt,flex:1,fontWeight:400}}/>
+            <button className="btn sm" disabled={!text.trim()} onClick={()=>text.trim()&&onPick({text:text.trim()})}>Dùng</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+function ThreeWins({tasks,wins,setSlot,clearSlot,toggleText,move,edit}){
+  const [pickingKey,setPickingKey]=useState(null);
+  const byId={}; tasks.forEach(t=>byId[t.id]=t);
+  const rows=WIN_SLOTS.map(s=>{
+    const v=wins[s.key];
+    const task=v&&v.taskId?byId[v.taskId]:null;
+    const missing=v&&v.taskId&&!task; // việc đã bị xoá khỏi Bảng việc
+    const isDone=task?task.status==='done':!!(v&&v.done);
+    const title=task?task.title:(v?v.text:null);
+    return {s,v,task,missing,isDone,title};
+  });
+  const doneCount=rows.filter(r=>r.title&&r.isDone).length;
+  const allDone=doneCount===3;
+  return (
+    <div className="panel">
+      <div className="panel-h">
+        <i className="ti ti-trophy lead"></i><b>3 việc thắng lớn hôm nay</b>
+        <div style={{flex:1}}></div>
+        <span className="tag" style={{background:allDone?'var(--grn-lt)':'var(--bg)',color:allDone?'var(--grn)':'var(--muted)',border:allDone?'none':'1px solid var(--border)'}}>{allDone&&'🎉 '}{doneCount}/3 xong</span>
+      </div>
+      <div className="panel-b" style={{padding:'10px 18px 16px',display:'flex',flexDirection:'column',gap:9}}>
+        {rows.map(({s,task,missing,isDone,title})=>(
+          <div key={s.key} style={{display:'flex',alignItems:'center',gap:12,padding:'11px 13px',borderRadius:12,background:'var(--'+s.color+'-lt)',opacity:isDone?.6:1}}>
+            <span style={{fontSize:20,flexShrink:0}}>{s.ic}</span>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:10.5,fontWeight:700,letterSpacing:'.03em',textTransform:'uppercase',color:'var(--'+s.color+')'}}>{s.label}</div>
+              {title
+                ? <div style={{fontSize:13.5,fontWeight:600,marginTop:2,textDecoration:isDone?'line-through':'none',cursor:task?'pointer':'default'}} onClick={()=>task&&edit(task)}>{missing?'(việc đã bị xoá)':title}</div>
+                : <div style={{fontSize:12.5,color:'var(--muted)',marginTop:2}}>{s.hint}</div>}
+            </div>
+            {title ? (
+              <div style={{display:'flex',gap:6,flexShrink:0}}>
+                {!isDone && task && <button className="btn ghost sm" onClick={()=>move(task.id,'done')}><i className="ti ti-check"></i></button>}
+                {!task && !missing && <button className="btn ghost sm" onClick={()=>toggleText(s.key)}><i className={'ti '+(isDone?'ti-square-check-filled':'ti-square')}></i></button>}
+                <button className="btn ghost sm" onClick={()=>clearSlot(s.key)}><i className="ti ti-x"></i></button>
+              </div>
+            ) : <button className="btn ghost sm" style={{flexShrink:0}} onClick={()=>setPickingKey(s.key)}><i className="ti ti-plus"></i>Chọn</button>}
+          </div>
+        ))}
+      </div>
+      {pickingKey && <WinPicker slot={WIN_SLOTS.find(s=>s.key===pickingKey)} tasks={tasks} onClose={()=>setPickingKey(null)} onPick={(v)=>{setSlot(pickingKey,v);setPickingKey(null);}}/>}
+    </div>
+  );
+}
+
 /* ---------- Kế hoạch hôm nay ---------- */
-function Today({tasks,plan,rebuild,move,edit,toggleCk,openFocus,startDeep}){
+function Today({tasks,plan,rebuild,move,edit,toggleCk,openFocus,startDeep,wins,setWinSlot,clearWinSlot,toggleWinText}){
   if(!plan) return <div className="empty"><i className="ti ti-loader"></i><p>Đang dựng kế hoạch…</p></div>;
   const byId={}; tasks.forEach(t=>byId[t.id]=t);
   const items=plan.ids.map(id=>byId[id]).filter(Boolean);
@@ -1381,6 +1480,8 @@ function Today({tasks,plan,rebuild,move,edit,toggleCk,openFocus,startDeep}){
   let rank=0;
   return (
     <div>
+      <ThreeWins tasks={tasks} wins={wins} setSlot={setWinSlot} clearSlot={clearWinSlot} toggleText={toggleWinText} move={move} edit={edit}/>
+
       {/* thanh điều khiển quỹ thời gian */}
       <div className="panel" style={{marginBottom:16}}>
         <div className="panel-b" style={{padding:'14px 18px',display:'flex',alignItems:'center',gap:14,flexWrap:'wrap'}}>
