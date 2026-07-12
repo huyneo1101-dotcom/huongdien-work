@@ -4,7 +4,7 @@ App tĩnh một-file: toàn bộ UI + logic + CSS trong `index.html` (~2.895 dò
 
 ## Quy tắc làm việc với file này
 - **KHÔNG đọc cả `index.html` (~224KB)** — dùng grep định vị rồi Read cửa sổ nhỏ (xem skill `bigfile-nav`).
-- ⚠️ **Thiếu `sw.js` và `manifest.json`**: `index.html` gọi `serviceWorker.register('sw.js')` nhưng repo KHÔNG có `sw.js` và cũng KHÔNG có manifest → PWA/offline hỏng, register luôn lỗi. Cần bổ sung hoặc gỡ dòng register (xem skill `pwa-healthcheck`).
+- PWA đã đủ: `sw.js` (CACHE `huongdien-v1`, network-first trang chính, cache-first asset/CDN font+Tabler, không cache Supabase), `manifest.json` + `icon.svg`, và thẻ `<link rel="manifest">` trong `<head>`. Sửa nội dung đáng kể → **bump `CACHE`** (xem `pwa-healthcheck`).
 - Babel transpile trong trình duyệt: lỗi cú pháp = trắng màn hình. Kiểm tra Console sau khi sửa.
 
 ## Dữ liệu (localStorage, tiền tố `hdw.`)

@@ -1,0 +1,15 @@
+{
+  "name": "Hương Diện · Quản lý công việc",
+  "short_name": "Hương Diện",
+  "description": "Quản lý công việc & kinh doanh cho shop Mẹ&Bé Hương Diện.",
+  "lang": "vi",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f3ef",
+  "theme_color": "#f97316",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
