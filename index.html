@@ -57,6 +57,9 @@ input,textarea,select{font-family:inherit;font-size:14px}
 .tgl{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:11px;color:var(--muted);font-size:13px;font-weight:500}
 .tgl:hover{background:var(--o-lt);color:var(--o-dk)}
 .tgl i{font-size:18px}
+.tgl.on{background:var(--o-lt);color:var(--o-dk);font-weight:600}
+.tgl.deep{color:var(--o-dk);font-weight:600}
+.tgl.deep:hover{background:linear-gradient(135deg,#7c2d12,#c2410c);color:#fff}
 
 /* Main */
 .main{flex:1;min-width:0;display:flex;flex-direction:column}
@@ -1084,6 +1087,14 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
     if(status==='done' && was && was.status!=='done') celebrate(was);
   };
   const addSpent=(id,mins)=>setTasks(prev=>prev.map(x=>x.id===id?{...x,spent:(x.spent||0)+mins}:x));
+  /* Chế độ Deep Work mở từ bất kỳ đâu: ưu tiên đúng bộ việc đã xếp cho hôm nay,
+     chưa xếp thì tự lấy 5 việc điểm ưu tiên cao nhất của mình. */
+  const startDeepMode=()=>{
+    const open=myPool.filter(t=>t.status!=='done');
+    const planIds=(todayPlan&&todayPlan.date===today())?todayPlan.ids.filter(id=>open.some(t=>t.id===id)):[];
+    setDeepIds(planIds.length?planIds
+      :open.map(t=>({id:t.id,s:scoreTask(t)})).sort((a,b)=>b.s-a.s).slice(0,5).map(x=>x.id));
+  };
   const assignTask=(id,uidTo)=>setTasks(prev=>prev.map(x=>x.id===id?{...x,assignee:uidTo||'',assignedBy:uidTo?me.id:undefined,assignedAt:uidTo?today():undefined}:x));
 
   /* Sao lưu & khôi phục */
@@ -1233,7 +1244,9 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
     {id:'g_shop',name:'Cửa hàng',icon:'ti-building-store',badge:riskOpen,views:[
       {id:'ncc',n:'Nguồn hàng'},{id:'law',n:'Tuân thủ & Thuế'}]},
     {id:'g_ref',name:'Cẩm nang',icon:'ti-book',views:[{id:'learn',n:'Kiến thức'},{id:'book',n:'Sổ tay'}]},
-    {id:'g_brain',name:'Não khỏe',icon:'ti-brain',views:[{id:'brain',n:'Não khỏe'}]},
+    /* foot: nằm ở chân sidebar cùng nhóm "chăm mình" (Nghỉ & Thở, Deep Work), không đứng chung
+       với các mục công việc phía trên. Trên điện thoại vẫn giữ trong thanh dưới cho dễ với. */
+    {id:'g_brain',name:'Não khỏe',icon:'ti-brain',foot:true,views:[{id:'brain',n:'Não khỏe'}]},
   ].filter(g=>!g.admin||isAdmin);
   const groupOf=(v)=>GROUPS.find(g=>g.views.some(x=>x.id===v))||GROUPS[0];
   const curGroup=groupOf(view);
@@ -1289,7 +1302,7 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
           <div><b>Hương Diện</b><br/><small>Quản lý công việc</small></div>
         </div>
         <nav className="nav">
-          {GROUPS.map(g=>(
+          {GROUPS.filter(g=>!g.foot).map(g=>(
             <button key={g.id} className={curGroup.id===g.id?'on':''} onClick={()=>openGroup(g)}>
               <i className={'ti '+g.icon}></i>{g.name}
               {g.badge>0 && <span className="badge">{g.badge}</span>}
@@ -1304,8 +1317,16 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
               <div style={{fontSize:12,color:'var(--muted)'}}><b style={{color:'var(--ink)',fontSize:15,fontFamily:'Baloo 2'}}>{stats.doneWeek}</b> việc xong<br/>{stats.open} việc còn lại</div>
             </div>
           </div>
+          {GROUPS.filter(g=>g.foot).map(g=>(
+            <button key={g.id} className={'tgl'+(curGroup.id===g.id?' on':'')} onClick={()=>openGroup(g)}>
+              <i className={'ti '+g.icon}></i>{g.name}
+            </button>
+          ))}
           <button className="tgl" onClick={()=>setBreath(true)}>
             <i className="ti ti-yoga"></i>Nghỉ & Thở
+          </button>
+          <button className="tgl deep" onClick={startDeepMode} title="Phiên tập trung sâu, đi lần lượt qua các việc ưu tiên">
+            <i className="ti ti-flame"></i>Chế độ Deep Work
           </button>
           <button className="tgl" onClick={()=>setDark(d=>!d)}>
             <i className={'ti '+(dark?'ti-sun':'ti-moon')}></i>{dark?'Giao diện sáng':'Giao diện tối'}
