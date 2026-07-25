@@ -1,5 +1,5 @@
 // HDWork service worker — cho cài PWA + chạy offline. An toàn: chỉ chạy khi mở qua http(s).
-const CACHE = "hdwork-v2";
+const CACHE = "hdwork-v3";
 const CORE = ["./index.html", "./manifest.json", "./icon.svg"];
 
 self.addEventListener("install", (e) => {

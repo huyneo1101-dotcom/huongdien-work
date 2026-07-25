@@ -160,6 +160,9 @@ input,textarea,select{font-family:inherit;font-size:14px}
 .row .rt small{color:var(--muted);font-size:12px}
 
 /* daily */
+.grid3{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.subnav{padding:0 26px 14px;align-items:center}
+@media(max-width:768px){.subnav{padding:0 16px 12px;overflow-x:auto;flex-wrap:nowrap}.subnav::-webkit-scrollbar{display:none}}
 .dailywrap{display:grid;grid-template-columns:1.4fr 1fr;gap:18px}
 @media(max-width:860px){.dailywrap{grid-template-columns:1fr}}
 .streak{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--amber)}
@@ -213,8 +216,9 @@ input,textarea,select{font-family:inherit;font-size:14px}
 .mtop b{font-family:"Baloo 2";font-size:16px}
 .botnav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);z-index:50;padding:6px 4px 8px;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .botnav::-webkit-scrollbar{height:0}
-.botnav button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:var(--muted2);padding:5px 4px;border-radius:10px;flex:0 0 auto;min-width:60px;position:relative}
-.botnav button i{font-size:23px}
+/* 7 nhóm phải vừa màn 375px mà vẫn đọc được cả chữ → co giãn đều, không cuộn ngang */
+.botnav button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;font-weight:600;color:var(--muted2);padding:5px 2px;border-radius:10px;flex:1 1 0;min-width:0;white-space:nowrap;position:relative}
+.botnav button i{font-size:22px}
 .botnav button.on{color:var(--o)}
 .botnav .badge{position:absolute;top:2px;right:50%;transform:translateX(16px);background:var(--red);color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px}
 .fab{display:none;position:fixed;right:18px;bottom:78px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--o),var(--o-dk));color:#fff;font-size:28px;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(249,115,22,.45);z-index:49}
@@ -697,8 +701,240 @@ function Ring({pct,size=46,color='#f97316'}){
   );
 }
 
+/* ================= TÀI KHOẢN & PHÂN QUYỀN =================
+   GIỚI HẠN CẦN BIẾT: app chạy hoàn toàn trên trình duyệt, không có máy chủ kiểm tra
+   đăng nhập. Màn khoá này chặn được: người lạ mở link (không có tài khoản, không có
+   dữ liệu), và người không phận sự cầm máy. Nó KHÔNG chặn được người rành kỹ thuật
+   ngồi trước máy đã đăng nhập — họ mở DevTools là đọc được localStorage.
+   Muốn chặn cả trường hợp đó phải chuyển sang tài khoản trên máy chủ (Supabase Auth + RLS).
+   Mật khẩu chỉ lưu dạng BĂM SHA-256 kèm muối riêng từng người, không lưu chữ thật. */
+const SESSION_KEY='hdwork.session';   // cố ý KHÔNG có tiền tố 'hdw.' → phiên đăng nhập không đồng bộ sang máy khác
+const ROLE_SEED=[
+ {id:'owner',  n:'Chủ cửa hàng',             ic:'👑',admin:true,               projs:[]},
+ {id:'manager',n:'Quản lý cửa hàng',         ic:'🗂️',admin:true,               projs:[]},
+ {id:'mkt',    n:'NV Marketing & nhập hàng', ic:'📣',admin:false,projs:['mkt','content','nhap']},
+ {id:'dq',     n:'NV chi nhánh ĐQ',          ic:'🏬',admin:false,projs:['don','cs','kho']},
+ {id:'nk',     n:'NV bán hàng NK',           ic:'🛍️',admin:false,projs:['don','cs']},
+ {id:'kho',    n:'NV kho & bắn đơn tỉnh',    ic:'📦',admin:false,projs:['kho','don']},
+];
+function randHex(n){
+  try{ const a=new Uint8Array(n); crypto.getRandomValues(a); return Array.from(a).map(b=>b.toString(16).padStart(2,'0')).join(''); }
+  catch(e){ let s=''; for(let i=0;i<n*2;i++) s+='0123456789abcdef'[Math.floor(Math.random()*16)]; return s; }
+}
+async function hashPw(pw,salt){
+  const data=new TextEncoder().encode(salt+'|'+pw);
+  try{
+    const buf=await crypto.subtle.digest('SHA-256',data);
+    return 'sha256:'+Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }catch(e){
+    /* dự phòng khi trình duyệt không cho dùng Web Crypto (vd mở thẳng bằng file://).
+       Yếu hơn SHA-256 nhiều — chỉ để app không chết, nên dùng qua https. */
+    let h=0x811c9dc5, g=0x9e3779b9;
+    for(let i=0;i<data.length;i++){ h=((h^data[i])>>>0)*0x01000193>>>0; g=(g+data[i]*(i+31))>>>0; }
+    return 'weak:'+h.toString(16).padStart(8,'0')+g.toString(16).padStart(8,'0');
+  }
+}
+const Auth={
+  users(){ return store.get('hdw.users',[]); },
+  saveUsers(u){ store.set('hdw.users',u); },
+  roles(){ return mergeSeed(store.get('hdw.roles',ROLE_SEED),ROLE_SEED,'hdw.rolesSeen'); },
+  saveRoles(r){ store.set('hdw.roles',r); },
+  session(){ try{ return JSON.parse(localStorage.getItem(SESSION_KEY)||'null'); }catch(e){ return null; } },
+  open(id){ try{ localStorage.setItem(SESSION_KEY,JSON.stringify({uid:id,at:Date.now()})); }catch(e){} },
+  close(){ try{ localStorage.removeItem(SESSION_KEY); }catch(e){} },
+};
+const roleOf=(u,roles)=>(roles.find(r=>r.id===(u&&u.role))||{id:'staff',n:'Nhân viên',ic:'👤',admin:false,projs:[]});
+const initials=(name)=>(name||'?').trim().split(/\s+/).slice(-1)[0][0].toUpperCase();
+/* khoá dữ liệu riêng từng người — mỗi tài khoản một bộ thói quen, năng lượng, bài đã học… */
+const ukey=(id,k)=>'hdw.u.'+id+'.'+k;
+
+const authCard={maxWidth:400,width:'100%',background:'var(--card)',borderRadius:20,boxShadow:'var(--sh)',padding:'26px 24px'};
+const authInput={width:'100%',background:'var(--bg)',border:'1.5px solid var(--border)',borderRadius:11,padding:'12px 13px',color:'var(--ink)',outline:'none',fontSize:15,fontFamily:'inherit'};
+function AuthShell({children,sub}){
+  return (
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:20,background:'linear-gradient(160deg,var(--o-lt),var(--bg))'}}>
+      <div style={{width:'100%',maxWidth:400}}>
+        <div style={{textAlign:'center',marginBottom:18}}>
+          <div style={{fontSize:40}}>📋</div>
+          <b style={{fontFamily:'Baloo 2',fontSize:23,display:'block'}}>Hương Diện</b>
+          <div style={{fontSize:13,color:'var(--muted)'}}>{sub||'Quản lý công việc'}</div>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+/* Màn khoá: chọn người → nhập mật khẩu. Máy mới thì nhập mã đồng bộ để kéo tài khoản về. */
+function Login({users,roles,onIn}){
+  const [mode,setMode]=useState(users.length?'pick':'start');
+  const [pick,setPick]=useState(null);
+  const [pw,setPw]=useState(''); const [pw2,setPw2]=useState(''); const [nm,setNm]=useState('');
+  const [code,setCode]=useState(''); const [err,setErr]=useState(''); const [busy,setBusy]=useState(false);
+  const active=users.filter(u=>u.active!==false);
+
+  const doLogin=async()=>{
+    if(!pw){ setErr('Chưa nhập mật khẩu.'); return; }
+    setBusy(true);
+    const h=await hashPw(pw,pick.salt);
+    setBusy(false);
+    if(h===pick.hash){ setErr(''); onIn(pick.id); }
+    else setErr('Mật khẩu không đúng.');
+  };
+  const doCreateOwner=async()=>{
+    if(nm.trim().length<2){ setErr('Nhập tên của bạn.'); return; }
+    if(pw.length<6){ setErr('Mật khẩu tối thiểu 6 ký tự.'); return; }
+    if(pw!==pw2){ setErr('Hai ô mật khẩu chưa khớp.'); return; }
+    setBusy(true);
+    const salt=randHex(8), hash=await hashPw(pw,salt);
+    const u={id:'u'+Date.now(),name:nm.trim(),role:'owner',salt,hash,active:true,createdAt:today()};
+    Auth.saveUsers([u]); setBusy(false); onIn(u.id);
+  };
+  const doSync=async()=>{
+    const c=code.trim(); if(c.length<4){ setErr('Mã đồng bộ chưa đúng.'); return; }
+    setBusy(true); setErr('');
+    try{
+      localStorage.setItem('hdw.synccode',c);
+      const r=await Sync.pull();
+      if(r&&r.ok&&!r.empty){ location.reload(); return; }
+      localStorage.removeItem('hdw.synccode');
+      setErr('Mã này chưa có dữ liệu nào. Kiểm tra lại mã trong Sổ tay → Đồng bộ trên máy cũ.');
+    }catch(e){ localStorage.removeItem('hdw.synccode'); setErr('Không kết nối được. Kiểm tra mạng rồi thử lại.'); }
+    setBusy(false);
+  };
+  const errBox=err&&<div style={{marginTop:12,padding:'10px 12px',background:'var(--red-lt)',color:'var(--red)',borderRadius:11,fontSize:12.5,lineHeight:1.5}}>{err}</div>;
+
+  if(mode==='start'||(mode==='pick'&&!active.length)) return (
+    <AuthShell sub="Chưa có tài khoản nào trên máy này">
+      <div style={authCard}>
+        <b style={{fontFamily:'Baloo 2',fontSize:17}}>Bắt đầu thế nào?</b>
+        <p style={{fontSize:13,color:'var(--muted)',lineHeight:1.6,margin:'8px 0 16px'}}>Nếu cửa hàng đã dùng app trên máy khác, hãy nhập <b>mã đồng bộ</b> để kéo tài khoản và dữ liệu về máy này. Chưa có gì thì tạo tài khoản chủ cửa hàng.</p>
+        <button className="btn" style={{width:'100%',justifyContent:'center',marginBottom:9}} onClick={()=>{setMode('sync');setErr('');}}><i className="ti ti-cloud-download"></i>Nhập mã đồng bộ</button>
+        <button className="btn ghost" style={{width:'100%',justifyContent:'center'}} onClick={()=>{setMode('owner');setErr('');}}><i className="ti ti-user-plus"></i>Tạo tài khoản chủ cửa hàng</button>
+      </div>
+    </AuthShell>
+  );
+
+  if(mode==='sync') return (
+    <AuthShell sub="Kéo dữ liệu từ máy đã dùng">
+      <div style={authCard}>
+        <b style={{fontFamily:'Baloo 2',fontSize:17}}>Mã đồng bộ</b>
+        <p style={{fontSize:12.5,color:'var(--muted)',lineHeight:1.6,margin:'8px 0 14px'}}>Lấy ở máy cũ: <b>Sổ tay → Đồng bộ</b>. Mã này là chìa khoá vào dữ liệu cửa hàng — chỉ đưa cho người trong đội.</p>
+        <input value={code} onChange={e=>setCode(e.target.value)} onKeyDown={e=>e.key==='Enter'&&doSync()} placeholder="Dán mã đồng bộ" style={authInput} autoFocus/>
+        {errBox}
+        <button className="btn" disabled={busy} style={{width:'100%',justifyContent:'center',marginTop:14}} onClick={doSync}><i className="ti ti-cloud-download"></i>{busy?'Đang kéo dữ liệu…':'Kéo dữ liệu về'}</button>
+        <button className="btn ghost sm" style={{width:'100%',justifyContent:'center',marginTop:8}} onClick={()=>{setMode(active.length?'pick':'start');setErr('');}}>Quay lại</button>
+      </div>
+    </AuthShell>
+  );
+
+  if(mode==='owner') return (
+    <AuthShell sub="Tài khoản chủ cửa hàng">
+      <div style={authCard}>
+        <b style={{fontFamily:'Baloo 2',fontSize:17}}>Tạo tài khoản chủ</b>
+        <p style={{fontSize:12.5,color:'var(--muted)',lineHeight:1.6,margin:'8px 0 14px'}}>Tài khoản này quản lý mọi thành viên khác. Nhớ kỹ mật khẩu — không có cách khôi phục nào ngoài file sao lưu.</p>
+        <input value={nm} onChange={e=>setNm(e.target.value)} placeholder="Tên của bạn" style={{...authInput,marginBottom:9}} autoFocus/>
+        <input value={pw} onChange={e=>setPw(e.target.value)} type="password" placeholder="Mật khẩu (tối thiểu 6 ký tự)" style={{...authInput,marginBottom:9}}/>
+        <input value={pw2} onChange={e=>setPw2(e.target.value)} type="password" placeholder="Nhắc lại mật khẩu" onKeyDown={e=>e.key==='Enter'&&doCreateOwner()} style={authInput}/>
+        {errBox}
+        <button className="btn" disabled={busy} style={{width:'100%',justifyContent:'center',marginTop:14}} onClick={doCreateOwner}><i className="ti ti-check"></i>Tạo tài khoản</button>
+        <button className="btn ghost sm" style={{width:'100%',justifyContent:'center',marginTop:8}} onClick={()=>{setMode('start');setErr('');}}>Quay lại</button>
+      </div>
+    </AuthShell>
+  );
+
+  if(mode==='pw'&&pick){ const r=roleOf(pick,roles); return (
+    <AuthShell sub={r.ic+' '+r.n}>
+      <div style={authCard}>
+        <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:16}}>
+          <div style={{width:46,height:46,borderRadius:14,background:'var(--o-lt)',color:'var(--o-dk)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,fontWeight:700,fontFamily:'Baloo 2'}}>{initials(pick.name)}</div>
+          <div><b style={{fontFamily:'Baloo 2',fontSize:17,display:'block'}}>{pick.name}</b><small style={{color:'var(--muted)'}}>{r.n}</small></div>
+        </div>
+        <input value={pw} onChange={e=>setPw(e.target.value)} type="password" placeholder={pick.mustChange?'Mã tạm chủ cửa hàng đưa':'Mật khẩu'} onKeyDown={e=>e.key==='Enter'&&doLogin()} style={authInput} autoFocus/>
+        {errBox}
+        <button className="btn" disabled={busy} style={{width:'100%',justifyContent:'center',marginTop:14}} onClick={doLogin}><i className="ti ti-login"></i>{busy?'Đang kiểm tra…':'Vào app'}</button>
+        <button className="btn ghost sm" style={{width:'100%',justifyContent:'center',marginTop:8}} onClick={()=>{setMode('pick');setPw('');setErr('');}}>Chọn người khác</button>
+        <div style={{marginTop:12,fontSize:11.5,color:'var(--muted2)',textAlign:'center',lineHeight:1.5}}>Quên mật khẩu? Nhờ chủ cửa hàng vào <b>Đội ngũ → Thành viên</b> cấp lại mã tạm.</div>
+      </div>
+    </AuthShell>
+  ); }
+
+  return (
+    <AuthShell sub="Ai đang dùng máy này?">
+      <div style={authCard}>
+        {active.map(u=>{ const r=roleOf(u,roles); return (
+          <button key={u.id} onClick={()=>{setPick(u);setMode('pw');setPw('');setErr('');}}
+            style={{display:'flex',alignItems:'center',gap:12,width:'100%',padding:'11px 12px',borderRadius:13,border:'1.5px solid var(--border)',background:'var(--bg)',marginBottom:8,cursor:'pointer',textAlign:'left'}}>
+            <div style={{width:38,height:38,borderRadius:12,background:'var(--o-lt)',color:'var(--o-dk)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,fontWeight:700,fontFamily:'Baloo 2',flexShrink:0}}>{initials(u.name)}</div>
+            <div style={{flex:1,minWidth:0}}>
+              <b style={{fontSize:14,display:'block',color:'var(--ink)'}}>{u.name}</b>
+              <small style={{color:'var(--muted)',fontSize:12}}>{r.ic} {r.n}</small>
+            </div>
+            {u.mustChange
+              ? <span className="tag" style={{background:'var(--amber-lt)',color:'var(--amber)'}}>Cần đặt mật khẩu</span>
+              : <i className="ti ti-lock" style={{color:'var(--muted2)'}}></i>}
+          </button>
+        ); })}
+        <button className="btn ghost sm" style={{width:'100%',justifyContent:'center',marginTop:6}} onClick={()=>{setMode('sync');setErr('');}}><i className="ti ti-cloud-download"></i>Máy mới · nhập mã đồng bộ</button>
+      </div>
+      <div style={{marginTop:14,fontSize:11.5,color:'var(--muted2)',textAlign:'center',lineHeight:1.6}}>
+        Dữ liệu nằm trên máy này, không ai mở link mà thấy được.<br/>Mật khẩu lưu dạng băm — quên là phải nhờ chủ cấp lại.
+      </div>
+    </AuthShell>
+  );
+}
+/* Người mới đăng nhập bằng mã tạm → buộc tự đặt mật khẩu riêng */
+function SetPassword({user,onDone,onBack}){
+  const [pw,setPw]=useState(''),[pw2,setPw2]=useState(''),[err,setErr]=useState(''),[busy,setBusy]=useState(false);
+  const go=async()=>{
+    if(pw.length<6){ setErr('Mật khẩu tối thiểu 6 ký tự.'); return; }
+    if(pw!==pw2){ setErr('Hai ô mật khẩu chưa khớp.'); return; }
+    setBusy(true);
+    const salt=randHex(8), hash=await hashPw(pw,salt);
+    onDone(hash,salt);
+  };
+  return (
+    <AuthShell sub="Lần đầu đăng nhập">
+      <div style={authCard}>
+        <b style={{fontFamily:'Baloo 2',fontSize:17}}>Chào {user.name} — đặt mật khẩu riêng</b>
+        <p style={{fontSize:12.5,color:'var(--muted)',lineHeight:1.6,margin:'8px 0 14px'}}>Mã tạm chỉ dùng được một lần. Đặt mật khẩu của riêng bạn để không ai khác vào được tài khoản này.</p>
+        <input value={pw} onChange={e=>setPw(e.target.value)} type="password" placeholder="Mật khẩu mới (tối thiểu 6 ký tự)" style={{...authInput,marginBottom:9}} autoFocus/>
+        <input value={pw2} onChange={e=>setPw2(e.target.value)} type="password" placeholder="Nhắc lại mật khẩu" onKeyDown={e=>e.key==='Enter'&&go()} style={authInput}/>
+        {err&&<div style={{marginTop:12,padding:'10px 12px',background:'var(--red-lt)',color:'var(--red)',borderRadius:11,fontSize:12.5}}>{err}</div>}
+        <button className="btn" disabled={busy} style={{width:'100%',justifyContent:'center',marginTop:14}} onClick={go}><i className="ti ti-check"></i>Lưu mật khẩu & vào app</button>
+        <button className="btn ghost sm" style={{width:'100%',justifyContent:'center',marginTop:8}} onClick={onBack}>Thoát ra</button>
+      </div>
+    </AuthShell>
+  );
+}
+/* Cổng vào: chưa đăng nhập thì KHÔNG dựng app, chỉ thấy màn khoá */
+function Root(){
+  const [users,setUsersState]=useState(()=>Auth.users());
+  const [roles,setRolesState]=useState(()=>Auth.roles());
+  const [curId,setCurId]=useState(()=>{ const s=Auth.session(); return (s&&s.uid)||null; });
+  const [pulled,setPulled]=useState(!Sync.enabled());
+  const setUsers=(u)=>{ setUsersState(u); Auth.saveUsers(u); };
+  const setRoles=(r)=>{ setRolesState(r); Auth.saveRoles(r); };
+  /* kéo dữ liệu mới nhất từ cloud TRƯỚC khi dựng màn khoá, để danh sách tài khoản luôn mới */
+  useEffect(()=>{
+    if(!Sync.enabled()){ setPulled(true); return; }
+    Sync.pull().then(r=>{ if(r&&r.changed){ location.reload(); return; } setUsersState(Auth.users()); setRolesState(Auth.roles()); setPulled(true); })
+      .catch(()=>setPulled(true));
+  },[]);
+  const me=users.find(u=>u.id===curId&&u.active!==false)||null;
+  if(!pulled) return <AuthShell sub="Đang tải dữ liệu…"><div style={{...authCard,textAlign:'center',color:'var(--muted)',fontSize:13}}>Đang đồng bộ với đám mây…</div></AuthShell>;
+  /* onIn đọc lại từ kho: màn khoá có thể vừa tạo tài khoản chủ đầu tiên */
+  if(!me) return <Login users={users} roles={roles} onIn={(id)=>{ Auth.open(id); setUsersState(Auth.users()); setCurId(id); }}/>;
+  if(me.mustChange) return <SetPassword user={me} onBack={()=>{ Auth.close(); setCurId(null); }}
+    onDone={(hash,salt)=>setUsers(users.map(u=>u.id===me.id?{...u,hash,salt,mustChange:false}:u))}/>;
+  return <App key={me.id} me={me} roles={roles} setRoles={setRoles} users={users} setUsers={setUsers}
+    onLock={()=>{ Auth.close(); setCurId(null); }}/>;
+}
+
 /* ===================================================================== */
-function App(){
+function App({me,roles,setRoles,users,setUsers,onLock}){
+  const myRole=roleOf(me,roles);
+  const isAdmin=!!myRole.admin;
+  const isOwner=me.role==='owner';
   const [tasks,setTasks]=useState(()=>{const t=store.get('hdw.tasks',null);return mergeInbox(t||seed());});
   const [daily,setDaily]=useState(()=>store.get('hdw.daily',SEED_DAILY));
   const [recurring,setRecurring]=useState(()=>mergeSeed(store.get('hdw.recurring',SEED_RECUR),SEED_RECUR,'hdw.recurSeen'));
@@ -713,14 +949,17 @@ function App(){
   const [focusTask,setFocusTask]=useState(null);
   const [deepIds,setDeepIds]=useState(null);
   const [breath,setBreath]=useState(false);
-  const [zen,setZen]=useState(()=>store.get('hdw.zen',{min:0,sessions:0}));
-  const [brainlog,setBrainlog]=useState(()=>store.get('hdw.brainlog',{}));
-  const [carecfg,setCarecfg]=useState(()=>store.get('hdw.carecfg',{water:true,stand:true,eye:false,caffeine:true,caffeineHour:14}));
-  const [learned,setLearned]=useState(()=>store.get('hdw.learned',{}));
+  /* ---- dữ liệu RIÊNG từng tài khoản (thói quen, năng lượng, bài đã học, kế hoạch ngày) ----
+     Tài khoản chủ giữ nguyên dữ liệu cũ để không mất lịch sử; người mới bắt đầu từ trống. */
+  const mine=(k,d)=>{ const v=store.get(ukey(me.id,k),null); if(v!==null) return v; return isOwner?store.get('hdw.'+k,d):d; };
+  const [zen,setZen]=useState(()=>mine('zen',{min:0,sessions:0}));
+  const [brainlog,setBrainlog]=useState(()=>mine('brainlog',{}));
+  const [carecfg,setCarecfg]=useState(()=>mine('carecfg',{water:true,stand:true,eye:false,caffeine:true,caffeineHour:14}));
+  const [learned,setLearned]=useState(()=>mine('learned',{}));
   const [toast,setToast]=useState(null);
-  const [dailyState,setDailyState]=useState(()=>store.get('hdw.dailyState',{date:today(),done:[],streak:0,last:''}));
-  const [view,setView]=useState('dash');
-  const [todayPlan,setTodayPlan]=useState(()=>store.get('hdw.todayPlan',null));
+  const [dailyState,setDailyState]=useState(()=>mine('dailyState',{date:today(),done:[],streak:0,last:''}));
+  const [view,setView]=useState(()=>store.get('hdwork.lastview',isAdmin?'dash':'today'));
+  const [todayPlan,setTodayPlan]=useState(()=>mine('todayPlan',null));
   const [dark,setDark]=useState(()=>store.get('hdw.dark',0)==1||store.get('hdw.dark',false)===true||localStorage.getItem('hdw.dark')==='1');
   const [editing,setEditing]=useState(null); // task object or null
   const [bellOpen,setBellOpen]=useState(false);
@@ -729,18 +968,19 @@ function App(){
 
   useEffect(()=>store.set('hdw.tasks',tasks),[tasks]);
   useEffect(()=>store.set('hdw.daily',daily),[daily]);
-  useEffect(()=>store.set('hdw.dailyState',dailyState),[dailyState]);
-  useEffect(()=>store.set('hdw.todayPlan',todayPlan),[todayPlan]);
+  useEffect(()=>store.set(ukey(me.id,'dailyState'),dailyState),[dailyState]);
+  useEffect(()=>store.set(ukey(me.id,'todayPlan'),todayPlan),[todayPlan]);
+  useEffect(()=>store.set('hdwork.lastview',view),[view]);
   useEffect(()=>store.set('hdw.recurring',recurring),[recurring]);
   useEffect(()=>store.set('hdw.bizmetrics',bizmetrics),[bizmetrics]);
   useEffect(()=>store.set('hdw.bizconfig',bizconfig),[bizconfig]);
   useEffect(()=>store.set('hdw.notebook',notebook),[notebook]);
   useEffect(()=>store.set('hdw.sourcing',sourcing),[sourcing]);
   useEffect(()=>store.set('hdw.compliance',compliance),[compliance]);
-  useEffect(()=>store.set('hdw.zen',zen),[zen]);
-  useEffect(()=>store.set('hdw.brainlog',brainlog),[brainlog]);
-  useEffect(()=>store.set('hdw.carecfg',carecfg),[carecfg]);
-  useEffect(()=>store.set('hdw.learned',learned),[learned]);
+  useEffect(()=>store.set(ukey(me.id,'zen'),zen),[zen]);
+  useEffect(()=>store.set(ukey(me.id,'brainlog'),brainlog),[brainlog]);
+  useEffect(()=>store.set(ukey(me.id,'carecfg'),carecfg),[carecfg]);
+  useEffect(()=>store.set(ukey(me.id,'learned'),learned),[learned]);
   const addZen=(m)=>setZen(z=>({min:(z.min||0)+m,sessions:(z.sessions||0)+1}));
 
   // Nhắc nhịp chăm sóc: bắn toast nhẹ theo giờ khi app đang mở
@@ -773,8 +1013,7 @@ function App(){
   useEffect(()=>{ const add=genRecurring(recurring,tasks); if(add.length) setTasks(prev=>[...prev,...add]); },[recurring]);
   // toast tự ẩn
   useEffect(()=>{ if(!toast) return; const id=setTimeout(()=>setToast(null),2600); return ()=>clearTimeout(id); },[toast]);
-  // đồng bộ: kéo dữ liệu mới nhất từ cloud khi mở app
-  useEffect(()=>{ if(Sync.enabled()) Sync.pull().then(r=>{ if(r&&r.changed) location.reload(); }); },[]);
+  // đồng bộ: việc kéo dữ liệu từ cloud đã làm ở Root, trước màn khoá
   useEffect(()=>{ document.body.classList.toggle('dark',dark); store.set('hdw.dark',dark?1:0); },[dark]);
 
   // reset checklist hằng ngày khi sang ngày mới
@@ -826,6 +1065,7 @@ function App(){
     if(status==='done' && was && was.status!=='done') celebrate(was);
   };
   const addSpent=(id,mins)=>setTasks(prev=>prev.map(x=>x.id===id?{...x,spent:(x.spent||0)+mins}:x));
+  const assignTask=(id,uidTo)=>setTasks(prev=>prev.map(x=>x.id===id?{...x,assignee:uidTo||'',assignedBy:uidTo?me.id:undefined,assignedAt:uidTo?today():undefined}:x));
 
   /* Sao lưu & khôi phục */
   const exportData=()=>{
@@ -856,10 +1096,12 @@ function App(){
     return {...x,checklist:cl,progress:cl.length?prog:x.progress};
   }));
 
-  /* kế hoạch hôm nay: xếp theo điểm ưu tiên, lấp đủ quỹ thời gian trong ngày */
+  /* kế hoạch hôm nay: xếp theo điểm ưu tiên, lấp đủ quỹ thời gian trong ngày.
+     Chỉ xếp việc CỦA MÌNH — chủ/quản lý tính thêm việc chưa giao ai vào phần của mình. */
+  const myPool=useMemo(()=>tasks.filter(t=>t.assignee===me.id||(isAdmin&&!t.assignee)),[tasks,me.id,isAdmin]);
   const rebuildPlan=(cap)=>{
     const capH=cap || (todayPlan&&todayPlan.cap) || 6;
-    const open=tasks.filter(t=>t.status!=='done');
+    const open=myPool.filter(t=>t.status!=='done');
     const ranked=open.map(t=>({id:t.id,s:scoreTask(t),h:estOf(t)})).sort((a,b)=>b.s-a.s);
     const ids=[]; let used=0;
     for(const r of ranked){ if(used>=capH) break; ids.push(r.id); used+=r.h; }
@@ -870,17 +1112,17 @@ function App(){
   // Tự bù việc: sau khi 1 việc xong, thời gian trống ra → đề xuất thêm việc ưu tiên cao còn lại cho đủ quỹ giờ
   useEffect(()=>{
     if(!todayPlan || todayPlan.date!==today()) return;
-    const byId={}; tasks.forEach(t=>byId[t.id]=t);
+    const byId={}; myPool.forEach(t=>byId[t.id]=t);
     const inPlan=new Set(todayPlan.ids);
     const activeH=todayPlan.ids.map(id=>byId[id]).filter(t=>t&&t.status!=='done').reduce((a,t)=>a+estOf(t),0);
     if(activeH>=todayPlan.cap) return;                       // còn đầy việc thì thôi
-    const cands=tasks.filter(t=>t.status!=='done'&&!inPlan.has(t.id))
+    const cands=myPool.filter(t=>t.status!=='done'&&!inPlan.has(t.id))
       .map(t=>({id:t.id,s:scoreTask(t),h:estOf(t)})).sort((a,b)=>b.s-a.s);
     if(!cands.length) return;
     let used=activeH; const add=[];
     for(const c of cands){ if(used>=todayPlan.cap) break; add.push(c.id); used+=c.h; }
     if(add.length) setTodayPlan(p=>({...p,ids:[...p.ids,...add],auto:[...(p.auto||[]),...add]}));
-  },[tasks]);
+  },[myPool]);
 
   /* daily */
   const toggleDaily=(id)=>setDailyState(s=>{
@@ -888,33 +1130,45 @@ function App(){
     return {...s,done};
   });
 
+  /* ---- Việc nào người này được thấy ----
+     Nhân viên chỉ thấy việc được giao cho mình → to-do list riêng, không rối vì việc người khác.
+     Chủ & quản lý thấy toàn bộ, lọc theo người ở ô "Người nhận" trên Bảng việc. */
+  const [whoFilter,setWhoFilter]=useState('all');
+  const vTasks=useMemo(()=>{
+    if(!isAdmin) return tasks.filter(t=>t.assignee===me.id);
+    if(whoFilter==='all') return tasks;
+    if(whoFilter==='none') return tasks.filter(t=>!t.assignee);
+    return tasks.filter(t=>t.assignee===whoFilter);
+  },[tasks,isAdmin,me.id,whoFilter]);
+  const nameOf=(id)=>{ const u=users.find(x=>x.id===id); return u?u.name:null; };
+
   /* derived */
   const filtered=useMemo(()=>{
-    let r=tasks;
+    let r=vTasks;
     if(projFilter!=='all') r=r.filter(t=>t.proj===projFilter);
     if(q.trim()){const s=q.toLowerCase();r=r.filter(t=>t.title.toLowerCase().includes(s)||(t.note||'').toLowerCase().includes(s));}
     return r;
-  },[tasks,projFilter,q]);
+  },[vTasks,projFilter,q]);
 
   const stats=useMemo(()=>{
     const t=today();
-    const open=tasks.filter(x=>x.status!=='done');
+    const open=vTasks.filter(x=>x.status!=='done');
     return {
       todayCnt: open.filter(x=>x.due===t).length,
-      doing: tasks.filter(x=>x.status==='doing').length,
+      doing: vTasks.filter(x=>x.status==='doing').length,
       overdue: open.filter(x=>x.due && x.due<t).length,
-      doneWeek: tasks.filter(x=>x.status==='done' && x.doneAt && x.doneAt>=addDays(-7)).length,
+      doneWeek: vTasks.filter(x=>x.status==='done' && x.doneAt && x.doneAt>=addDays(-7)).length,
       open: open.length,
-      total: tasks.length,
+      total: vTasks.length,
     };
-  },[tasks]);
+  },[vTasks]);
 
   const overdueCount=stats.overdue;
 
   const alerts=useMemo(()=>{
     const t=today(), soon=addDays(3);
     const list=[];
-    tasks.forEach(x=>{
+    vTasks.forEach(x=>{
       if(x.status==='done'||!x.due) return;
       let kind=null;
       if(x.due<t) kind='over';
@@ -929,22 +1183,31 @@ function App(){
   const urgentCount=alerts.filter(a=>a.kind==='over'||a.kind==='today').length;
 
   const riskOpen=useMemo(()=>COMPLIANCE.reduce((n,g)=>n+g.items.filter(i=>i.risk==='high'&&compliance[i.id]!=='done').length,0),[compliance]);
-  const NAV=[
-    {id:'dash',name:'Tổng quan',icon:'ti-layout-dashboard'},
-    {id:'today',name:'Hôm nay',icon:'ti-target-arrow'},
-    {id:'brain',name:'Não khỏe',icon:'ti-brain'},
-    {id:'board',name:'Bảng việc',icon:'ti-layout-kanban'},
-    {id:'proj',name:'Theo mảng',icon:'ti-folders'},
-    {id:'cal',name:'Lịch · Hạn',icon:'ti-calendar-due',badge:overdueCount},
-    {id:'stats',name:'Thống kê',icon:'ti-chart-histogram'},
-    {id:'kd',name:'Sổ KD',icon:'ti-report-money'},
-    {id:'sales',name:'Bán hàng',icon:'ti-shopping-cart'},
-    {id:'ncc',name:'Nguồn hàng',icon:'ti-truck-delivery'},
-    {id:'law',name:'Tuân thủ',icon:'ti-shield-check',badge:riskOpen},
-    {id:'learn',name:'Kiến thức',icon:'ti-school'},
-    {id:'book',name:'Sổ tay',icon:'ti-book'},
-    {id:'daily',name:'Việc lặp lại',icon:'ti-checkup-list'},
-  ];
+  /* ---- Menu 7 nhóm, mỗi nhóm có tab con ----
+     Năm màn Hôm nay/Bảng việc/Theo mảng/Lịch/Việc lặp lại đọc cùng một kho việc,
+     nên chúng là TAB CON của "Công việc" chứ không phải 5 mục ngang hàng. */
+  const unassigned=isAdmin?tasks.filter(t=>!t.assignee&&t.status!=='done').length:0;
+  const GROUPS=[
+    {id:'g_dash',name:'Tổng quan',icon:'ti-layout-dashboard',views:[{id:'dash',n:'Tổng quan'}]},
+    {id:'g_work',name:'Công việc',icon:'ti-checklist',badge:overdueCount,views:[
+      {id:'today',n:'Hôm nay'},{id:'board',n:'Bảng việc'},{id:'proj',n:'Theo mảng'},{id:'cal',n:'Lịch · Hạn'},{id:'daily',n:'Việc lặp lại'}]},
+    {id:'g_team',name:'Đội ngũ',icon:'ti-users',admin:true,badge:unassigned,views:[
+      {id:'assign',n:'Phân công'},{id:'progress',n:'Tiến độ'},{id:'members',n:'Thành viên'}]},
+    {id:'g_num',name:'Số liệu',icon:'ti-chart-histogram',admin:true,views:[
+      {id:'sales',n:'Bán hàng'},{id:'kd',n:'Sổ KD'},{id:'stats',n:'Thống kê'}]},
+    {id:'g_shop',name:'Cửa hàng',icon:'ti-building-store',badge:riskOpen,views:[
+      {id:'ncc',n:'Nguồn hàng'},{id:'law',n:'Tuân thủ & Thuế'}]},
+    {id:'g_ref',name:'Cẩm nang',icon:'ti-book',views:[{id:'learn',n:'Kiến thức'},{id:'book',n:'Sổ tay'}]},
+    {id:'g_brain',name:'Não khỏe',icon:'ti-brain',views:[{id:'brain',n:'Não khỏe'}]},
+  ].filter(g=>!g.admin||isAdmin);
+  const groupOf=(v)=>GROUPS.find(g=>g.views.some(x=>x.id===v))||GROUPS[0];
+  const curGroup=groupOf(view);
+  /* mở nhóm thì quay lại đúng tab con dùng lần trước */
+  const lastTab=useRef(store.get('hdwork.lasttab',{}));
+  const openGroup=(g)=>{ const v=lastTab.current[g.id]; setView(g.views.some(x=>x.id===v)?v:g.views[0].id); };
+  const goView=(v)=>{ const g=groupOf(v); lastTab.current={...lastTab.current,[g.id]:v}; store.set('hdwork.lasttab',lastTab.current); setView(v); };
+  useEffect(()=>{ if(!GROUPS.some(g=>g.views.some(x=>x.id===view))) setView(GROUPS[0].views[0].id); },[view]);
+
   const viewMeta={
     dash:{t:'Tổng quan',s:'Tiến độ công việc cửa hàng hôm nay'},
     today:{t:'Kế hoạch hôm nay',s:'Bộ việc nên làm trong ngày — xếp theo thứ tự ưu tiên'},
@@ -960,9 +1223,13 @@ function App(){
     learn:{t:'Kiến thức kinh doanh',s:'Bài học ngắn về tài chính, định giá, khách hàng… cho chủ shop'},
     book:{t:'Sổ tay vận hành',s:'Quy trình, prompt AI, nhà cung cấp & sao lưu dữ liệu'},
     daily:{t:'Việc lặp lại',s:'Thói quen mỗi ngày + việc tự sinh theo tuần/tháng'},
-  }[view];
+    assign:{t:'Phân công việc',s:'Giao việc cho từng người và xem ai đang gánh bao nhiêu'},
+    progress:{t:'Tiến độ đội ngũ',s:'Ai xong bao nhiêu việc, ai đang quá hạn'},
+    members:{t:'Thành viên & vai trò',s:'Tạo tài khoản, đổi vai trò, cấp lại mật khẩu'},
+  }[view]||{t:'Hương Diện',s:''};
 
-  const openNew=(proj)=>setEditing({id:uid(),title:'',proj:proj||'nhap',status:'todo',pri:'med',progress:0,due:'',note:'',checklist:[],created:today(),_new:true});
+  const openNew=(proj)=>setEditing({id:uid(),title:'',proj:proj||(myRole.projs&&myRole.projs[0])||'nhap',status:'todo',pri:'med',progress:0,due:'',note:'',checklist:[],created:today(),
+    assignee:isAdmin?'':me.id,createdBy:me.id,_new:true});
 
   return (
     <div className="app">
@@ -973,18 +1240,18 @@ function App(){
           <div><b>Hương Diện</b><br/><small>Quản lý công việc</small></div>
         </div>
         <nav className="nav">
-          {NAV.map(n=>(
-            <button key={n.id} className={view===n.id?'on':''} onClick={()=>setView(n.id)}>
-              <i className={'ti '+n.icon}></i>{n.name}
-              {n.badge>0 && <span className="badge">{n.badge}</span>}
+          {GROUPS.map(g=>(
+            <button key={g.id} className={curGroup.id===g.id?'on':''} onClick={()=>openGroup(g)}>
+              <i className={'ti '+g.icon}></i>{g.name}
+              {g.badge>0 && <span className="badge">{g.badge}</span>}
             </button>
           ))}
         </nav>
         <div className="side-foot">
           <div style={{padding:'4px 10px'}}>
-            <div style={{fontSize:11,color:'var(--muted)',fontWeight:600,marginBottom:6}}>HOÀN THÀNH TUẦN</div>
+            <div style={{fontSize:11,color:'var(--muted)',fontWeight:600,marginBottom:6}}>{isAdmin&&whoFilter==='all'?'CẢ ĐỘI':'CỦA TÔI'} · HOÀN THÀNH TUẦN</div>
             <div style={{display:'flex',alignItems:'center',gap:10}}>
-              <Ring pct={stats.total?Math.round((tasks.filter(x=>x.status==='done').length)/stats.total*100):0} size={42}/>
+              <Ring pct={stats.total?Math.round((vTasks.filter(x=>x.status==='done').length)/stats.total*100):0} size={42}/>
               <div style={{fontSize:12,color:'var(--muted)'}}><b style={{color:'var(--ink)',fontSize:15,fontFamily:'Baloo 2'}}>{stats.doneWeek}</b> việc xong<br/>{stats.open} việc còn lại</div>
             </div>
           </div>
@@ -994,6 +1261,14 @@ function App(){
           <button className="tgl" onClick={()=>setDark(d=>!d)}>
             <i className={'ti '+(dark?'ti-sun':'ti-moon')}></i>{dark?'Giao diện sáng':'Giao diện tối'}
           </button>
+          <div style={{display:'flex',alignItems:'center',gap:9,padding:'9px 10px',marginTop:6,borderTop:'1px solid var(--border)'}}>
+            <div style={{width:30,height:30,borderRadius:10,background:'var(--o-lt)',color:'var(--o-dk)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:700,fontFamily:'Baloo 2',flexShrink:0}}>{initials(me.name)}</div>
+            <div style={{flex:1,minWidth:0}}>
+              <b style={{fontSize:12.5,display:'block',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{me.name}</b>
+              <small style={{color:'var(--muted)',fontSize:11}}>{myRole.ic} {myRole.n}</small>
+            </div>
+            <button onClick={onLock} title="Khoá app" style={{color:'var(--muted)',padding:6,display:'flex'}}><i className="ti ti-lock" style={{fontSize:17}}></i></button>
+          </div>
         </div>
       </aside>
 
@@ -1002,6 +1277,8 @@ function App(){
         <div className="mtop">
           <div className="lic">📋</div><b>Hương Diện</b>
           <div className="spacer" style={{flex:1}}></div>
+          <span style={{fontSize:12,color:'var(--muted)',fontWeight:600}}>{me.name}</span>
+          <button className="tgl" style={{padding:8}} onClick={onLock} title="Khoá app"><i className="ti ti-lock" style={{fontSize:19}}></i></button>
           <button className="tgl" style={{padding:8}} onClick={()=>setDark(d=>!d)}><i className={'ti '+(dark?'ti-sun':'ti-moon')} style={{fontSize:20}}></i></button>
         </div>
 
@@ -1039,14 +1316,31 @@ function App(){
           <button className="btn" onClick={()=>openNew(projFilter!=='all'?projFilter:null)}><i className="ti ti-plus"></i>Thêm việc</button>
         </div>
 
+        {/* thanh tab con của nhóm đang mở */}
+        {curGroup.views.length>1 &&
+          <div className="chips subnav">
+            {curGroup.views.map(v=>(
+              <button key={v.id} className={'chip'+(view===v.id?' on':'')} onClick={()=>goView(v.id)}>{v.n}</button>
+            ))}
+            {isAdmin&&['today','board','proj','cal'].indexOf(view)>=0 &&
+              <select value={whoFilter} onChange={e=>setWhoFilter(e.target.value)} style={{...selSt,marginLeft:'auto'}} title="Lọc theo người nhận việc">
+                <option value="all">👥 Cả đội</option>
+                <option value="none">◻️ Chưa giao ai</option>
+                {users.filter(u=>u.active!==false).map(u=>(<option key={u.id} value={u.id}>{u.id===me.id?'⭐ ':''}{u.name}</option>))}
+              </select>}
+          </div>}
+
         <div className="content" key={view}>
-          {view==='dash' && <Dash stats={stats} tasks={tasks} setView={setView} edit={setEditing} daily={daily} dailyState={dailyState} toggleDaily={toggleDaily} importPlan={importPlan} planLoaded={planLoaded} missingPlan={missingPlan} planEverLoaded={planEverLoaded} onBreath={()=>setBreath(true)} zen={zen}/>}
-          {view==='today' && <Today tasks={tasks} plan={todayPlan} rebuild={rebuildPlan} move={moveTask} edit={setEditing} toggleCk={toggleCk} openFocus={setFocusTask} startDeep={setDeepIds}/>}
+          {view==='dash' && <Dash stats={stats} tasks={vTasks} setView={goView} edit={setEditing} daily={daily} dailyState={dailyState} toggleDaily={toggleDaily} importPlan={importPlan} planLoaded={planLoaded} missingPlan={missingPlan} planEverLoaded={planEverLoaded} onBreath={()=>setBreath(true)} zen={zen} me={me} isAdmin={isAdmin}/>}
+          {view==='today' && <Today tasks={myPool} plan={todayPlan} rebuild={rebuildPlan} move={moveTask} edit={setEditing} toggleCk={toggleCk} openFocus={setFocusTask} startDeep={setDeepIds}/>}
           {view==='brain' && <BrainEnergy log={brainlog} setLog={setBrainlog} cfg={carecfg} setCfg={setCarecfg} onBreath={()=>setBreath(true)}/>}
-          {view==='board' && <Board tasks={filtered} all={tasks} projFilter={projFilter} setProjFilter={setProjFilter} move={moveTask} edit={setEditing} toggleCk={toggleCk}/>}
-          {view==='proj' && <Projects tasks={tasks} setView={setView} setProjFilter={setProjFilter}/>}
+          {view==='board' && <Board tasks={filtered} all={vTasks} projFilter={projFilter} setProjFilter={setProjFilter} move={moveTask} edit={setEditing} toggleCk={toggleCk} nameOf={nameOf}/>}
+          {view==='proj' && <Projects tasks={vTasks} setView={goView} setProjFilter={setProjFilter}/>}
           {view==='cal' && <Calendar tasks={filtered} move={moveTask} edit={setEditing}/>}
-          {view==='stats' && <Stats tasks={tasks}/>}
+          {view==='stats' && <Stats tasks={vTasks}/>}
+          {view==='assign' && <Assign tasks={tasks} users={users} roles={roles} me={me} assign={assignTask} edit={setEditing} openNew={openNew} setWho={(id)=>{setWhoFilter(id);goView('board');}}/>}
+          {view==='progress' && <TeamProgress tasks={tasks} users={users} roles={roles}/>}
+          {view==='members' && <Members users={users} setUsers={setUsers} roles={roles} setRoles={setRoles} me={me} isOwner={isOwner} tasks={tasks}/>}
           {view==='kd' && <BizBook metrics={bizmetrics} setMetrics={setBizmetrics} config={bizconfig} setConfig={setBizconfig}/>}
           {view==='sales' && <Sales/>}
           {view==='ncc' && <Sourcing st={sourcing} setSt={setSourcing}/>}
@@ -1060,15 +1354,16 @@ function App(){
       {/* mobile bottom nav + fab */}
       <button className="fab" onClick={()=>openNew(projFilter!=='all'?projFilter:null)}><i className="ti ti-plus"></i></button>
       <nav className="botnav">
-        {NAV.map(n=>(
-          <button key={n.id} className={view===n.id?'on':''} onClick={()=>setView(n.id)}>
-            <i className={'ti '+n.icon}></i>{n.name.split(' ')[0]}
-            {n.badge>0 && <span className="badge">{n.badge}</span>}
+        {GROUPS.map(g=>(
+          <button key={g.id} className={curGroup.id===g.id?'on':''} onClick={()=>openGroup(g)}>
+            <i className={'ti '+g.icon}></i>{g.name}
+            {g.badge>0 && <span className="badge">{g.badge}</span>}
           </button>
         ))}
       </nav>
 
-      {editing && <TaskModal task={editing} onSave={saveTask} onDel={delTask} onClose={()=>setEditing(null)}/>}
+      {editing && <TaskModal task={editing} onSave={saveTask} onDel={delTask} onClose={()=>setEditing(null)}
+        users={users} roles={roles} me={me} canAssign={isAdmin}/>}
       {focusTask && <FocusModal task={focusTask} onClose={()=>setFocusTask(null)} onLog={addSpent} onDone={(id)=>{moveTask(id,'done');setFocusTask(null);}}/>}
       {deepIds && <DeepWork ids={deepIds} tasks={tasks} onClose={()=>setDeepIds(null)} onLog={addSpent} onComplete={(id)=>moveTask(id,'done')} toggleCk={toggleCk}/>}
       {breath && <BreathMode onClose={()=>setBreath(false)} onLog={addZen}/>}
@@ -1183,7 +1478,7 @@ function Dash({stats,tasks,setView,edit,daily,dailyState,toggleDaily,importPlan,
 }
 
 /* ---------- Kanban Board ---------- */
-function Board({tasks,projFilter,setProjFilter,move,edit,toggleCk}){
+function Board({tasks,projFilter,setProjFilter,move,edit,toggleCk,nameOf}){
   const [dragId,setDragId]=useState(null);
   const [dropCol,setDropCol]=useState(null);
   const cols=['todo','doing','done'];
@@ -1209,7 +1504,7 @@ function Board({tasks,projFilter,setProjFilter,move,edit,toggleCk}){
               {list.map(t=>(
                 <TaskCard key={t.id} t={t} cs={cs} cols={cols}
                   onDragStart={()=>setDragId(t.id)} onDragEnd={()=>{setDragId(null);setDropCol(null);}}
-                  dragging={dragId===t.id} move={move} edit={edit} toggleCk={toggleCk}/>
+                  dragging={dragId===t.id} move={move} edit={edit} toggleCk={toggleCk} nameOf={nameOf}/>
               ))}
             </div>
           );
@@ -1219,7 +1514,7 @@ function Board({tasks,projFilter,setProjFilter,move,edit,toggleCk}){
   );
 }
 
-function TaskCard({t,cs,onDragStart,onDragEnd,dragging,move,edit,toggleCk}){
+function TaskCard({t,cs,onDragStart,onDragEnd,dragging,move,edit,toggleCk,nameOf}){
   const p=projOf(t.proj), di=dueInfo(t.due);
   const idx=['todo','doing','done'].indexOf(cs);
   return (
@@ -1232,6 +1527,7 @@ function TaskCard({t,cs,onDragStart,onDragEnd,dragging,move,edit,toggleCk}){
       <div className="metarow">
         <span className="tag" style={{background:p.bg,color:p.color}}>{p.icon} {p.name}</span>
         {di && <span className={'due '+di.cls}><i className="ti ti-clock"></i>{di.label}</span>}
+        {nameOf && nameOf(t.assignee) && <span className="tag" style={{background:'var(--bg)',color:'var(--muted)'}}><i className="ti ti-user"></i>{nameOf(t.assignee)}</span>}
       </div>
       {t.checklist&&t.checklist.length>0 &&
         <div className="cklist">
@@ -3184,8 +3480,269 @@ function Compliance({st,setSt}){
   );
 }
 
+/* ================= ĐỘI NGŨ: phân công · tiến độ · thành viên ================= */
+function memberStats(tasks,uid){
+  const t=today(), mine=tasks.filter(x=>x.assignee===uid);
+  const open=mine.filter(x=>x.status!=='done');
+  return {
+    all:mine.length,
+    todo:open.filter(x=>x.status==='todo').length,
+    doing:open.filter(x=>x.status==='doing').length,
+    over:open.filter(x=>x.due&&x.due<t).length,
+    dueToday:open.filter(x=>x.due===t).length,
+    doneWeek:mine.filter(x=>x.status==='done'&&x.doneAt&&x.doneAt>=addDays(-7)).length,
+    onTime:mine.filter(x=>x.status==='done'&&x.doneAt&&x.due&&x.doneAt<=x.due).length,
+    doneAll:mine.filter(x=>x.status==='done').length,
+    open:open.length,
+  };
+}
+function Assign({tasks,users,roles,me,assign,edit,openNew,setWho}){
+  const active=users.filter(u=>u.active!==false);
+  const free=tasks.filter(t=>!t.assignee&&t.status!=='done')
+    .sort((a,b)=>({high:0,med:1,low:2})[a.pri||'med']-({high:0,med:1,low:2})[b.pri||'med']||(a.due||'zz').localeCompare(b.due||'zz'));
+  /* gợi ý người nhận theo mảng việc của vai trò — đỡ phải nhớ ai lo mảng nào */
+  const suggest=(t)=>active.filter(u=>{const r=roleOf(u,roles);return (r.projs||[]).indexOf(t.proj)>=0;});
+  return (
+    <div>
+      <div className="panel" style={{marginBottom:14}}>
+        <div className="panel-h"><i className="ti ti-inbox lead"></i><b>Chưa giao ai</b>
+          <span className="tag" style={{background:free.length?'var(--amber-lt)':'var(--grn-lt)',color:free.length?'var(--amber)':'var(--grn)',marginLeft:6}}>{free.length} việc</span>
+          <button className="btn sm" style={{marginLeft:'auto'}} onClick={()=>openNew(null)}><i className="ti ti-plus"></i>Thêm việc</button>
+        </div>
+        <div className="panel-b" style={{padding:'4px 16px 12px'}}>
+          {!free.length && <div style={{padding:'14px 2px',color:'var(--muted)',fontSize:13}}>✅ Mọi việc đang mở đều đã có người phụ trách.</div>}
+          {free.map(t=>{ const p=projOf(t.proj), sg=suggest(t); return (
+            <div className="row" key={t.id} style={{padding:'11px 2px',flexWrap:'wrap'}}>
+              <span className="tag" style={{background:p.bg,color:p.color}}>{p.icon} {p.name}</span>
+              <div className="rt" style={{cursor:'pointer',minWidth:150}} onClick={()=>edit(t)}>
+                <b>{t.title}</b>
+                <small>{PRI[t.pri||'med']}{t.due?' · hạn '+t.due:''}</small>
+              </div>
+              {sg.length>0 && <span style={{fontSize:11.5,color:'var(--muted2)'}}>gợi ý: {sg.map(u=>u.name).join(', ')}</span>}
+              <select value="" onChange={e=>e.target.value&&assign(t.id,e.target.value)} style={selSt}>
+                <option value="">Giao cho…</option>
+                {active.map(u=>(<option key={u.id} value={u.id}>{u.name}{u.id===me.id?' (tôi)':''}</option>))}
+              </select>
+            </div>
+          ); })}
+        </div>
+      </div>
+
+      <div className="grid3">
+        {active.map(u=>{ const r=roleOf(u,roles), s=memberStats(tasks,u.id);
+          const list=tasks.filter(t=>t.assignee===u.id&&t.status!=='done')
+            .sort((a,b)=>(a.due||'zz').localeCompare(b.due||'zz')).slice(0,6);
+          return (
+            <div className="panel" key={u.id} style={{marginBottom:12}}>
+              <div className="panel-h">
+                <div style={{width:32,height:32,borderRadius:10,background:'var(--o-lt)',color:'var(--o-dk)',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontFamily:'Baloo 2',fontSize:14}}>{initials(u.name)}</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <b style={{fontSize:14,fontFamily:'Baloo 2'}}>{u.name}</b>
+                  <div style={{fontSize:11.5,color:'var(--muted)'}}>{r.ic} {r.n}</div>
+                </div>
+                {s.over>0 && <span className="tag" style={{background:'var(--red-lt)',color:'var(--red)'}}>{s.over} quá hạn</span>}
+              </div>
+              <div className="panel-b" style={{padding:'10px 16px 14px'}}>
+                <div style={{display:'flex',gap:8,marginBottom:10,flexWrap:'wrap'}}>
+                  <span className="tag" style={{background:'var(--bg)',color:'var(--muted)'}}>{s.todo} cần làm</span>
+                  <span className="tag" style={{background:'var(--o-lt)',color:'var(--o-dk)'}}>{s.doing} đang làm</span>
+                  <span className="tag" style={{background:'var(--grn-lt)',color:'var(--grn)'}}>{s.doneWeek} xong tuần này</span>
+                </div>
+                {!list.length && <div style={{fontSize:12.5,color:'var(--muted2)',padding:'6px 0'}}>Chưa được giao việc nào đang mở.</div>}
+                {list.map(t=>{ const over=t.due&&t.due<today(); return (
+                  <div key={t.id} onClick={()=>edit(t)} style={{display:'flex',gap:8,alignItems:'center',padding:'7px 0',borderTop:'1px solid var(--border)',cursor:'pointer'}}>
+                    <span style={{width:7,height:7,borderRadius:4,background:STATUS[t.status].dot,flexShrink:0}}></span>
+                    <div style={{flex:1,minWidth:0,fontSize:12.5,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{t.title}</div>
+                    {t.due && <small style={{color:over?'var(--red)':'var(--muted2)',fontSize:11,fontWeight:600}}>{over?'quá hạn':t.due.slice(5)}</small>}
+                  </div>
+                ); })}
+                {s.open>list.length && <button className="btn ghost sm" style={{marginTop:10,width:'100%',justifyContent:'center'}} onClick={()=>setWho(u.id)}>Xem cả {s.open} việc</button>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+function TeamProgress({tasks,users,roles}){
+  const active=users.filter(u=>u.active!==false);
+  const rows=active.map(u=>({u,r:roleOf(u,roles),s:memberStats(tasks,u.id)})).sort((a,b)=>b.s.doneWeek-a.s.doneWeek);
+  const maxDone=Math.max(1,...rows.map(x=>x.s.doneWeek));
+  const noOne=tasks.filter(t=>!t.assignee&&t.status!=='done').length;
+  const totalOpen=tasks.filter(t=>t.status!=='done').length;
+  return (
+    <div>
+      <div className="panel" style={{marginBottom:14}}>
+        <div className="panel-b" style={{padding:'16px 18px',display:'flex',gap:14,flexWrap:'wrap'}}>
+          {[['Việc đang mở',totalOpen,'var(--ink)'],['Chưa giao ai',noOne,noOne?'var(--amber)':'var(--grn)'],
+            ['Quá hạn cả đội',rows.reduce((a,x)=>a+x.s.over,0),'var(--red)'],['Xong 7 ngày qua',rows.reduce((a,x)=>a+x.s.doneWeek,0),'var(--grn)']].map(([n,v,c],i)=>(
+            <div key={i} style={{flex:'1 1 120px',padding:'11px 13px',background:'var(--bg)',borderRadius:12}}>
+              <b style={{display:'block',fontFamily:'Baloo 2',fontSize:22,color:c}}>{v}</b>
+              <span style={{fontSize:11.5,color:'var(--muted)',fontWeight:600}}>{n}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="panel">
+        <div className="panel-h"><i className="ti ti-chart-bar lead"></i><b>Xong trong 7 ngày qua</b></div>
+        <div className="panel-b" style={{padding:'8px 18px 16px'}}>
+          {!rows.length && <div className="empty"><i className="ti ti-users"></i><p>Chưa có thành viên nào.</p></div>}
+          {rows.map(({u,r,s})=>(
+            <div key={u.id} style={{padding:'11px 0',borderTop:'1px solid var(--border)'}}>
+              <div style={{display:'flex',alignItems:'center',gap:9,marginBottom:6,flexWrap:'wrap'}}>
+                <b style={{fontSize:13.5}}>{u.name}</b>
+                <small style={{color:'var(--muted)'}}>{r.ic} {r.n}</small>
+                <span style={{marginLeft:'auto',display:'flex',gap:6,flexWrap:'wrap'}}>
+                  {s.over>0 && <span className="tag" style={{background:'var(--red-lt)',color:'var(--red)'}}>{s.over} quá hạn</span>}
+                  {s.dueToday>0 && <span className="tag" style={{background:'var(--amber-lt)',color:'var(--amber)'}}>{s.dueToday} đến hạn nay</span>}
+                  <span className="tag" style={{background:'var(--bg)',color:'var(--muted)'}}>{s.open} đang mở</span>
+                </span>
+              </div>
+              <div style={{display:'flex',alignItems:'center',gap:10}}>
+                <div className="prog full" style={{flex:1,marginTop:0,height:9}}><i style={{width:(s.doneWeek/maxDone*100)+'%'}}></i></div>
+                <b style={{fontFamily:'Baloo 2',color:'var(--grn)',minWidth:22,textAlign:'right'}}>{s.doneWeek}</b>
+              </div>
+              {s.doneAll>0 && <div style={{fontSize:11.5,color:'var(--muted2)',marginTop:4}}>Tổng đã xong {s.doneAll} việc · đúng hạn {Math.round(s.onTime/s.doneAll*100)}%</div>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+function Members({users,setUsers,roles,setRoles,me,isOwner,tasks}){
+  const [nm,setNm]=useState(''),[rl,setRl]=useState('nk'),[made,setMade]=useState(null);
+  const [rn,setRn]=useState(''),[radmin,setRadmin]=useState(false),[showRole,setShowRole]=useState(false);
+  const [busy,setBusy]=useState(false);
+  const tempCode=()=>String(Math.floor(100000+Math.random()*900000));
+  const add=async()=>{
+    if(nm.trim().length<2){ alert('Nhập tên thành viên.'); return; }
+    setBusy(true);
+    const code=tempCode(), salt=randHex(8), hash=await hashPw(code,salt);
+    const u={id:'u'+Date.now(),name:nm.trim(),role:rl,salt,hash,mustChange:true,active:true,createdAt:today()};
+    setUsers([...users,u]); setMade({name:u.name,code}); setNm(''); setBusy(false);
+  };
+  const reset=async(u)=>{
+    if(!confirm('Cấp lại mật khẩu cho '+u.name+'? Mật khẩu cũ sẽ không dùng được nữa.')) return;
+    setBusy(true);
+    const code=tempCode(), salt=randHex(8), hash=await hashPw(code,salt);
+    setUsers(users.map(x=>x.id===u.id?{...x,salt,hash,mustChange:true}:x));
+    setMade({name:u.name,code}); setBusy(false);
+  };
+  const toggleActive=(u)=>{
+    if(u.id===me.id){ alert('Không tự khoá tài khoản của chính mình được.'); return; }
+    setUsers(users.map(x=>x.id===u.id?{...x,active:x.active===false}:x));
+  };
+  const del=(u)=>{
+    if(u.id===me.id){ alert('Không xoá được tài khoản đang đăng nhập.'); return; }
+    const n=tasks.filter(t=>t.assignee===u.id&&t.status!=='done').length;
+    if(!confirm('Xoá '+u.name+'?'+(n?'\n\n'+n+' việc đang giao cho người này sẽ quay về "chưa giao ai".':''))) return;
+    setUsers(users.filter(x=>x.id!==u.id));
+  };
+  const addRole=()=>{
+    if(rn.trim().length<2) return;
+    setRoles([...roles,{id:'r'+Date.now(),n:rn.trim(),ic:radmin?'🗂️':'👤',admin:radmin,projs:[]}]);
+    setRn(''); setRadmin(false);
+  };
+  const inp={width:'100%',background:'var(--bg)',border:'1.5px solid var(--border)',borderRadius:10,padding:'9px 11px',color:'var(--ink)',outline:'none',fontFamily:'inherit'};
+
+  if(!isOwner) return (
+    <div className="panel"><div className="panel-b" style={{padding:'18px'}}>
+      <b style={{fontFamily:'Baloo 2',fontSize:16}}>Danh sách thành viên</b>
+      <p style={{fontSize:13,color:'var(--muted)',margin:'6px 0 14px'}}>Chỉ chủ cửa hàng mới tạo/sửa được tài khoản.</p>
+      {users.filter(u=>u.active!==false).map(u=>{const r=roleOf(u,roles);return (
+        <div className="row" key={u.id} style={{padding:'10px 0'}}>
+          <span className="tag" style={{background:'var(--o-lt)',color:'var(--o-dk)'}}>{r.ic}</span>
+          <div className="rt"><b>{u.name}</b><small>{r.n}</small></div>
+        </div>
+      );})}
+    </div></div>
+  );
+
+  return (
+    <div>
+      {made &&
+        <div className="panel" style={{marginBottom:14,borderLeft:'4px solid var(--grn)'}}>
+          <div className="panel-b" style={{padding:'16px 18px'}}>
+            <b style={{fontFamily:'Baloo 2',fontSize:16}}>Mã tạm cho {made.name}</b>
+            <div style={{margin:'10px 0',fontFamily:'Baloo 2',fontSize:34,letterSpacing:6,color:'var(--grn)',fontWeight:700}}>{made.code}</div>
+            <p style={{fontSize:13,color:'var(--muted)',lineHeight:1.6}}>Đưa mã này cho <b>{made.name}</b>. Họ chọn tên mình ở màn khoá, nhập mã tạm, rồi <b>tự đặt mật khẩu riêng</b> — mã tạm hết hiệu lực ngay sau đó. Mã chỉ hiện một lần ở đây, quên thì cấp lại.</p>
+            <button className="btn ghost sm" style={{marginTop:10}} onClick={()=>setMade(null)}>Đã ghi lại</button>
+          </div>
+        </div>}
+
+      <div className="panel" style={{marginBottom:14}}>
+        <div className="panel-h"><i className="ti ti-user-plus lead"></i><b>Thêm thành viên</b></div>
+        <div className="panel-b" style={{padding:'14px 18px 18px'}}>
+          <div style={{display:'flex',gap:9,flexWrap:'wrap',alignItems:'center'}}>
+            <input placeholder="Tên thành viên" value={nm} onChange={e=>setNm(e.target.value)} onKeyDown={e=>e.key==='Enter'&&add()} style={{...inp,flex:'2 1 180px'}}/>
+            <select value={rl} onChange={e=>setRl(e.target.value)} style={selSt}>{roles.map(r=>(<option key={r.id} value={r.id}>{r.ic} {r.n}</option>))}</select>
+            <button className="btn" disabled={busy} onClick={add}><i className="ti ti-plus"></i>Tạo & cấp mã tạm</button>
+          </div>
+          <div style={{marginTop:12,padding:'11px 13px',background:'var(--o-lt)',color:'var(--o-dk)',borderRadius:11,fontSize:12.5,lineHeight:1.55}}>
+            <i className="ti ti-info-circle"></i> App tạo <b>mã tạm 6 số</b>, người mới dùng mã đó đăng nhập lần đầu rồi <b>tự đặt mật khẩu của họ</b>. Bạn không biết và không cần biết mật khẩu của nhân viên.
+          </div>
+        </div>
+      </div>
+
+      <div className="panel" style={{marginBottom:14}}>
+        <div className="panel-h"><i className="ti ti-users lead"></i><b>Thành viên ({users.length})</b></div>
+        <div className="panel-b" style={{padding:'4px 18px 14px'}}>
+          {users.map(u=>{ const r=roleOf(u,roles), s=memberStats(tasks,u.id), off=u.active===false; return (
+            <div key={u.id} style={{padding:'12px 0',borderTop:'1px solid var(--border)',opacity:off?.55:1}}>
+              <div style={{display:'flex',gap:10,alignItems:'center',flexWrap:'wrap'}}>
+                <div style={{width:34,height:34,borderRadius:11,background:'var(--o-lt)',color:'var(--o-dk)',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontFamily:'Baloo 2'}}>{initials(u.name)}</div>
+                <div style={{flex:'1 1 120px',minWidth:0}}>
+                  <b style={{fontSize:14}}>{u.name}{u.id===me.id&&<span style={{color:'var(--muted2)',fontWeight:500}}> · bạn</span>}</b>
+                  <div style={{fontSize:11.5,color:'var(--muted)'}}>{s.open} việc đang mở{s.over?' · '+s.over+' quá hạn':''}{u.mustChange?' · chưa đặt mật khẩu':''}{off?' · đã khoá':''}</div>
+                </div>
+                <select value={u.role} disabled={u.id===me.id} onChange={e=>setUsers(users.map(x=>x.id===u.id?{...x,role:e.target.value}:x))} style={selSt}>
+                  {roles.map(x=>(<option key={x.id} value={x.id}>{x.ic} {x.n}</option>))}
+                </select>
+                <button className="btn ghost sm" disabled={busy} onClick={()=>reset(u)} title="Cấp lại mật khẩu"><i className="ti ti-key"></i>Cấp lại</button>
+                {u.id!==me.id && <button className="btn ghost sm" onClick={()=>toggleActive(u)}>{off?'Mở khoá':'Khoá'}</button>}
+                {u.id!==me.id && <button onClick={()=>del(u)} style={{color:'var(--red)',padding:6,display:'flex'}}><i className="ti ti-trash" style={{fontSize:18}}></i></button>}
+              </div>
+            </div>
+          ); })}
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-h" style={{cursor:'pointer'}} onClick={()=>setShowRole(o=>!o)}>
+          <i className="ti ti-id-badge-2 lead"></i><b>Vai trò ({roles.length})</b>
+          <i className={'ti '+(showRole?'ti-chevron-up':'ti-chevron-down')} style={{marginLeft:'auto',color:'var(--muted2)',fontSize:20}}></i>
+        </div>
+        {showRole && <div className="panel-b" style={{padding:'4px 18px 16px'}}>
+          {roles.map(r=>(
+            <div className="row" key={r.id} style={{padding:'10px 0'}}>
+              <span style={{fontSize:18}}>{r.ic}</span>
+              <div className="rt"><b>{r.n}</b><small>{r.admin?'Thấy Số liệu & Đội ngũ':'Chỉ thấy việc được giao'}{(r.projs||[]).length?' · gợi ý mảng: '+r.projs.map(p=>projOf(p).name).join(', '):''}</small></div>
+              {ROLE_SEED.some(x=>x.id===r.id)
+                ? <span className="tag" style={{background:'var(--bg)',color:'var(--muted2)'}}>mặc định</span>
+                : <button onClick={()=>{ if(users.some(u=>u.role===r.id)){alert('Còn thành viên đang giữ vai trò này.');return;} setRoles(roles.filter(x=>x.id!==r.id)); }} style={{color:'var(--red)',padding:6,display:'flex'}}><i className="ti ti-trash" style={{fontSize:17}}></i></button>}
+            </div>
+          ))}
+          <div style={{marginTop:12,padding:14,background:'var(--bg)',borderRadius:12,display:'flex',gap:9,flexWrap:'wrap',alignItems:'center'}}>
+            <input placeholder="Tên vai trò mới…" value={rn} onChange={e=>setRn(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addRole()} style={{...inp,flex:'2 1 180px',background:'var(--card)'}}/>
+            <label style={{display:'flex',alignItems:'center',gap:6,fontSize:12.5,fontWeight:600,color:'var(--muted)'}}>
+              <input type="checkbox" checked={radmin} onChange={e=>setRadmin(e.target.checked)}/> Được xem Số liệu & Đội ngũ
+            </label>
+            <button className="btn sm" onClick={addRole}><i className="ti ti-plus"></i>Thêm vai trò</button>
+          </div>
+        </div>}
+      </div>
+
+      <div style={{padding:'12px 14px',background:'var(--bg)',borderRadius:12,fontSize:12,color:'var(--muted)',lineHeight:1.6,marginTop:14}}>
+        <b>Về bảo mật:</b> mật khẩu lưu dạng băm SHA-256 kèm muối riêng, không lưu chữ thật, và không đọc lại được. Màn khoá chặn người lạ mở link cũng như người không phận sự cầm máy. Nhưng app chạy trên trình duyệt nên người rành kỹ thuật ngồi trước máy đã đăng nhập vẫn đọc được dữ liệu qua công cụ nhà phát triển — muốn chặn cả trường hợp đó phải chuyển sang tài khoản trên máy chủ. <b>Mã đồng bộ</b> chính là chìa khoá vào dữ liệu cửa hàng từ máy khác, chỉ đưa cho người trong đội.
+      </div>
+    </div>
+  );
+}
+
 /* ---------- Task Modal ---------- */
-function TaskModal({task,onSave,onDel,onClose}){
+function TaskModal({task,onSave,onDel,onClose,users,roles,me,canAssign}){
   const [f,setF]=useState({...task,checklist:task.checklist?[...task.checklist]:[]});
   const set=(k,v)=>setF(p=>({...p,[k]:v}));
   const addCk=()=>set('checklist',[...f.checklist,{t:'',done:false}]);
@@ -3222,6 +3779,19 @@ function TaskModal({task,onSave,onDel,onClose}){
                 <button key={p.id} className={'chip'+(f.proj===p.id?' on':'')} onClick={()=>set('proj',p.id)}>{p.icon} {p.name}</button>
               ))}
             </div>
+          </div>
+          <div className="fld">
+            <label>Giao cho</label>
+            {canAssign
+              ? <div className="chips">
+                  <button className={'chip'+(!f.assignee?' on':'')} onClick={()=>set('assignee','')}>◻️ Chưa giao</button>
+                  {(users||[]).filter(u=>u.active!==false).map(u=>{ const r=roleOf(u,roles||[]); return (
+                    <button key={u.id} className={'chip'+(f.assignee===u.id?' on':'')} onClick={()=>set('assignee',u.id)} title={r.n}>{r.ic} {u.name}{u.id===(me&&me.id)?' (tôi)':''}</button>
+                  ); })}
+                </div>
+              : <div style={{fontSize:13,color:'var(--muted)',padding:'8px 0'}}>
+                  {f.assignee===(me&&me.id)?'Việc của bạn':'Chỉ chủ và quản lý mới đổi được người nhận việc.'}
+                </div>}
           </div>
           <div className="frow">
             <div className="fld">
@@ -3283,7 +3853,7 @@ function TaskModal({task,onSave,onDel,onClose}){
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+ReactDOM.createRoot(document.getElementById('root')).render(<Root/>);
 </script>
 
 <!-- pwa-update-banner: tự phát hiện bản mới (so ETag/Last-Modified index.html) -->
