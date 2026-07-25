@@ -1,5 +1,5 @@
 /* Hương Diện service worker — app shell offline + network-first cho trang chính */
-const CACHE = 'huongdien-v7';
+const CACHE = 'huongdien-v8';
 const CORE = ['./', './index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', (e) => {
