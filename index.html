@@ -1229,6 +1229,9 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
   const urgentCount=alerts.filter(a=>a.kind==='over'||a.kind==='today').length;
 
   const riskOpen=useMemo(()=>COMPLIANCE.reduce((n,g)=>n+g.items.filter(i=>i.risk==='high'&&compliance[i.id]!=='done').length,0),[compliance]);
+  /* Tạm ẩn mục Não khỏe theo yêu cầu — code giữ nguyên, đổi thành true là hiện lại đủ cả
+     nút chân sidebar lẫn thanh dưới điện thoại. */
+  const SHOW_BRAIN=false;
   /* ---- Menu 7 nhóm, mỗi nhóm có tab con ----
      Năm màn Hôm nay/Bảng việc/Theo mảng/Lịch/Việc lặp lại đọc cùng một kho việc,
      nên chúng là TAB CON của "Công việc" chứ không phải 5 mục ngang hàng. */
@@ -1244,10 +1247,10 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
     {id:'g_shop',name:'Cửa hàng',icon:'ti-building-store',badge:riskOpen,views:[
       {id:'ncc',n:'Nguồn hàng'},{id:'law',n:'Tuân thủ & Thuế'}]},
     {id:'g_ref',name:'Cẩm nang',icon:'ti-book',views:[{id:'learn',n:'Kiến thức'},{id:'book',n:'Sổ tay'}]},
-    /* foot: nằm ở chân sidebar cùng nhóm "chăm mình" (Lấy lại nhịp, Deep Work), không đứng chung
+    /* foot: nằm ở chân sidebar cùng nhóm "chăm mình" (Meditation, Deep Work), không đứng chung
        với các mục công việc phía trên. Trên điện thoại vẫn giữ trong thanh dưới cho dễ với. */
     {id:'g_brain',name:'Não khỏe',icon:'ti-brain',foot:true,views:[{id:'brain',n:'Não khỏe'}]},
-  ].filter(g=>!g.admin||isAdmin);
+  ].filter(g=>(!g.admin||isAdmin) && (g.id!=='g_brain'||SHOW_BRAIN));
   const groupOf=(v)=>GROUPS.find(g=>g.views.some(x=>x.id===v))||GROUPS[0];
   const curGroup=groupOf(view);
   /* mở nhóm thì quay lại đúng tab con dùng lần trước */
@@ -1323,7 +1326,7 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
             </button>
           ))}
           <button className="tgl" onClick={()=>setBreath(true)}>
-            <i className="ti ti-lungs"></i>Lấy lại nhịp
+            <i className="ti ti-lungs"></i>Meditation
           </button>
           <button className="tgl deep" onClick={startDeepMode} title="Phiên tập trung sâu, đi lần lượt qua các việc ưu tiên">
             <i className="ti ti-flame"></i>Chế độ Deep Work
@@ -1491,11 +1494,11 @@ function Dash({stats,tasks,setView,edit,daily,dailyState,toggleDaily,importPlan,
         <div className="stat"><div className="ic g"><i className="ti ti-circle-check"></i></div><div className="n">{stats.doneWeek}</div><div className="l">Xong trong 7 ngày</div></div>
       </div>
 
-      {/* Lấy lại nhịp */}
+      {/* Meditation */}
       <div onClick={onBreath} style={{display:'flex',alignItems:'center',gap:14,background:'linear-gradient(135deg,#0d3b3f,#155e63)',borderRadius:16,padding:'14px 18px',marginBottom:18,color:'#eafaf8',cursor:'pointer',boxShadow:'var(--sh)'}}>
         <div style={{fontSize:30,lineHeight:1}}>🌿</div>
         <div style={{flex:1,minWidth:140}}>
-          <b style={{fontFamily:'Baloo 2',fontSize:15}}>Lấy lại nhịp</b>
+          <b style={{fontFamily:'Baloo 2',fontSize:15}}>Meditation</b>
           <div style={{fontSize:12.5,opacity:.85,marginTop:1}}>Thở 5–10 phút để lấy lại tập trung{zen&&zen.min>0?` · đã thiền ${zen.min} phút`:''}</div>
         </div>
         <span className="btn sm" style={{background:'rgba(255,255,255,.18)',pointerEvents:'none'}}><i className="ti ti-player-play"></i>Bắt đầu</span>
@@ -2819,7 +2822,7 @@ function Notebook({nb,setNb,onExport,onImport}){
   );
 }
 
-/* ---------- Lấy lại nhịp (thở có dẫn nhịp) ---------- */
+/* ---------- Meditation (thở có dẫn nhịp) ---------- */
 const BREATH_PAT={
   box:{name:'Thở hộp · 4-4-4-4',sub:'Cân bằng & tập trung',steps:[['Hít vào',4,'in'],['Giữ',4,'hold'],['Thở ra',4,'out'],['Giữ',4,'hold']]},
   relax:{name:'Thư giãn · 4-7-8',sub:'Hạ căng thẳng, dễ ngủ',steps:[['Hít vào',4,'in'],['Giữ',7,'hold'],['Thở ra',8,'out']]},
@@ -2853,7 +2856,7 @@ function BreathMode({onClose,onLog}){
     <div style={bg}>
       <div style={{maxWidth:440,margin:'auto',padding:24,textAlign:'center',width:'100%'}}>
         <div style={{fontSize:48}}>🌿</div>
-        <h1 style={{fontFamily:'Baloo 2',fontSize:26,margin:'10px 0 4px'}}>Lấy lại nhịp</h1>
+        <h1 style={{fontFamily:'Baloo 2',fontSize:26,margin:'10px 0 4px'}}>Meditation</h1>
         <p style={{opacity:.75,fontSize:13.5,marginBottom:20}}>Vài phút thở có nhịp để đầu óc nhẹ lại, rồi quay lại làm việc tỉnh táo hơn.</p>
         <div style={{fontSize:12,opacity:.7,fontWeight:600,marginBottom:8,textAlign:'left'}}>Kiểu thở</div>
         <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:20}}>
