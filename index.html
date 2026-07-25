@@ -168,6 +168,10 @@ input,textarea,select{font-family:inherit;font-size:14px}
 .row .rt small{color:var(--muted);font-size:12px}
 
 /* daily */
+/* ô tên thành viên: nhìn như chữ thường, hiện viền khi rê chuột/bấm vào để biết sửa được */
+.nameedit{background:transparent!important;border-color:transparent!important;transition:all .12s}
+.nameedit:hover{background:var(--bg)!important;border-color:var(--border)!important}
+.nameedit:focus{background:var(--bg)!important;border-color:var(--o)!important}
 .grid3{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
 .subnav{padding:0 26px 14px;align-items:center}
 @media(max-width:768px){.subnav{padding:0 16px 12px;overflow-x:auto;flex-wrap:nowrap}.subnav::-webkit-scrollbar{display:none}}
@@ -752,7 +756,13 @@ const Auth={
   close(){ try{ localStorage.removeItem(SESSION_KEY); }catch(e){} },
 };
 const roleOf=(u,roles)=>(roles.find(r=>r.id===(u&&u.role))||{id:'staff',n:'Nhân viên',ic:'👤',admin:false,projs:[]});
-const initials=(name)=>(name||'?').trim().split(/\s+/).slice(-1)[0][0].toUpperCase();
+/* Chữ đại diện: lấy chữ cái đầu của TỪ CUỐI có chứa chữ — tên Việt thì từ cuối là tên gọi
+   (Phương Anh → A). Bỏ qua đuôi số như "Hương 114" để không ra chữ đại diện là "1". */
+const initials=(name)=>{
+  const s=(name||'').trim(); if(!s) return '?';
+  const w=s.split(/\s+/).filter(x=>/[^\W\d_]/.test(x));
+  return (w.length?w[w.length-1]:s.split(/\s+/)[0])[0].toUpperCase();
+};
 /* khoá dữ liệu riêng từng người — mỗi tài khoản một bộ thói quen, năng lượng, bài đã học… */
 const ukey=(id,k)=>'hdw.u.'+id+'.'+k;
 
@@ -1235,16 +1245,19 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
   /* ---- Menu 7 nhóm, mỗi nhóm có tab con ----
      Năm màn Hôm nay/Bảng việc/Theo mảng/Lịch/Việc lặp lại đọc cùng một kho việc,
      nên chúng là TAB CON của "Công việc" chứ không phải 5 mục ngang hàng. */
-  const unassigned=isAdmin?tasks.filter(t=>!t.assignee&&t.status!=='done').length:0;
+  /* Badge Đội ngũ đếm việc QUÁ HẠN của người khác trong đội — thứ chủ/quản lý cần để mắt và
+     tự tắt khi đội làm kịp. Không đếm việc chưa giao (số đó nằm to trong màn Phân công) và
+     không đếm việc của chính mình (đã có badge ở Công việc rồi, đếm lại là trùng). */
+  const teamOverdue=isAdmin?tasks.filter(t=>t.status!=='done'&&t.due&&t.due<today()&&t.assignee&&t.assignee!==me.id).length:0;
   const GROUPS=[
     {id:'g_dash',name:'Tổng quan',icon:'ti-layout-dashboard',views:[{id:'dash',n:'Tổng quan'}]},
-    {id:'g_work',name:'Công việc',icon:'ti-checklist',badge:overdueCount,views:[
+    {id:'g_work',name:'Công việc',icon:'ti-checklist',badge:overdueCount,hint:'Việc quá hạn',views:[
       {id:'today',n:'Hôm nay'},{id:'board',n:'Bảng việc'},{id:'proj',n:'Theo mảng'},{id:'cal',n:'Lịch · Hạn'},{id:'daily',n:'Việc lặp lại'}]},
-    {id:'g_team',name:'Đội ngũ',icon:'ti-users',admin:true,badge:unassigned,views:[
+    {id:'g_team',name:'Đội ngũ',icon:'ti-users',admin:true,badge:teamOverdue,hint:'Việc quá hạn của người khác trong đội',views:[
       {id:'assign',n:'Phân công'},{id:'progress',n:'Tiến độ'},{id:'members',n:'Thành viên'}]},
     {id:'g_num',name:'Số liệu',icon:'ti-chart-histogram',admin:true,views:[
       {id:'sales',n:'Bán hàng'},{id:'kd',n:'Sổ KD'},{id:'stats',n:'Thống kê'}]},
-    {id:'g_shop',name:'Cửa hàng',icon:'ti-building-store',badge:riskOpen,views:[
+    {id:'g_shop',name:'Cửa hàng',icon:'ti-building-store',badge:riskOpen,hint:'Mục rủi ro cao chưa xử lý',views:[
       {id:'ncc',n:'Nguồn hàng'},{id:'law',n:'Tuân thủ & Thuế'}]},
     {id:'g_ref',name:'Cẩm nang',icon:'ti-book',views:[{id:'learn',n:'Kiến thức'},{id:'book',n:'Sổ tay'}]},
     /* foot: nằm ở chân sidebar cùng nhóm "chăm mình" (Meditation, Deep Work), không đứng chung
@@ -1306,9 +1319,9 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
         </div>
         <nav className="nav">
           {GROUPS.filter(g=>!g.foot).map(g=>(
-            <button key={g.id} className={curGroup.id===g.id?'on':''} onClick={()=>openGroup(g)}>
+            <button key={g.id} className={curGroup.id===g.id?'on':''} onClick={()=>openGroup(g)} title={g.badge>0?g.hint:''}>
               <i className={'ti '+g.icon}></i>{g.name}
-              {g.badge>0 && <span className="badge">{g.badge}</span>}
+              {g.badge>0 && <span className="badge" title={g.hint}>{g.badge}</span>}
             </button>
           ))}
         </nav>
@@ -1426,7 +1439,7 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
       <button className="fab" onClick={()=>openNew(projFilter!=='all'?projFilter:null)}><i className="ti ti-plus"></i></button>
       <nav className="botnav">
         {GROUPS.map(g=>(
-          <button key={g.id} className={curGroup.id===g.id?'on':''} onClick={()=>openGroup(g)}>
+          <button key={g.id} className={curGroup.id===g.id?'on':''} onClick={()=>openGroup(g)} title={g.badge>0?g.hint:''}>
             <i className={'ti '+g.icon}></i>{g.name}
             {g.badge>0 && <span className="badge">{g.badge}</span>}
           </button>
@@ -3784,6 +3797,7 @@ function TeamProgress({tasks,users,roles}){
 function Members({users,setUsers,roles,setRoles,me,isOwner,tasks}){
   const [nm,setNm]=useState(''),[rl,setRl]=useState('nk'),[made,setMade]=useState(null);
   const [rn,setRn]=useState(''),[radmin,setRadmin]=useState(false),[showRole,setShowRole]=useState(false);
+  const [draft,setDraft]=useState({});   // bản nháp ô tên đang gõ, chưa chắc đã hợp lệ
   const [busy,setBusy]=useState(false);
   const tempCode=()=>String(Math.floor(100000+Math.random()*900000));
   const add=async()=>{
@@ -3863,9 +3877,18 @@ function Members({users,setUsers,roles,setRoles,me,isOwner,tasks}){
             <div key={u.id} style={{padding:'12px 0',borderTop:'1px solid var(--border)',opacity:off?.55:1}}>
               <div style={{display:'flex',gap:10,alignItems:'center',flexWrap:'wrap'}}>
                 <div style={{width:34,height:34,borderRadius:11,background:'var(--o-lt)',color:'var(--o-dk)',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontFamily:'Baloo 2'}}>{initials(u.name)}</div>
-                <div style={{flex:'1 1 120px',minWidth:0}}>
-                  <b style={{fontSize:14}}>{u.name}{u.id===me.id&&<span style={{color:'var(--muted2)',fontWeight:500}}> · bạn</span>}</b>
-                  <div style={{fontSize:11.5,color:'var(--muted)'}}>{s.open} việc đang mở{s.over?' · '+s.over+' quá hạn':''}{u.mustChange?' · chưa đặt mật khẩu':''}{off?' · đã khoá':''}</div>
+                <div style={{flex:'1 1 150px',minWidth:0}}>
+                  <div style={{display:'flex',alignItems:'center',gap:6}}>
+                    {/* Đổi tên tại chỗ. Ô trống chỉ nằm trong bản nháp, KHÔNG ghi đè tên đã lưu —
+                        xoá hết để gõ lại mà bỏ đi giữa chừng thì tên cũ vẫn còn nguyên. */}
+                    <input value={draft[u.id]!==undefined?draft[u.id]:u.name} placeholder="Tên thành viên"
+                      onChange={e=>{ const v=e.target.value; setDraft({...draft,[u.id]:v});
+                        if(v.trim()) setUsers(users.map(x=>x.id===u.id?{...x,name:v}:x)); }}
+                      onKeyDown={e=>e.key==='Enter'&&e.target.blur()}
+                      className="nameedit" style={{...inp,fontWeight:700,fontSize:14,padding:'6px 9px'}}/>
+                    {u.id===me.id&&<span style={{color:'var(--muted2)',fontWeight:500,fontSize:12,whiteSpace:'nowrap'}}>· bạn</span>}
+                  </div>
+                  <div style={{fontSize:11.5,color:'var(--muted)',paddingLeft:9}}>{s.open} việc đang mở{s.over?' · '+s.over+' quá hạn':''}{u.mustChange?' · chưa đặt mật khẩu':''}{off?' · đã khoá':''}</div>
                 </div>
                 <select value={u.role} disabled={u.id===me.id} onChange={e=>setUsers(users.map(x=>x.id===u.id?{...x,role:e.target.value}:x))} style={selSt}>
                   {roles.map(x=>(<option key={x.id} value={x.id}>{x.ic} {x.n}</option>))}
