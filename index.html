@@ -7,6 +7,11 @@
 <link rel="manifest" href="manifest.json"/>
 <title>Hương Diện · Quản lý công việc</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📋%3C/text%3E%3C/svg%3E"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icon.svg"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="Hương Diện"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet"/>
@@ -214,14 +219,13 @@ input,textarea,select{font-family:inherit;font-size:14px}
 .mtop{display:none;align-items:center;gap:10px;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
 .mtop .lic{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--o),var(--o-dk));display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px}
 .mtop b{font-family:"Baloo 2";font-size:16px}
-.botnav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);z-index:50;padding:6px 4px 8px;overflow-x:auto;-webkit-overflow-scrolling:touch}
-.botnav::-webkit-scrollbar{height:0}
-/* 7 nhóm phải vừa màn 375px mà vẫn đọc được cả chữ → co giãn đều, không cuộn ngang */
+.botnav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);z-index:50;padding:6px 4px calc(8px + env(safe-area-inset-bottom))}
+/* Gom menu còn 7 nhóm nên bỏ được nút "Thêm": 7 mục co giãn đều, vừa màn 375px mà vẫn đọc được cả chữ */
 .botnav button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;font-weight:600;color:var(--muted2);padding:5px 2px;border-radius:10px;flex:1 1 0;min-width:0;white-space:nowrap;position:relative}
 .botnav button i{font-size:22px}
 .botnav button.on{color:var(--o)}
 .botnav .badge{position:absolute;top:2px;right:50%;transform:translateX(16px);background:var(--red);color:#fff;font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px}
-.fab{display:none;position:fixed;right:18px;bottom:78px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--o),var(--o-dk));color:#fff;font-size:28px;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(249,115,22,.45);z-index:49}
+.fab{display:none;position:fixed;right:18px;bottom:calc(78px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--o),var(--o-dk));color:#fff;font-size:28px;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(249,115,22,.45);z-index:49}
 @media(max-width:768px){
   .side{display:none}.mtop{display:flex}.botnav{display:flex}.fab{display:flex}
   .topbar{display:none}.content{padding:14px 14px 96px}
@@ -501,6 +505,7 @@ const INBOX_TASKS=[
   {id:'hd-2026-07-25-7',title:'Quyết định nhóm B — brand không có đường chính ngạch',proj:'kho',pri:'high',due:'',note:'Phân loại 25/07: nhóm B là các brand tìm không ra nhà nhập khẩu chính thức tại VN — Fruto (52 SP, Nga), Avenir High Colostrum (50,1tr, SKU giá trị lớn nhất kho), Matilia, Marigold, Alula, I am NZ, Milk Safe & Clean (23,7tr), Sysy Pro, Palenum, Pororo, Hestia, Jack N Jill, YoyiC, Alete, Nissin Anpanman. Nhóm này chiếm phần lớn giá trị tồn. Ba lối ra: tự nhập chính ngạch (nếu sản lượng đủ), tìm nhà nhập khẩu có tờ khai hải quan, hoặc bỏ dòng hàng. Không có cách nào hợp thức hoá hàng đã vào ngoài luồng.',checklist:[{t:'Xếp nhóm B theo giá trị tồn, xử lý mã lớn trước (Avenir, Healthy Care, Milk Safe)',done:false},{t:'Với mã sản lượng đủ lớn: hỏi báo giá nhập chính ngạch + chi phí công bố sản phẩm',done:false},{t:'Với mã còn lại: lên kế hoạch xả tồn có kiểm soát rồi ngừng nhập',done:false},{t:'Ghi rõ quyết định từng brand vào tab Nguồn hàng',done:false}],src:'hd-chat'},
   {id:'hd-2026-07-25-8',title:'Chuẩn bị hoá đơn điện tử từ máy tính tiền + sổ sách TT88',proj:'tc',pri:'med',due:'',note:'Từ 2026 hộ kinh doanh bỏ thuế khoán, chuyển hết sang kê khai theo doanh thu thực. Bán lẻ trực tiếp cho người tiêu dùng bắt buộc dùng hoá đơn điện tử khởi tạo từ máy tính tiền, kết nối cơ quan thuế. Sổ sách theo Thông tư 88/2021 gồm 5 loại sổ, đủ đơn giản để tự làm. Lệ phí môn bài đã được bãi bỏ từ 01/01/2026.',checklist:[{t:'Kiểm tra KiotViet đã bật tính năng HĐĐT từ máy tính tiền chưa',done:false},{t:'Đăng ký/gia hạn chữ ký số và mẫu 01/ĐKTĐ-HĐĐT',done:false},{t:'Lập đủ 5 loại sổ theo TT88 cho từng hộ',done:false},{t:'Đối chiếu doanh thu sổ sách với sao kê ngân hàng theo tháng',done:false}],src:'hd-chat'},
   {id:'hd-2026-07-25-9',title:'Niêm yết giá đầy đủ trên kệ — nhất là sữa cho trẻ dưới 6 tuổi',proj:'kho',pri:'med',due:'',note:'Sữa cho trẻ em dưới 6 tuổi thuộc danh mục bình ổn giá nên bị kiểm tra niêm yết rất chặt. Đây là lỗi dễ sửa nhất trong bốn thứ quản lý thị trường hay soi, nhưng cũng là lỗi bị lập biên bản nhiều nhất vì shop hay bỏ sót vài kệ.',checklist:[{t:'Rà từng kệ, mã nào thiếu tem giá thì in bổ sung',done:false},{t:'Giá trên kệ khớp giá trên KiotViet và trên web',done:false},{t:'Giao 1 nhân viên kiểm lại tem giá mỗi đầu tuần',done:false}],src:'hd-chat'},
+  {id:'hd-2026-07-10-1',title:'Rà sổ sách & cộng tổng doanh thu 6 tháng đầu 2026 (đến 30/6)',proj:'tc',pri:'high',due:'',note:'Theo yêu cầu 10/07: hộ kinh doanh (HKD) cần xem lại sổ sách ghi chép và cộng tổng doanh thu từng tháng từ đầu năm 2026 đến hết 30/6/2026 — phục vụ đối chiếu/kê khai thuế HKD.',checklist:[{t:'Tổng hợp doanh thu tháng 1, 2, 3/2026 theo sổ sách',done:false},{t:'Tổng hợp doanh thu tháng 4, 5, 6/2026 theo sổ sách',done:false},{t:'Cộng tổng doanh thu 6 tháng đầu năm 2026',done:false},{t:'Đối chiếu với Sổ KD / báo cáo KiotViet đã ghi trong app',done:false}],src:'hd-chat'},
   /* __INBOX_INSERT__ (tác vụ theo lịch chèn task mới phía trên dòng này) */
 ];
 function mergeInbox(existing){
@@ -949,17 +954,18 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
   const [focusTask,setFocusTask]=useState(null);
   const [deepIds,setDeepIds]=useState(null);
   const [breath,setBreath]=useState(false);
-  /* ---- dữ liệu RIÊNG từng tài khoản (thói quen, năng lượng, bài đã học, kế hoạch ngày) ----
+  /* ---- dữ liệu RIÊNG từng tài khoản (thói quen, năng lượng, bài đã học, kế hoạch ngày, 3 việc thắng lớn) ----
      Tài khoản chủ giữ nguyên dữ liệu cũ để không mất lịch sử; người mới bắt đầu từ trống. */
   const mine=(k,d)=>{ const v=store.get(ukey(me.id,k),null); if(v!==null) return v; return isOwner?store.get('hdw.'+k,d):d; };
   const [zen,setZen]=useState(()=>mine('zen',{min:0,sessions:0}));
   const [brainlog,setBrainlog]=useState(()=>mine('brainlog',{}));
-  const [carecfg,setCarecfg]=useState(()=>mine('carecfg',{water:true,stand:true,eye:false,caffeine:true,caffeineHour:14}));
+  const [carecfg,setCarecfg]=useState(()=>mine('carecfg',{water:true,stand:true,eye:false,caffeine:true,caffeineHour:14,taskReminder:true}));
   const [learned,setLearned]=useState(()=>mine('learned',{}));
   const [toast,setToast]=useState(null);
   const [dailyState,setDailyState]=useState(()=>mine('dailyState',{date:today(),done:[],streak:0,last:''}));
   const [view,setView]=useState(()=>store.get('hdwork.lastview',isAdmin?'dash':'today'));
   const [todayPlan,setTodayPlan]=useState(()=>mine('todayPlan',null));
+  const [threeWins,setThreeWins]=useState(()=>mine('threewins',null));
   const [dark,setDark]=useState(()=>store.get('hdw.dark',0)==1||store.get('hdw.dark',false)===true||localStorage.getItem('hdw.dark')==='1');
   const [editing,setEditing]=useState(null); // task object or null
   const [bellOpen,setBellOpen]=useState(false);
@@ -970,6 +976,7 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
   useEffect(()=>store.set('hdw.daily',daily),[daily]);
   useEffect(()=>store.set(ukey(me.id,'dailyState'),dailyState),[dailyState]);
   useEffect(()=>store.set(ukey(me.id,'todayPlan'),todayPlan),[todayPlan]);
+  useEffect(()=>store.set(ukey(me.id,'threewins'),threeWins),[threeWins]);
   useEffect(()=>store.set('hdwork.lastview',view),[view]);
   useEffect(()=>store.set('hdw.recurring',recurring),[recurring]);
   useEffect(()=>store.set('hdw.bizmetrics',bizmetrics),[bizmetrics]);
@@ -983,7 +990,19 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
   useEffect(()=>store.set(ukey(me.id,'learned'),learned),[learned]);
   const addZen=(m)=>setZen(z=>({min:(z.min||0)+m,sessions:(z.sessions||0)+1}));
 
-  // Nhắc nhịp chăm sóc: bắn toast nhẹ theo giờ khi app đang mở
+  // Thông báo: dùng Notification thật khi tab đang ẩn (nếu đã cấp quyền), ngược lại bắn toast trong app
+  const ping=(msg,tag)=>{
+    let shown=false;
+    try{
+      if(document.hidden && 'Notification' in window && Notification.permission==='granted'){
+        new Notification('Hương Diện · Quản lý công việc',{body:msg,tag});
+        shown=true;
+      }
+    }catch(e){}
+    if(!shown) setToast({msg});
+  };
+
+  // Nhắc nhịp chăm sóc: theo giờ khi app đang mở/chạy nền
   const careFired=useRef({});
   useEffect(()=>{
     const NUDGE={
@@ -996,11 +1015,11 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
       Object.keys(NUDGE).forEach(k=>{
         if(!carecfg[k]) return;
         const last=careFired.current[k]||0;
-        if(now-last >= NUDGE[k].every*60000){ careFired.current[k]=now; setToast({msg:NUDGE[k].msg}); }
+        if(now-last >= NUDGE[k].every*60000){ careFired.current[k]=now; ping(NUDGE[k].msg,'hdw-care-'+k); }
       });
       if(carecfg.caffeine){
         const h=new Date().getHours();
-        if(h===(carecfg.caffeineHour||14) && careFired.current.caf!==dstr(new Date())){ careFired.current.caf=dstr(new Date()); setToast({msg:'☕ Đến giờ cắt caffeine — tránh cà phê sau giờ này để ngủ ngon.'}); }
+        if(h===(carecfg.caffeineHour||14) && careFired.current.caf!==dstr(new Date())){ careFired.current.caf=dstr(new Date()); ping('☕ Đến giờ cắt caffeine — tránh cà phê sau giờ này để ngủ ngon.','hdw-care-caffeine'); }
       }
     };
     careFired.current.water=careFired.current.water||Date.now();
@@ -1124,6 +1143,22 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
     if(add.length) setTodayPlan(p=>({...p,ids:[...p.ids,...add],auto:[...(p.auto||[]),...add]}));
   },[myPool]);
 
+  /* 3 việc thắng lớn/ngày: 1 kiếm tiền ngay · 1 xây hệ thống · 1 nâng trình cá nhân — reset mỗi ngày mới */
+  const wins=(threeWins&&threeWins.date===today())?threeWins:{date:today(),money:null,system:null,growth:null};
+  const setWinSlot=(key,val)=>setThreeWins(w=>{
+    const base=(w&&w.date===today())?w:{date:today(),money:null,system:null,growth:null};
+    return {...base,[key]:{...val,done:false}};
+  });
+  const clearWinSlot=(key)=>setThreeWins(w=>{
+    const base=(w&&w.date===today())?w:{date:today(),money:null,system:null,growth:null};
+    return {...base,[key]:null};
+  });
+  const toggleWinText=(key)=>setThreeWins(w=>{
+    const base=(w&&w.date===today())?w:{date:today(),money:null,system:null,growth:null};
+    const cur=base[key];
+    return cur?{...base,[key]:{...cur,done:!cur.done}}:base;
+  });
+
   /* daily */
   const toggleDaily=(id)=>setDailyState(s=>{
     const done=s.done.includes(id)?s.done.filter(x=>x!==id):[...s.done,id];
@@ -1207,6 +1242,20 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
   const openGroup=(g)=>{ const v=lastTab.current[g.id]; setView(g.views.some(x=>x.id===v)?v:g.views[0].id); };
   const goView=(v)=>{ const g=groupOf(v); lastTab.current={...lastTab.current,[g.id]:v}; store.set('hdwork.lasttab',lastTab.current); setView(v); };
   useEffect(()=>{ if(!GROUPS.some(g=>g.views.some(x=>x.id===view))) setView(GROUPS[0].views[0].id); },[view]);
+
+  // Nhắc việc quá hạn / hôm nay còn tồn — mỗi 45 phút, ưu tiên báo quá hạn trước
+  const taskFired=useRef(0);
+  useEffect(()=>{
+    if(!carecfg.taskReminder) return;
+    const tick=()=>{
+      const now=Date.now();
+      if(now-taskFired.current < 45*60000) return;
+      if(stats.overdue>0){ taskFired.current=now; ping(`⏰ Có ${stats.overdue} việc đã quá hạn — mở app để xử lý.`,'hdw-overdue'); }
+      else if(stats.todayCnt>0){ taskFired.current=now; ping(`📌 Còn ${stats.todayCnt} việc cần làm hôm nay.`,'hdw-today'); }
+    };
+    const id=setInterval(tick,60000);
+    return ()=>clearInterval(id);
+  },[carecfg.taskReminder, stats.overdue, stats.todayCnt]);
 
   const viewMeta={
     dash:{t:'Tổng quan',s:'Tiến độ công việc cửa hàng hôm nay'},
@@ -1332,7 +1381,7 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
 
         <div className="content" key={view}>
           {view==='dash' && <Dash stats={stats} tasks={vTasks} setView={goView} edit={setEditing} daily={daily} dailyState={dailyState} toggleDaily={toggleDaily} importPlan={importPlan} planLoaded={planLoaded} missingPlan={missingPlan} planEverLoaded={planEverLoaded} onBreath={()=>setBreath(true)} zen={zen} me={me} isAdmin={isAdmin}/>}
-          {view==='today' && <Today tasks={myPool} plan={todayPlan} rebuild={rebuildPlan} move={moveTask} edit={setEditing} toggleCk={toggleCk} openFocus={setFocusTask} startDeep={setDeepIds}/>}
+          {view==='today' && <Today tasks={myPool} plan={todayPlan} rebuild={rebuildPlan} move={moveTask} edit={setEditing} toggleCk={toggleCk} openFocus={setFocusTask} startDeep={setDeepIds} wins={wins} setWinSlot={setWinSlot} clearWinSlot={clearWinSlot} toggleWinText={toggleWinText}/>}
           {view==='brain' && <BrainEnergy log={brainlog} setLog={setBrainlog} cfg={carecfg} setCfg={setCarecfg} onBreath={()=>setBreath(true)}/>}
           {view==='board' && <Board tasks={filtered} all={vTasks} projFilter={projFilter} setProjFilter={setProjFilter} move={moveTask} edit={setEditing} toggleCk={toggleCk} nameOf={nameOf}/>}
           {view==='proj' && <Projects tasks={vTasks} setView={goView} setProjFilter={setProjFilter}/>}
@@ -1719,8 +1768,89 @@ function Daily({daily,setDaily,st,toggle,recurring,setRecurring}){
 }
 const selSt={background:'var(--card)',border:'1.5px solid var(--border)',borderRadius:9,padding:'8px 10px',color:'var(--ink)',outline:'none',fontWeight:600,fontSize:12.5};
 
+/* ---------- 3 việc thắng lớn/ngày (1 tiền · 1 hệ thống · 1 cá nhân) ---------- */
+const WIN_SLOTS=[
+  {key:'money',ic:'💰',label:'Kiếm tiền ngay',hint:'đẩy combo, gọi khách cũ, xử lý tồn, chăm Zalo, chạy ads, tối ưu Shopee…',color:'grn'},
+  {key:'system',ic:'🧱',label:'Xây hệ thống',hint:'viết quy trình, tạo form đơn hàng, cập nhật bảng tồn, chuẩn hoá dữ liệu, sửa chatbot…',color:'blue'},
+  {key:'growth',ic:'🌱',label:'Nâng trình cá nhân',hint:'tập bi-a đúng bài, học AI, tập thể lực, đọc một bài phân tích sâu…',color:'o'},
+];
+function WinPicker({slot,tasks,onPick,onClose}){
+  const [q,setQ]=useState('');
+  const [text,setText]=useState('');
+  const open=tasks.filter(t=>t.status!=='done');
+  const filtered=(q.trim()?open.filter(t=>t.title.toLowerCase().includes(q.trim().toLowerCase())):open).slice(0,50);
+  return (
+    <div className="ov" onClick={onClose}>
+      <div className="modal" onClick={e=>e.stopPropagation()} style={{maxWidth:480}}>
+        <div className="modal-h"><span style={{fontSize:19}}>{slot.ic}</span><b>Chọn việc — {slot.label}</b>
+          <button className="btn ghost sm" style={{marginLeft:'auto'}} onClick={onClose}><i className="ti ti-x"></i></button>
+        </div>
+        <div className="modal-b">
+          <div className="srch" style={{marginBottom:12}}><i className="ti ti-search"></i><input placeholder="Tìm trong việc đang mở…" value={q} onChange={e=>setQ(e.target.value)} autoFocus/></div>
+          <div style={{maxHeight:250,overflowY:'auto',display:'flex',flexDirection:'column',gap:6}}>
+            {filtered.length===0 && <div style={{fontSize:12.5,color:'var(--muted)',padding:'10px 2px'}}>Không tìm thấy việc nào đang mở.</div>}
+            {filtered.map(t=>(
+              <button key={t.id} className="btn ghost sm" style={{justifyContent:'flex-start',textAlign:'left',width:'100%',height:'auto',padding:'9px 12px'}} onClick={()=>onPick({taskId:t.id})}>{t.title}</button>
+            ))}
+          </div>
+          <div className="hr"></div>
+          <div style={{fontSize:12,color:'var(--muted)',marginBottom:8,fontWeight:600}}>Hoặc nhập việc khác (không cần có trong Bảng việc — hợp cho việc cá nhân):</div>
+          <div style={{display:'flex',gap:8}}>
+            <input value={text} onChange={e=>setText(e.target.value)} placeholder={slot.hint} style={{...selSt,flex:1,fontWeight:400}}/>
+            <button className="btn sm" disabled={!text.trim()} onClick={()=>text.trim()&&onPick({text:text.trim()})}>Dùng</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+function ThreeWins({tasks,wins,setSlot,clearSlot,toggleText,move,edit}){
+  const [pickingKey,setPickingKey]=useState(null);
+  const byId={}; tasks.forEach(t=>byId[t.id]=t);
+  const rows=WIN_SLOTS.map(s=>{
+    const v=wins[s.key];
+    const task=v&&v.taskId?byId[v.taskId]:null;
+    const missing=v&&v.taskId&&!task; // việc đã bị xoá khỏi Bảng việc
+    const isDone=task?task.status==='done':!!(v&&v.done);
+    const title=task?task.title:(v?v.text:null);
+    return {s,v,task,missing,isDone,title};
+  });
+  const doneCount=rows.filter(r=>r.title&&r.isDone).length;
+  const allDone=doneCount===3;
+  return (
+    <div className="panel">
+      <div className="panel-h">
+        <i className="ti ti-trophy lead"></i><b>3 việc thắng lớn hôm nay</b>
+        <div style={{flex:1}}></div>
+        <span className="tag" style={{background:allDone?'var(--grn-lt)':'var(--bg)',color:allDone?'var(--grn)':'var(--muted)',border:allDone?'none':'1px solid var(--border)'}}>{allDone&&'🎉 '}{doneCount}/3 xong</span>
+      </div>
+      <div className="panel-b" style={{padding:'10px 18px 16px',display:'flex',flexDirection:'column',gap:9}}>
+        {rows.map(({s,task,missing,isDone,title})=>(
+          <div key={s.key} style={{display:'flex',alignItems:'center',gap:12,padding:'11px 13px',borderRadius:12,background:'var(--'+s.color+'-lt)',opacity:isDone?.6:1}}>
+            <span style={{fontSize:20,flexShrink:0}}>{s.ic}</span>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:10.5,fontWeight:700,letterSpacing:'.03em',textTransform:'uppercase',color:'var(--'+s.color+')'}}>{s.label}</div>
+              {title
+                ? <div style={{fontSize:13.5,fontWeight:600,marginTop:2,textDecoration:isDone?'line-through':'none',cursor:task?'pointer':'default'}} onClick={()=>task&&edit(task)}>{missing?'(việc đã bị xoá)':title}</div>
+                : <div style={{fontSize:12.5,color:'var(--muted)',marginTop:2}}>{s.hint}</div>}
+            </div>
+            {title ? (
+              <div style={{display:'flex',gap:6,flexShrink:0}}>
+                {!isDone && task && <button className="btn ghost sm" onClick={()=>move(task.id,'done')}><i className="ti ti-check"></i></button>}
+                {!task && !missing && <button className="btn ghost sm" onClick={()=>toggleText(s.key)}><i className={'ti '+(isDone?'ti-square-check-filled':'ti-square')}></i></button>}
+                <button className="btn ghost sm" onClick={()=>clearSlot(s.key)}><i className="ti ti-x"></i></button>
+              </div>
+            ) : <button className="btn ghost sm" style={{flexShrink:0}} onClick={()=>setPickingKey(s.key)}><i className="ti ti-plus"></i>Chọn</button>}
+          </div>
+        ))}
+      </div>
+      {pickingKey && <WinPicker slot={WIN_SLOTS.find(s=>s.key===pickingKey)} tasks={tasks} onClose={()=>setPickingKey(null)} onPick={(v)=>{setSlot(pickingKey,v);setPickingKey(null);}}/>}
+    </div>
+  );
+}
+
 /* ---------- Kế hoạch hôm nay ---------- */
-function Today({tasks,plan,rebuild,move,edit,toggleCk,openFocus,startDeep}){
+function Today({tasks,plan,rebuild,move,edit,toggleCk,openFocus,startDeep,wins,setWinSlot,clearWinSlot,toggleWinText}){
   if(!plan) return <div className="empty"><i className="ti ti-loader"></i><p>Đang dựng kế hoạch…</p></div>;
   const byId={}; tasks.forEach(t=>byId[t.id]=t);
   const items=plan.ids.map(id=>byId[id]).filter(Boolean);
@@ -1735,6 +1865,8 @@ function Today({tasks,plan,rebuild,move,edit,toggleCk,openFocus,startDeep}){
   let rank=0;
   return (
     <div>
+      <ThreeWins tasks={tasks} wins={wins} setSlot={setWinSlot} clearSlot={clearWinSlot} toggleText={toggleWinText} move={move} edit={edit}/>
+
       {/* thanh điều khiển quỹ thời gian */}
       <div className="panel" style={{marginBottom:16}}>
         <div className="panel-b" style={{padding:'14px 18px',display:'flex',alignItems:'center',gap:14,flexWrap:'wrap'}}>
@@ -2789,7 +2921,9 @@ function BrainEnergy({log,setLog,cfg,setCfg,onBreath}){
   const advice=!en?null : en<=2?{c:'var(--amber)',bg:'var(--amber-lt)',t:'Năng lượng thấp — làm việc nhẹ, chia nhỏ, và thở 5 phút. Để dành việc khó cho lúc khỏe hơn.'}
     : en===3?{c:'var(--blue)',bg:'var(--blue-lt)',t:'Ổn định — làm việc vừa sức, xen kẽ nghỉ ngắn theo nhịp.'}
     : {c:'var(--grn)',bg:'var(--grn-lt)',t:'Năng lượng cao — tấn công ngay việc khó nhất / "việc xương nhất" 🐸 khi não đang đỉnh!'};
-  const cares=[['water','💧 Nhắc uống nước (mỗi 60′)'],['stand','🧍 Nhắc đứng dậy vận động (mỗi 50′)'],['eye','👀 Nhắc nghỉ mắt 20-20-20 (mỗi 20′)'],['caffeine','☕ Nhắc cắt caffeine (theo giờ)']];
+  const cares=[['water','💧 Nhắc uống nước (mỗi 60′)'],['stand','🧍 Nhắc đứng dậy vận động (mỗi 50′)'],['eye','👀 Nhắc nghỉ mắt 20-20-20 (mỗi 20′)'],['caffeine','☕ Nhắc cắt caffeine (theo giờ)'],['taskReminder','⏰ Nhắc việc quá hạn / hôm nay (mỗi 45′)']];
+  const [notifPerm,setNotifPerm]=useState(()=>('Notification' in window?Notification.permission:'unsupported'));
+  const askNotif=()=>{ try{ Notification.requestPermission().then(p=>setNotifPerm(p)); }catch(e){} };
   return (
     <div>
       {/* Check-in năng lượng */}
@@ -2843,6 +2977,20 @@ function BrainEnergy({log,setLog,cfg,setCfg,onBreath}){
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Thông báo trình duyệt */}
+      <div className="panel">
+        <div className="panel-h"><i className="ti ti-bell-ringing lead"></i><b>Thông báo trình duyệt</b></div>
+        <div className="panel-b" style={{padding:'12px 18px 16px'}}>
+          {notifPerm==='unsupported' && <div style={{fontSize:13,color:'var(--muted)'}}>Trình duyệt này không hỗ trợ thông báo.</div>}
+          {notifPerm==='granted' && <div style={{display:'flex',alignItems:'center',gap:8,fontSize:13,color:'var(--grn)',fontWeight:600}}><i className="ti ti-circle-check"></i>Đã bật — sẽ nhận nhắc dù đang ở tab khác (khi app còn mở/chạy nền).</div>}
+          {notifPerm==='denied' && <div style={{fontSize:13,color:'var(--muted)'}}>Thông báo đang bị chặn. Vào cài đặt trình duyệt cho site này → cho phép Thông báo, rồi tải lại trang.</div>}
+          {notifPerm==='default' && <>
+            <div style={{fontSize:13,color:'var(--muted)',marginBottom:10}}>Bật để nhận nhắc việc/chăm sóc ngay cả khi đang lướt tab khác (app cần vẫn đang mở).</div>
+            <button className="btn sm" onClick={askNotif}><i className="ti ti-bell-plus"></i>Bật thông báo</button>
+          </>}
         </div>
       </div>
 
