@@ -974,6 +974,7 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
   const [brainlog,setBrainlog]=useState(()=>mine('brainlog',{}));
   const [carecfg,setCarecfg]=useState(()=>mine('carecfg',{water:true,stand:true,eye:false,caffeine:true,caffeineHour:14,taskReminder:true}));
   const [learned,setLearned]=useState(()=>mine('learned',{}));
+  const [trained,setTrained]=useState(()=>mine('trained',{}));
   const [toast,setToast]=useState(null);
   const [dailyState,setDailyState]=useState(()=>mine('dailyState',{date:today(),done:[],streak:0,last:''}));
   const [view,setView]=useState(()=>store.get('hdwork.lastview',isAdmin?'dash':'today'));
@@ -1001,6 +1002,7 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
   useEffect(()=>store.set(ukey(me.id,'brainlog'),brainlog),[brainlog]);
   useEffect(()=>store.set(ukey(me.id,'carecfg'),carecfg),[carecfg]);
   useEffect(()=>store.set(ukey(me.id,'learned'),learned),[learned]);
+  useEffect(()=>store.set(ukey(me.id,'trained'),trained),[trained]);
   const addZen=(m)=>setZen(z=>({min:(z.min||0)+m,sessions:(z.sessions||0)+1}));
 
   // Thông báo: dùng Notification thật khi tab đang ẩn (nếu đã cấp quyền), ngược lại bắn toast trong app
@@ -1259,7 +1261,7 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
       {id:'sales',n:'Bán hàng'},{id:'kd',n:'Sổ KD'},{id:'stats',n:'Thống kê'}]},
     {id:'g_shop',name:'Cửa hàng',icon:'ti-building-store',badge:riskOpen,hint:'Mục rủi ro cao chưa xử lý',views:[
       {id:'ncc',n:'Nguồn hàng'},{id:'law',n:'Tuân thủ & Thuế'}]},
-    {id:'g_ref',name:'Cẩm nang',icon:'ti-book',views:[{id:'learn',n:'Kiến thức'},{id:'book',n:'Sổ tay'}]},
+    {id:'g_ref',name:'Cẩm nang',icon:'ti-book',views:[{id:'train',n:'Huấn luyện'},{id:'learn',n:'Kiến thức'},{id:'book',n:'Sổ tay'}]},
     /* foot: nằm ở chân sidebar cùng nhóm "chăm mình" (Meditation, Deep Work), không đứng chung
        với các mục công việc phía trên. Trên điện thoại vẫn giữ trong thanh dưới cho dễ với. */
     {id:'g_brain',name:'Não khỏe',icon:'ti-brain',foot:true,views:[{id:'brain',n:'Não khỏe'}]},
@@ -1298,6 +1300,7 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
     sales:{t:'Bán hàng (KiotViet)',s:'Doanh thu, đơn hàng, sản phẩm bán chạy & tồn kho — đồng bộ tự động từ KiotViet'},
     ncc:{t:'Nguồn hàng chính ngạch',s:'24 thương hiệu nhóm A · theo dõi chuyển nguồn sang nhà phân phối chính thức'},
     law:{t:'Tuân thủ & Thuế',s:'Rủi ro pháp lý đang có, hồ sơ chứng từ và lịch khai thuế theo quý'},
+    train:{t:'Huấn luyện theo vai trò',s:'Giáo trình riêng cho từng vị trí — học xong tick lại để theo dõi tiến độ'},
     learn:{t:'Kiến thức kinh doanh',s:'Bài học ngắn về tài chính, định giá, khách hàng… cho chủ shop'},
     book:{t:'Sổ tay vận hành',s:'Quy trình, prompt AI, nhà cung cấp & sao lưu dữ liệu'},
     daily:{t:'Việc lặp lại',s:'Thói quen mỗi ngày + việc tự sinh theo tuần/tháng'},
@@ -1429,6 +1432,7 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
           {view==='sales' && <Sales/>}
           {view==='ncc' && <Sourcing st={sourcing} setSt={setSourcing}/>}
           {view==='law' && <Compliance st={compliance} setSt={setCompliance}/>}
+          {view==='train' && <Training me={me} roles={roles} isAdmin={isAdmin} done={trained} setDone={setTrained}/>}
           {view==='learn' && <Knowledge learned={learned} setLearned={setLearned}/>}
           {view==='book' && <Notebook nb={notebook} setNb={setNotebook} onExport={exportData} onImport={importData}/>}
           {view==='daily' && <Daily daily={daily} setDaily={setDaily} st={dailyState} toggle={toggleDaily} recurring={recurring} setRecurring={setRecurring}/>}
@@ -3930,6 +3934,439 @@ function Members({users,setUsers,roles,setRoles,me,isOwner,tasks}){
       <div style={{padding:'12px 14px',background:'var(--bg)',borderRadius:12,fontSize:12,color:'var(--muted)',lineHeight:1.6,marginTop:14}}>
         <b>Về bảo mật:</b> mật khẩu lưu dạng băm SHA-256 kèm muối riêng, không lưu chữ thật, và không đọc lại được. Màn khoá chặn người lạ mở link cũng như người không phận sự cầm máy. Nhưng app chạy trên trình duyệt nên người rành kỹ thuật ngồi trước máy đã đăng nhập vẫn đọc được dữ liệu qua công cụ nhà phát triển — muốn chặn cả trường hợp đó phải chuyển sang tài khoản trên máy chủ. <b>Mã đồng bộ</b> chính là chìa khoá vào dữ liệu cửa hàng từ máy khác, chỉ đưa cho người trong đội.
       </div>
+    </div>
+  );
+}
+
+/* ================= HUẤN LUYỆN THEO VAI TRÒ =================
+   Mỗi vị trí một giáo trình riêng, bám thực tế Hương Diện: 2 hộ kinh doanh (NK/114 và ĐQ),
+   KiotViet + hoá đơn điện tử, Zalo OA ~900 khách, danh mục nghiêng hẳn về hàng ngoại.
+   body = nội dung chính · box = mẫu/kịch bản để dùng thẳng · do = làm ngay · err = sai hay gặp */
+const TRAINING={
+ nk:{ic:'🛍️',intro:'Bạn là người khách gặp đầu tiên. Việc của bạn không phải "bán được hàng" mà là "tư vấn đúng để mẹ quay lại lần sau" — một khách mẹ bỉm mua lại hàng chục lần mỗi năm, giá trị nằm ở chỗ đó chứ không ở đơn hôm nay.',lessons:[
+  {id:'nk1',t:'Hỏi 4 câu trước khi tư vấn bất cứ thứ gì',min:6,
+   body:['Đừng bao giờ báo giá ngay khi khách hỏi "sữa này bao nhiêu". Hỏi đủ 4 câu rồi mới nói — khách thấy mình được quan tâm, và bạn tránh bán sai.',
+     'Bé mấy tháng tuổi? — quyết định số sữa, size bỉm, loại ăn dặm.',
+     'Bé nặng bao nhiêu cân? — size bỉm đi theo CÂN NẶNG chứ không theo tháng tuổi.',
+     'Bé đang dùng loại nào? — biết để không đổi đột ngột, và biết mẹ quen mức giá nào.',
+     'Bé có vấn đề gì không: táo bón, hay trớ, hăm, biếng ăn, dị ứng đạm bò? — đây là câu ra quyết định.'],
+   box:{t:'Câu mở đầu dùng được mọi lúc',lines:['"Dạ chị cho em hỏi bé nhà mình mấy tháng và được bao nhiêu cân rồi ạ? Để em tư vấn đúng loại cho bé, chứ cùng một tuổi mà cân nặng khác nhau là dùng khác nhau đó chị."']},
+   do:['Ba khách tiếp theo, hỏi đủ 4 câu trước khi báo giá.','Ghi lại tháng tuổi + cân nặng của bé vào ghi chú khách trên Zalo.'],
+   err:['Báo giá ngay rồi mới hỏi → khách so giá xong đi mất.','Hỏi tháng tuổi rồi suy ra size bỉm mà không hỏi cân nặng.']},
+  {id:'nk2',t:'Chọn size bỉm theo cân nặng — bảng phải thuộc',min:5,
+   body:['Size bỉm dán/quần đi theo cân nặng của bé, in trên bao bì. Bé cùng 6 tháng tuổi có bé 6kg có bé 9kg, dùng hai size khác nhau.',
+     'Nguyên tắc: bé nằm ở NGƯỠNG TRÊN của size hiện tại và bắt đầu hay tràn ban đêm → đổi lên size kế tiếp.',
+     'Bé biết lật, biết bò trở đi thì chuyển từ bỉm dán sang bỉm quần cho dễ thay.',
+     'Dấu hiệu sai size: hằn đỏ ở đùi và bụng (chật), tràn ra lưng hoặc đùi (rộng).'],
+   box:{t:'Ngưỡng cân nặng chuẩn (đối chiếu lại bao bì từng hãng)',lines:['NB: dưới 5kg · S: 4–8kg · M: 6–11kg · L: 9–14kg · XL: 12–17kg · XXL: trên 15kg',
+     'Bỉm Nhật (Merries, Moony) thường ôm hơn — bé ở ranh giới thì lấy size lớn hơn.']},
+   do:['Cầm 3 gói bỉm khác hãng, đọc ngưỡng cân trên bao bì, so xem hãng nào ôm hơn.','Tập một câu tư vấn đổi size cho bé 9kg đang dùng size M.'],
+   err:['Tư vấn size theo tháng tuổi.','Khách kêu tràn ban đêm mà chỉ khuyên đổi hãng, không xét lên size.']},
+  {id:'nk3',t:'Tư vấn theo 5 giai đoạn của bé',min:8,
+   body:['Nhớ theo giai đoạn thì tư vấn nhanh và ít sai. Mỗi giai đoạn có nhóm hàng riêng.',
+     'MẸ BẦU: sữa bầu, vitamin tổng hợp, sắt, canxi, miếng lót thấm sữa, đồ đi sinh.',
+     '0–6 THÁNG: sữa số 1, bỉm NB/S, khăn ướt, bình sữa, núm ti, nước muối sinh lý, kem hăm.',
+     '6–12 THÁNG: bắt đầu ăn dặm — bột/cháo, dầu ăn dặm, men vi sinh, bỉm M, cốc tập uống, ghế ăn.',
+     '1–2 TUỔI: sữa số 3, bỉm quần L/XL, vitamin D3K2, canxi, đồ chơi phát triển, sữa tắm gội.',
+     'TRÊN 2 TUỔI: sữa tăng chiều cao, TPCN ăn ngon, kem đánh răng trẻ em, đồ dùng đi học.'],
+   box:{t:'Combo bán kèm tự nhiên (gợi ý, không ép)',lines:['Mua bỉm → khăn ướt (bán theo lốc rẻ hơn)',
+     'Mua sữa số 1 → bình + cọ rửa bình',
+     'Bắt đầu ăn dặm → dầu ăn dặm + men vi sinh + yếm/ghế',
+     'Mẹ mới sinh → miếng lót thấm sữa + túi trữ sữa']},
+   do:['Viết ra 3 combo cho giai đoạn 6–12 tháng bằng đúng hàng đang có trên kệ.'],
+   err:['Gợi ý combo cho có, khách mua về không dùng → lần sau mất tin.']},
+  {id:'nk4',t:'Xử lý 5 câu từ chối hay gặp nhất',min:7,
+   body:['Nguyên tắc chung: không giảm giá ngay. Giảm giá là thứ cuối cùng, và giảm rồi thì khách sẽ luôn chờ giảm.',
+     'Trả lời bằng GIÁ TRỊ: hàng có nguồn gốc, tư vấn có trách nhiệm, đổi trả tử tế, giao nhanh trong khu vực.'],
+   box:{t:'Mẫu trả lời',lines:['"Đắt quá" → "Dạ em hiểu ạ. Loại này quy ra mỗi ngày bé dùng khoảng X đồng thôi chị. Nếu chị muốn tầm giá mềm hơn em có loại Y cùng công dụng, để em so cho chị xem nhé."',
+     '"Shop kia rẻ hơn" → "Dạ có thể bên đó bán bản khác chị ạ. Hàng bên em có hoá đơn và tem nhãn phụ đầy đủ, chị kiểm tra được. Bé dùng vào người nên em không dám lấy hàng không rõ nguồn."',
+     '"Để em xem đã" → "Dạ chị cứ tham khảo thêm. Em gửi chị thông tin qua Zalo nhé, khi nào cần chị nhắn em, em giữ giá này cho chị."  (mục tiêu: LẤY BẰNG ĐƯỢC ZALO)',
+     '"Bé nhà em không hợp loại này" → hỏi kỹ biểu hiện, đừng đổi loại ngay. Trớ / táo / phát ban là ba hướng khác nhau hoàn toàn.',
+     '"Có khuyến mãi gì không" → nói về combo hoặc tích điểm, đừng cắt giá lẻ.']},
+   do:['Học thuộc câu trả lời cho "đắt quá" và "shop kia rẻ hơn", nói thử to 3 lần.'],
+   err:['Nói xấu shop khác.','Hạ giá ngay lần đầu khách kêu đắt.']},
+  {id:'nk5',t:'Ranh giới: điều TUYỆT ĐỐI không được nói',min:6,
+   body:['Đây là phần dễ khiến cửa hàng bị phạt và mất uy tín nhất. Đọc kỹ.',
+     'KHÔNG chẩn đoán bệnh, không nói sản phẩm "chữa" hay "điều trị" bất cứ thứ gì. Thực phẩm chức năng không phải thuốc.',
+     'KHÔNG khẳng định sữa công thức tốt bằng hoặc hơn sữa mẹ.',
+     'KHÔNG chủ động quảng cáo sữa cho trẻ dưới 24 tháng, bình bú, núm ti — khách hỏi thì tư vấn tại chỗ, nhưng không đăng bài, không chào mời trước.',
+     'KHÔNG bán thuốc. Khách hỏi thuốc nhỏ mũi, hạ sốt, men tiêu hoá dạng thuốc → chỉ sang nhà thuốc.',
+     'Bé có bệnh, sinh non, dị ứng đạm bò, đang dùng thuốc → khuyên mẹ hỏi bác sĩ, đừng tự quyết.'],
+   box:{t:'Nói thế nào cho đúng',lines:['SAI: "Loại này trị táo bón cho bé."   ĐÚNG: "Loại này có chất xơ hoà tan, nhiều mẹ phản hồi bé đi ngoài dễ hơn."',
+     'SAI: "Sữa này tốt như sữa mẹ."   ĐÚNG: "Trường hợp mẹ không đủ sữa thì đây là loại nhiều mẹ đang dùng."']},
+   do:['Đọc lại 3 câu bạn hay nói với khách, xem có câu nào rơi vào nhóm cấm không.'],
+   err:['Nhắc lại lời quảng cáo của hãng mà không kiểm.','Đăng bài bán sữa số 1, số 2 lên trang cá nhân.']},
+  {id:'nk6',t:'Chốt đơn Zalo và nhắc mua lại',min:6,
+   body:['Khách rời cửa hàng mà không có Zalo là mất khách. Mục tiêu mỗi ca: xin được Zalo của mọi khách mới.',
+     'Lưu tên khách kèm thông tin bé: "Chị Lan - bé Bo 8th 9kg - bỉm M Merries". Sau này nhắc mua lại rất nhanh.',
+     'Bỉm và sữa hết theo chu kỳ khoảng 3–4 tuần. Đặt lịch nhắn lại đúng lúc gần hết, đừng nhắn sớm quá thành phiền.',
+     'Tin nhắn nhắc phải có ích, không phải quảng cáo: hỏi thăm bé trước, gợi ý sau.'],
+   box:{t:'Mẫu tin nhắc mua lại',lines:['"Chị ơi bé Bo dùng hết bỉm chưa ạ? Bé được 3 tuần rồi chắc sắp hết. Bé lên cân chưa chị, nếu qua 11kg rồi thì đổi sang size L nhé. Em giữ hàng cho chị ạ."']},
+   do:['Xin Zalo của 5 khách tiếp theo và ghi chú đủ tên bé, tháng tuổi, cân nặng.'],
+   err:['Nhắn hàng loạt cùng một nội dung cho tất cả khách.','Không ghi chú gì, lần sau phải hỏi lại từ đầu.']},
+ ]},
+
+ dq:{ic:'🏬',intro:'Chi nhánh Đỗ Quang là một HỘ KINH DOANH RIÊNG, khác hộ Hương Diện 114. Ngoài việc bán hàng và tư vấn giống bên NK, bạn còn giữ một việc không ai làm thay được: không để hàng, tiền và hoá đơn của hai hộ lẫn vào nhau.',lessons:[
+  {id:'dq1',t:'Vì sao hai hộ không được lẫn nhau',min:7,
+   body:['Hương Diện 114 và Đỗ Quang là hai hộ kinh doanh riêng, mỗi hộ có mã số thuế riêng, tự kê khai và tự nộp thuế theo doanh thu của mình.',
+     'Từ 2026 hộ kinh doanh bỏ thuế khoán, kê khai theo doanh thu thực và cơ quan thuế đối chiếu dữ liệu ngân hàng chặt hơn hẳn.',
+     'Nếu hai hộ dùng chung kho, chung hoá đơn, chung tài khoản nhận tiền thì cơ quan thuế coi là chia tách nhân tạo và GỘP doanh thu hai bên lại để tính, kèm phạt.',
+     'Mỗi quý cửa hàng phải làm bảng cân đối xuất–nhập–tồn riêng cho từng hộ. Số liệu lẫn ở khâu bán hàng thì cuối quý không ai gỡ ra được.'],
+   do:['Kiểm tra máy tính tiền ở ĐQ đang xuất hoá đơn dưới mã số thuế nào.'],
+   err:['Lấy hàng từ kho bên kia bán tạm rồi "trả sau" mà không ghi phiếu.','Cho khách chuyển vào tài khoản hộ bên kia vì tiện.']},
+  {id:'dq2',t:'Ba việc bắt buộc mỗi ca ở ĐQ',min:6,
+   body:['MỘT — bán hàng của hộ nào thì xuất hoá đơn của hộ đó. Không có ngoại lệ, kể cả khi khách vội.',
+     'HAI — khách chuyển khoản phải vào ĐÚNG tài khoản đứng tên hộ Đỗ Quang. Không nhận vào tài khoản cá nhân của bất kỳ ai.',
+     'BA — hàng chuyển qua lại giữa hai chi nhánh phải có phiếu: ngày, mã hàng, số lượng, ai giao ai nhận. Chụp lại gửi quản lý ngay trong ngày.'],
+   box:{t:'Mẫu phiếu chuyển hàng giữa hai chi nhánh',lines:['Ngày ___ · Từ: ____ → Đến: ____',
+     'Mã hàng / Tên hàng / Số lượng / Hạn dùng',
+     'Người giao ___  Người nhận ___  (chụp ảnh gửi nhóm Zalo quản lý)']},
+   do:['Lần chuyển hàng gần nhất, viết lại phiếu cho đủ thông tin trên.'],
+   err:['Chuyển hàng miệng, hết quý không khớp tồn.']},
+  {id:'dq3',t:'Chốt ca và chốt sổ cuối ngày',min:6,
+   body:['Đếm tiền mặt trong két, đối chiếu với tổng tiền mặt trên KiotViet của ca. Lệch là báo ngay trong ngày, để hôm sau thì không tìm ra nữa.',
+     'Đối chiếu tiền chuyển khoản: mở sao kê tài khoản hộ, cộng lại xem có khớp với các đơn ghi "chuyển khoản" không.',
+     'Rà đơn nào đã bán mà chưa xuất hoá đơn, ghi lại để quản lý xử lý.',
+     'Kiểm nhanh kệ: có mã nào hết hàng cần báo nhập, có mã nào cận date cần đẩy.'],
+   do:['Làm đủ 4 bước trên trong ca hôm nay, ghi kết quả vào ghi chú công việc trong app.'],
+   err:['Để dồn 2–3 ngày mới đối chiếu tiền.']},
+  {id:'dq4',t:'Tư vấn bán hàng — học chung với NV bán hàng NK',min:4,
+   body:['Toàn bộ phần tư vấn theo tháng tuổi bé, chọn size bỉm, xử lý từ chối và ranh giới không được nói đều áp dụng y hệt cho ĐQ.',
+     'Mở giáo trình vai "NV bán hàng NK" ở ô chọn phía trên và học hết 6 bài đó.',
+     'Điểm khác duy nhất: mọi thao tác hoá đơn và thu tiền phải theo đúng hộ Đỗ Quang.'],
+   do:['Đọc hết giáo trình NV bán hàng NK, tick lại từng bài.'],
+   err:[]},
+  {id:'dq5',t:'Giữ khách khu vực quanh chi nhánh',min:5,
+   body:['Lợi thế của chi nhánh nhỏ là giao nhanh và nhớ khách — không phải giá rẻ.',
+     'Khách trong bán kính đi xe 10–15 phút: nhận giao trong ngày, nói rõ khung giờ.',
+     'Lập nhóm Zalo khách quen quanh khu vực để báo hàng mới và hàng cận date giảm giá.',
+     'Nhớ mặt và nhớ bé: gọi đúng tên bé là khách quay lại.'],
+   do:['Lên danh sách 20 khách hay mua nhất ở khu vực, gắn nhãn trên Zalo.'],
+   err:['Hứa giao trong ngày rồi để sang hôm sau.']},
+ ]},
+
+ kho:{ic:'📦',intro:'Kho sai một con số thì cuối quý cả cửa hàng phải ngồi dò lại, và hồ sơ thuế lệch theo. Việc của bạn là giữ cho số trên phần mềm luôn bằng số trên kệ, và hàng đi tỉnh đến nơi nguyên vẹn.',lessons:[
+  {id:'kho1',t:'Nhận hàng về: kiểm đủ 5 thứ trước khi ký',min:7,
+   body:['Ký nhận rồi thì mọi thiếu hụt và hư hỏng thành trách nhiệm của mình. Kiểm xong mới ký.',
+     'SỐ LƯỢNG: đếm thùng, mở kiểm xác suất ít nhất 1 thùng mỗi mã.',
+     'HẠN DÙNG: ghi lại date của từng lô. Hàng còn dưới 6 tháng phải báo quản lý trước khi nhập kho.',
+     'TÌNH TRẠNG: móp, ướt, rách seal, hộp phồng — chụp ảnh ngay khi còn mặt người giao.',
+     'NHÃN PHỤ TIẾNG VIỆT: hàng nhập khẩu phải có. Thiếu là không được bày lên kệ.',
+     'CHỨNG TỪ: hoá đơn điện tử, phiếu giao hàng. Hàng nhập khẩu phải có tờ khai hải quan; đồ chơi phải có tem hợp quy CR.'],
+   box:{t:'Không nhận hàng nếu',lines:['Không có hoá đơn điện tử · Hàng nhập khẩu không có tờ khai hải quan',
+     'Đồ chơi không có tem CR · Không có nhãn phụ tiếng Việt và bên giao không chịu bổ sung',
+     'Hạn dùng ngắn hơn thoả thuận']},
+   do:['Lô hàng gần nhất, đối chiếu xem có đủ 5 nhóm thông tin trên không.'],
+   err:['Ký nhận rồi mới mở kiểm.','Nhận hàng cận date vì "bán nhanh thôi mà".']},
+  {id:'kho2',t:'FEFO và quản lý hạn dùng',min:6,
+   body:['FEFO = hàng nào HẾT HẠN TRƯỚC thì bán trước. Khác FIFO (nhập trước bán trước) — với sữa và đồ ăn dặm phải theo hạn dùng.',
+     'Xếp kệ: lô hạn gần để phía ngoài, lô hạn xa đẩy vào trong. Mỗi lần bổ sung hàng phải xoay lại, không úp hàng mới lên trên.',
+     'Dán nhãn tháng/năm hết hạn ở mặt ngoài thùng để nhìn là biết, khỏi lật từng hộp.',
+     'Ngưỡng cảnh báo: còn 6 tháng → báo marketing để lên chương trình đẩy; còn 3 tháng → giảm giá có kiểm soát; còn 1 tháng → xả dứt điểm hoặc trả nhà cung cấp nếu có thoả thuận.'],
+   do:['Rà một kệ sữa, xem có hộp nào hạn gần bị đẩy vào trong không.'],
+   err:['Bổ sung hàng mới đặt đè lên hàng cũ.','Phát hiện cận date khi chỉ còn 2 tuần.']},
+  {id:'kho3',t:'Kiểm kê: làm sao để số khớp',min:7,
+   body:['Kiểm kê là đếm thật rồi so với số trên KiotViet, không phải chép lại số của phần mềm.',
+     'Đếm theo khu vực, đánh dấu khu đã đếm để không đếm sót hoặc đếm hai lần.',
+     'Không bán hàng trong lúc đang đếm khu đó. Nếu buộc phải bán thì ghi phiếu riêng, cộng bù sau.',
+     'Lệch thì tìm nguyên nhân chứ đừng sửa số cho khớp: bán quên ghi, hàng vỡ chưa xoá, chuyển chi nhánh chưa hạch toán, nhập nhầm mã tương tự.',
+     'Số tồn cuối kỳ chính là số tồn đầu kỳ của quý sau trong hồ sơ thuế — sửa bừa cho khớp là để lại rắc rối cho cả năm sau.'],
+   do:['Kiểm kê thử một nhóm hàng, ghi lại mọi chênh lệch kèm nguyên nhân.'],
+   err:['Sửa số trên phần mềm cho bằng số đếm mà không ghi lý do.']},
+  {id:'kho4',t:'Đóng gói theo từng loại hàng',min:6,
+   body:['Sữa bột hộp thiếc: chèn kín, không để hộp va vào nhau. Móp hộp là khách trả lại.',
+     'Sữa nước, hộp giấy: bọc riêng, tránh để vật nặng đè lên.',
+     'Thuỷ tinh (bình sữa, lọ vitamin): bọc xốp nổ từng cái, dán chữ DỄ VỠ ở hai mặt thùng.',
+     'Bỉm: cồng kềnh nhưng nhẹ — hãng vận chuyển tính theo cân nặng quy đổi, gói chặt lại để giảm thể tích.',
+     'Đơn nhiều món: kiểm lại phiếu trước khi dán băng dính, chụp ảnh thùng đã đóng trước khi giao cho shipper.'],
+   do:['Đóng thử một đơn có cả sữa hộp và bình thuỷ tinh, chụp lại kết quả.'],
+   err:['Nhét bỉm vào thùng to lồng bồng làm phí ship tăng gấp đôi.','Không chụp ảnh, khách báo thiếu hàng thì không có gì đối chứng.']},
+  {id:'kho5',t:'Bắn đơn tỉnh: quy trình và cân nặng quy đổi',min:8,
+   body:['Trước khi bắn đơn: xác nhận lại với khách địa chỉ, số điện thoại và hình thức thanh toán. Sai số điện thoại là đơn hoàn chắc chắn.',
+     'Cân nặng tính cước là số LỚN HƠN giữa cân nặng thật và cân nặng quy đổi theo thể tích.',
+     'Ghi chú vận đơn phải rõ: "hàng dễ vỡ", "cho khách kiểm hàng", "gọi trước khi giao".',
+     'Đơn COD: ghi đúng số tiền thu hộ. Ghi sai là shipper thu sai, đối soát rất mệt.',
+     'Lưu mã vận đơn vào đơn hàng trên KiotViet và nhắn ngay cho khách.',
+     'Theo dõi đơn đang giao mỗi ngày. Đơn kẹt quá 2 ngày không đổi trạng thái thì gọi hãng vận chuyển hỏi.'],
+   box:{t:'Công thức cân nặng quy đổi',lines:['Cân quy đổi (kg) = Dài × Rộng × Cao (cm) ÷ 6000',
+     'Ví dụ thùng bỉm 60×40×30cm = 72.000 ÷ 6000 = 12kg tính cước, dù cân thật chỉ 4kg.',
+     '→ Gói chặt, chọn thùng vừa khít là cách giảm cước nhanh nhất.']},
+   do:['Đo một thùng bỉm đang đóng, tính cân quy đổi, so với cân thật.'],
+   err:['Ghi sai tiền COD.','Không lưu mã vận đơn, khách hỏi thì không tra được.']},
+  {id:'kho6',t:'Đơn hoàn, đơn thất lạc, hàng lỗi',min:6,
+   body:['Đơn hoàn về: kiểm tình trạng hàng trước khi nhập lại kho. Hộp móp, seal rách thì không bày lên kệ nữa, tách riêng báo quản lý.',
+     'Nhập lại kho ngay trong ngày — hàng hoàn nằm ngoài sổ là nguồn lệch tồn kho lớn nhất.',
+     'Đơn thất lạc: khiếu nại hãng vận chuyển trong thời hạn quy định, kèm ảnh đóng gói và mã vận đơn. Quá hạn là mất quyền đòi bồi thường.',
+     'Hàng lỗi từ nhà cung cấp: chụp ảnh, giữ nguyên bao bì, báo trong vòng 24 giờ.'],
+   do:['Lập một chỗ riêng trong kho dán nhãn "Hàng hoàn - chờ xử lý".'],
+   err:['Để hàng hoàn chất góc kho cả tuần.','Vứt bao bì hàng lỗi rồi mới báo nhà cung cấp.']},
+ ]},
+
+ mkt:{ic:'📣',intro:'Bạn giữ hai việc nhìn có vẻ khác nhau nhưng thực ra là một: kéo khách vào và chọn đúng hàng để bán. Nội dung sai luật thì cửa hàng bị phạt; nhập sai hàng thì vốn chôn trong kho. Cả hai đều đắt.',lessons:[
+  {id:'mkt1',t:'Luật quảng cáo ngành mẹ&bé — học trước khi viết bài',min:9,
+   body:['Đây là bài quan trọng nhất của vai trò này. Rất nhiều shop mẹ&bé bị phạt vì không biết.',
+     'CẤM TUYỆT ĐỐI quảng cáo: sản phẩm sữa thay thế sữa mẹ cho trẻ DƯỚI 24 THÁNG, bình bú và núm vú giả (Nghị định 100/2014). Cấm cả bài đăng cũ còn để trên trang.',
+     'Danh mục cửa hàng đang có 26 mã Pigeon (bình bú, núm ti) và nhiều dòng sữa số 1, số 2 — toàn bộ nhóm này không được đăng bài, không chạy quảng cáo.',
+     'Thực phẩm chức năng và thực phẩm bảo vệ sức khoẻ: nội dung quảng cáo phải được cơ quan y tế XÁC NHẬN TRƯỚC khi đăng. Cửa hàng đang có nhiều TPCN Úc như Healthy Care, Bio Island, Blackmores, Nordic Naturals.',
+     'Không dùng từ "chữa", "điều trị", "khỏi hẳn" cho thực phẩm chức năng.',
+     'Không dùng hình ảnh bác sĩ, nhân viên y tế để quảng cáo thực phẩm.'],
+   box:{t:'Được và không được',lines:['ĐƯỢC: đăng sữa cho trẻ trên 24 tháng, sữa bầu, bỉm, khăn ướt, đồ dùng, ăn dặm.',
+     'ĐƯỢC: trả lời riêng cho khách hỏi về sữa số 1, số 2 — tư vấn cá nhân không phải quảng cáo.',
+     'KHÔNG: đăng bài, chạy ads, livestream, treo biển khuyến mãi cho sữa dưới 24 tháng, bình bú, núm ti.']},
+   do:['Rà lại toàn bộ bài đăng cũ trên fanpage và TikTok, ẩn hết bài thuộc nhóm cấm.','Kiểm tra không còn chiến dịch quảng cáo nào đang chạy cho nhóm này.'],
+   err:['Nghĩ rằng bài đăng từ năm ngoái thì không tính.','Đăng ảnh combo có lẫn bình sữa vào giữa.']},
+  {id:'mkt2',t:'Nội dung nào đáng làm ở ngành này',min:7,
+   body:['Mẹ bỉm mua vì TIN, không vì rẻ. Nội dung kiến thức xây niềm tin tốt hơn bài bán hàng.',
+     'Tỉ lệ nên giữ: khoảng 6 phần kiến thức và mẹo nuôi con, 2 phần review sản phẩm, 1 phần khuyến mãi, 1 phần hậu trường cửa hàng.',
+     'Nội dung theo tháng tuổi bé là mảng dễ làm và trúng nhất: mỗi nhóm tuổi một chuỗi bài.',
+     'Video không lộ mặt vẫn bán được: quay tay cận cảnh, TikTok Photo Mode, video chữ chạy kèm giọng đọc.',
+     'Bài hậu trường — đóng gói, nhập hàng, kiểm date — tạo cảm giác cửa hàng thật, làm ăn nghiêm túc.'],
+   box:{t:'Chủ đề luôn có người đọc',lines:['Dấu hiệu bé cần đổi size bỉm · Pha sữa đúng cách, sai lầm hay gặp',
+     'Lịch ăn dặm theo tháng tuổi · Bé táo bón mẹ nên làm gì',
+     'Chọn đồ đi sinh cần những gì · Cách bảo quản sữa mẹ']},
+   do:['Lên lịch nội dung 1 tuần theo tỉ lệ 6-2-1-1.'],
+   err:['Tuần nào cũng chỉ đăng bài giảm giá.']},
+  {id:'mkt3',t:'Dùng thư viện prompt AI cho nhanh',min:5,
+   body:['Sổ tay → Thư viện prompt có sẵn hàng chục prompt viết caption, kịch bản TikTok, bài SEO, tin nhắn chăm khách.',
+     'Cách dùng: bấm Copy, dán vào ChatGPT hoặc Claude, điền chỗ trong ngoặc vuông rồi chạy.',
+     'AI viết xong PHẢI đọc lại và kiểm: tên sản phẩm, công dụng, giá, và nhất là có phạm luật quảng cáo ở bài trước không.',
+     'Đừng để AI tự viết về công dụng y tế của thực phẩm chức năng.'],
+   do:['Lấy prompt "3 caption bán hàng Facebook", chạy thử cho một sản phẩm đang cần đẩy.'],
+   err:['Đăng thẳng bài AI viết mà không đọc lại.']},
+  {id:'mkt4',t:'Nhập hàng: gọi nhà phân phối chính thức',min:8,
+   body:['Cửa hàng đang chuyển dần từ hàng nội địa nước ngoài sang nhà phân phối chính thức tại Việt Nam. Tab Cửa hàng → Nguồn hàng có sẵn 24 thương hiệu kèm số điện thoại đã tra.',
+     'Mỗi cuộc gọi phải hỏi đủ 9 câu trong Kịch bản gọi — quan trọng nhất là ba câu xin giấy công bố sản phẩm, tờ khai hải quan và phiếu công bố mỹ phẩm.',
+     'Không nhận lời "hàng chính hãng" bằng miệng. Chỉ ba loại giấy có giá trị khi bị kiểm tra: hoá đơn điện tử hợp lệ, giấy công bố sản phẩm, tờ khai hải quan.',
+     'Luôn đối chiếu mã số thuế trên masothue.com trước khi đặt cọc. Đã gặp trường hợp website mang tên thương hiệu lớn nhưng thực chất là một hộ bán lẻ.',
+     'Nhà cung cấp đòi cộng thêm 5–10% "để xuất hoá đơn" nghĩa là họ đang giấu doanh thu — đàm phán lại giá gốc hoặc đổi nguồn.'],
+   box:{t:'Gọi trước sáu số này, đều ở Hà Nội',lines:['Magicwave 1900 638097 — Meiji + Merries',
+     'Bắc Nam 0911 021 717 — Blédina + Healthy Care + Aptamil',
+     'Diana Unicharm 1900 585896 — Moony · Phương Linh 0888 962 929 — HiKid',
+     'Bristar 0903 45 11 45 — Chicco · VN Thịnh Vượng 092 428 6868 — Bio Island']},
+   do:['Gọi một nhà phân phối, hỏi đủ 9 câu, ghi kết quả vào tab Nguồn hàng.'],
+   err:['Gọi xong không ghi lại, lần sau phải tra lại từ đầu.']},
+  {id:'mkt5',t:'Chọn hàng để nhập bằng số, không bằng cảm giác',min:8,
+   body:['Trước khi nhập bất cứ mã mới nào, phải trả lời được ba câu: có ai mua không, biên bao nhiêu, bao lâu bán hết một lô.',
+     'Biên lợi nhuận mới là thứ đáng nhìn, không phải doanh thu. Từng có nhóm hàng bán rất chạy mà biên âm 16% — càng bán càng lỗ.',
+     'Nhóm biên cao đáng đẩy ở cửa hàng: thực phẩm chức năng và vitamin, sữa non, sữa đặc trị. Nhóm biên mỏng: sữa bột phổ thông.',
+     'Hàng cồng kềnh vốn lớn như xe đẩy, ghế ăn, máy hút sữa: trưng mẫu và đặt theo yêu cầu, không ôm tồn.',
+     'Hàng tiêu hao gọn nhẹ như bỉm, khăn ướt, túi trữ sữa, men vi sinh: nhập sâu, bán theo lốc.',
+     'Nhập thử lô nhỏ trước, theo dõi tốc độ bán 3–4 tuần rồi mới nhập lớn.'],
+   box:{t:'Công thức phải thuộc',lines:['Biên gộp (%) = (Giá bán − Giá vốn) ÷ Giá bán × 100',
+     'Đừng nhầm với markup tính trên giá vốn: markup 50% chỉ tương đương biên 33%.']},
+   do:['Lấy 5 mã đang định nhập, tính biên gộp từng mã, loại mã nào dưới 20%.'],
+   err:['Nhập vì "hãng đang có chương trình", không tính biên.','Nhập nhiều để được chiết khấu rồi ôm tồn 6 tháng.']},
+  {id:'mkt6',t:'Đo hiệu quả: bỏ tiền ra thì phải biết thu về',min:6,
+   body:['Mỗi chiến dịch quảng cáo phải ghi lại: chi bao nhiêu, ra bao nhiêu đơn, lãi gộp bao nhiêu, có lấy được Zalo khách không.',
+     'Doanh thu từ quảng cáo phải đủ bù biên mỏng cộng phí quảng cáo, không thì vẫn lỗ dù nhìn "có đơn".',
+     'Đo cả phần không ra đơn ngay: số người nhắn tin, số Zalo mới thêm — với ngành mẹ&bé, khách mua lại nhiều lần nên một Zalo mới có giá trị dài hạn.',
+     'Chiến dịch chạy 5–7 ngày không ra kết quả thì tắt, đừng nuôi hy vọng.'],
+   do:['Lập một bảng đơn giản theo dõi 3 chiến dịch gần nhất theo 4 cột ở trên.'],
+   err:['Chạy quảng cáo cho nhóm sản phẩm bị cấm quảng cáo.','Đánh giá chiến dịch bằng lượt thích.']},
+ ]},
+
+ manager:{ic:'🗂️',intro:'Bạn là người giữ nhịp hằng ngày. Chủ cửa hàng nhìn tháng và quý, nhân viên nhìn ca của mình — còn bạn nhìn ngày và tuần, và là người phát hiện vấn đề trước khi nó thành thiệt hại.',lessons:[
+  {id:'mg1',t:'Nhịp ngày và nhịp tuần của quản lý',min:7,
+   body:['ĐẦU NGÀY: mở app xem việc quá hạn và việc đến hạn hôm nay, xem ai đang gánh nặng quá, phân lại nếu cần.',
+     'TRONG NGÀY: xử lý việc phát sinh, không để tồn đọng sang hôm sau mà không ai biết.',
+     'CUỐI NGÀY: đối chiếu tiền, rà đơn chưa xuất hoá đơn, ghi lại việc còn dở.',
+     'ĐẦU TUẦN: rà Top 20 mã hàng giam tiền, kiểm tem giá và nhãn phụ trên kệ.',
+     'CUỐI TUẦN: đối soát doanh thu, cập nhật bảng 10 số, báo cáo chủ cửa hàng.',
+     'ĐẦU THÁNG: kiểm kê tồn kho, đối chiếu sao kê ngân hàng với doanh thu sổ sách.'],
+   do:['Đặt báo thức cho 3 mốc: đầu ngày, cuối ngày, cuối tuần.'],
+   err:['Chỉ xử lý việc gấp, không bao giờ làm việc định kỳ.']},
+  {id:'mg2',t:'Phân công việc trong app cho đúng',min:7,
+   body:['Vào Đội ngũ → Phân công. Khối trên cùng là việc chưa giao ai — mục tiêu là khối này không phình ra.',
+     'App gợi ý người nhận theo mảng việc của từng vai trò, nhưng người quyết vẫn là bạn: nhìn thêm ai đang quá tải.',
+     'Việc giao phải có HẠN. Việc không hạn là việc không bao giờ xong.',
+     'Việc lớn quá thì chẻ nhỏ thành checklist trong thẻ việc, để người làm biết bắt đầu từ đâu.',
+     'Badge đỏ ở mục Đội ngũ là số việc quá hạn của người khác — thấy sáng là phải hỏi ngay trong ngày, đừng đợi cuối tuần.'],
+   box:{t:'Hỏi thế nào khi việc quá hạn',lines:['Không hỏi "sao chưa làm xong". Hỏi "việc này đang vướng ở đâu, cần gì để xong".',
+     'Vướng thật thì gỡ; quên thì đặt lại hạn ngay lúc đó, đừng để trôi.']},
+   do:['Giao hết việc trong khối "Chưa giao ai" cho đúng người, mỗi việc đặt một hạn.'],
+   err:['Giao việc miệng rồi không vào app.','Giao dồn cho người làm nhanh nhất.']},
+  {id:'mg3',t:'Kèm nhân viên mới trong 7 ngày đầu',min:7,
+   body:['Ngày 1–2: cho đọc giáo trình huấn luyện đúng vai trò trong Cẩm nang, đi theo người cũ quan sát.',
+     'Ngày 3–4: cho làm thật với người cũ đứng cạnh. Sai thì sửa ngay tại chỗ, đừng để đến cuối ngày.',
+     'Ngày 5–7: làm độc lập, bạn kiểm lại kết quả cuối ca.',
+     'Kiểm tra bằng tình huống thật chứ không hỏi lý thuyết: "khách hỏi bé 9kg dùng size gì" thì phải trả lời được ngay.',
+     'Tài khoản: tạo trong Đội ngũ → Thành viên, đưa mã tạm 6 số, nhắc họ tự đặt mật khẩu ngay lần đầu.'],
+   do:['Với nhân viên mới nhất, kiểm 5 tình huống thật xem đã nắm chưa.'],
+   err:['Ném việc cho người mới rồi bỏ đi.','Chỉ dạy thao tác, không dạy vì sao.']},
+  {id:'mg4',t:'Kiểm tuân thủ hằng tuần — 15 phút',min:6,
+   body:['Bốn thứ quản lý thị trường soi nhiều nhất, tuần nào cũng phải rà một lượt.',
+     'MỘT: chứng từ nguồn gốc hàng. Lô nào thiếu giấy thì đòi nhà cung cấp bổ sung ngay trong tuần.',
+     'HAI: tem hợp quy CR trên đồ chơi trẻ em. Không tem là gỡ khỏi kệ.',
+     'BA: niêm yết giá đầy đủ, giá trên kệ khớp giá trên KiotViet và trên web. Sữa cho trẻ dưới 6 tuổi bị kiểm rất chặt.',
+     'BỐN: không có bài quảng cáo nào cho sữa dưới 24 tháng, bình bú, núm ti.',
+     'Ghi kết quả vào tab Cửa hàng → Tuân thủ & Thuế, mục nào xong thì tick.'],
+   do:['Đi một vòng cửa hàng với 4 mục trên, ghi lại mục nào chưa đạt.'],
+   err:['Nghĩ rằng kiểm một lần là xong mãi.']},
+  {id:'mg5',t:'Xử lý khiếu nại và đổi trả',min:7,
+   body:['Nghe hết trước khi giải thích. Khách đang bực mà bị ngắt lời thì mọi thứ hỏng.',
+     'Xác minh nhanh: hoá đơn, ngày mua, tình trạng sản phẩm, lô hàng.',
+     'Sản phẩm lỗi do nhà sản xuất hoặc do bảo quản của cửa hàng: đổi ngay, không tranh cãi. Chi phí một hộp sữa rẻ hơn một khách mất và một bài đăng xấu.',
+     'Khách dùng sai cách: hướng dẫn lại tử tế, không nói khách sai.',
+     'Trường hợp liên quan đến sức khoẻ của bé — bé uống vào bị đi ngoài, nổi mẩn: dừng bán mã đó, giữ lại mẫu và bao bì, báo chủ cửa hàng và nhà cung cấp ngay. Không tự kết luận nguyên nhân.',
+     'Ghi lại mọi khiếu nại: mã hàng nào bị phàn nàn nhiều lần là vấn đề của nguồn hàng, không phải xui.'],
+   do:['Lập một ghi chú theo dõi khiếu nại theo mã hàng.'],
+   err:['Đổ lỗi cho khách.','Xử lý xong không ghi lại, không ai biết mã nào hay lỗi.']},
+  {id:'mg6',t:'Đọc số để biết hôm nay có ổn không',min:7,
+   body:['Không cần giỏi kế toán, chỉ cần nhìn đúng vài con số mỗi tuần.',
+     'Doanh thu tuần so với cùng kỳ tuần trước — giảm hai tuần liên tiếp là tín hiệu, không phải ngẫu nhiên.',
+     'Biên gộp thực tế: bán nhiều mà biên tụt nghĩa là đang đẩy sai nhóm hàng.',
+     'Tồn trên 60 ngày: tiền đang nằm chết trong kho.',
+     'Số khách quay lại: đây là sức khoẻ dài hạn của cửa hàng.',
+     'Thấy bất thường thì báo chủ cửa hàng kèm con số cụ thể, đừng báo bằng cảm giác.'],
+   do:['Cập nhật bảng 10 số tuần này trong Số liệu → Sổ KD.'],
+   err:['Báo "dạo này hơi chậm" mà không có số.']},
+ ]},
+
+ owner:{ic:'👑',intro:'Vai trò của bạn không phải làm nhiều việc nhất mà là quyết đúng vài việc lớn: tiền có đủ không, hàng nào đáng bán, ai làm gì, và cửa hàng có đang đứng đúng phía của pháp luật không.',lessons:[
+  {id:'ow1',t:'Ba con số quyết định cửa hàng sống hay chết',min:8,
+   body:['TIỀN MẶT — cửa hàng chết vì hết tiền mặt chứ không phải vì hết lãi. Có thể lãi trên sổ mà vẫn không trả nổi lương vì vốn kẹt trong hàng tồn.',
+     'ĐIỂM HOÀ VỐN — mức doanh thu tối thiểu để không lỗ. Với chi phí cố định khoảng 230 triệu một tháng và biên gộp thực tế 12–13%, hoà vốn rơi vào khoảng 1,7–1,9 tỷ mỗi tháng.',
+     'BIÊN GỘP THỰC TẾ — không phải biên trên lý thuyết. Trừ hết hao hụt, giảm giá, freeship, hàng lỗi, hàng cận date mới ra con số thật.',
+     'Quỹ oxy: giữ tối thiểu một tháng chi phí bằng tiền mặt, để riêng, không đụng vào nhập hàng. Chưa có quỹ này thì chưa mở rộng.'],
+   box:{t:'Công thức',lines:['Doanh thu hoà vốn = Chi phí cố định ÷ Biên gộp thực tế (%)',
+     'Ví dụ: 230tr ÷ 13% ≈ 1,77 tỷ/tháng ≈ 59 triệu/ngày.']},
+   do:['Tính lại điểm hoà vốn với số chi phí hiện tại, quy ra mục tiêu doanh thu mỗi ngày và dán ở quầy.'],
+   err:['Lấy doanh thu tốt 1–2 tuần làm cớ nhập mạnh.','Dùng tiền thuế hoặc tiền nợ nhà cung cấp để bù chi phí vận hành.']},
+  {id:'ow2',t:'Quyết định giữ hay bỏ một dòng hàng',min:8,
+   body:['Bốn câu hỏi cho mọi dòng hàng: biên bao nhiêu, quay bao nhanh, có kéo khách không, có rủi ro pháp lý không.',
+     'Biên âm thì bỏ, không cần suy nghĩ thêm — bán càng nhiều lỗ càng nặng.',
+     'Biên mỏng nhưng kéo khách đến đều như bỉm và sữa phổ thông thì giữ, và kiếm lời ở hàng bán kèm.',
+     'Biên cao mà quay chậm thì giữ ít, đừng nhập sâu.',
+     'Rủi ro pháp lý cao mà biên không bù nổi thì bỏ, dù đang bán chạy.',
+     'Chia danh mục thành bốn nhóm: kéo khách, tạo lãi, giữ khách thân, và nhóm nguy hiểm cần giảm mạnh.'],
+   do:['Xếp 10 mã doanh thu lớn nhất vào bốn nhóm trên, quyết mã nào giảm nhập quý tới.'],
+   err:['Giữ dòng hàng vì tiếc công gây dựng.']},
+  {id:'ow3',t:'Rủi ro pháp lý — thứ đắt hơn thuế nhiều',min:9,
+   body:['Thuế hộ kinh doanh ngành phân phối chỉ 1,5% doanh thu. Rủi ro lớn hơn nhiều nằm ở nguồn gốc hàng.',
+     'Hàng nhập khẩu không có tờ khai hải quan bị coi là hàng nhập lậu: tịch thu toàn bộ cộng phạt theo giá trị lô. Không có thủ tục nào hợp thức hoá sau khi hàng đã vào Việt Nam ngoài luồng.',
+     'Hàng dành cho trẻ em thuộc nhóm tình tiết tăng nặng.',
+     'Có cửa hàng, có biển hiệu, có địa chỉ đăng ký mà bày hàng không chứng từ thì rủi ro TĂNG so với bán lẻ tẻ — vì đã tự khai báo vị trí.',
+     'Ba loại giấy duy nhất có giá trị khi bị kiểm tra: hoá đơn điện tử hợp lệ, giấy công bố sản phẩm, tờ khai hải quan.',
+     'Hai hộ Hương Diện 114 và Đỗ Quang phải tách thật: địa điểm riêng, kho riêng, hợp đồng riêng, tài khoản riêng. Lẫn nhau thì cơ quan thuế gộp doanh thu và phạt.'],
+   do:['Mở tab Cửa hàng → Tuân thủ & Thuế, xử lý cho hết các mục đánh dấu rủi ro cao.'],
+   err:['Nghĩ tách tiền vào tài khoản cá nhân là giấu được doanh thu — dữ liệu ngân hàng bị đối chiếu chặt từ 2026.']},
+  {id:'ow4',t:'Lịch thuế và cách làm báo cáo quý',min:7,
+   body:['Hạn nộp tờ khai: quý 1 là 30/4, quý 2 là 31/7, quý 3 là 31/10, quý 4 là 31/1 năm sau. Làm cho cả hai hộ.',
+     'Từ 2026 bỏ thuế khoán, kê khai theo doanh thu thực kèm sổ sách theo Thông tư 88.',
+     'Bán lẻ trực tiếp bắt buộc dùng hoá đơn điện tử khởi tạo từ máy tính tiền, kết nối cơ quan thuế.',
+     'Điều dễ sai nhất: TỒN ĐẦU KỲ phải lấy từ số cuối kỳ đã chốt trên bảng quý trước, KHÔNG lấy cột tồn đầu kỳ của KiotViet.',
+     'Quy trình 9 bước đầy đủ nằm ở Sổ tay → Quy trình làm báo cáo thuế quý.'],
+   do:['Kiểm tra đã lưu file bảng cân đối quý gần nhất chưa — quý sau cần nó làm tồn đầu kỳ.'],
+   err:['Để đến tuần cuối mới xuất dữ liệu từ KiotViet.']},
+  {id:'ow5',t:'Điều hành đội bằng app, không bằng nhắc miệng',min:6,
+   body:['Việc giao miệng là việc không tồn tại: không có hạn, không ai theo, quên là xong.',
+     'Mọi việc giao đều vào app, có người nhận và có hạn. Nhân viên chỉ thấy việc của mình nên không rối.',
+     'Xem Đội ngũ → Tiến độ mỗi tuần: ai xong bao nhiêu, ai đang quá hạn, tỉ lệ đúng hạn.',
+     'Tài khoản nhân viên: bạn tạo, app sinh mã tạm 6 số, họ tự đặt mật khẩu riêng. Bạn không biết mật khẩu của họ và không cần biết.',
+     'Mã đồng bộ là chìa khoá vào dữ liệu cửa hàng từ máy khác — coi như mật khẩu cấp cửa hàng, chỉ đưa người trong đội.'],
+   do:['Tuần này giao toàn bộ việc qua app, không nhắc miệng, xem cuối tuần bao nhiêu việc xong đúng hạn.'],
+   err:['Tự làm hết vì "nói còn lâu hơn làm".']},
+  {id:'ow6',t:'Ba kịch bản khi doanh thu giảm',min:7,
+   body:['Soạn sẵn trước khi cần, vì lúc doanh thu tụt là lúc khó nghĩ tỉnh táo nhất.',
+     'GIẢM 10%: cắt nhập nhóm hàng chậm, tăng chăm khách cũ qua Zalo, giảm nhập nhóm rủi ro.',
+     'GIẢM 20%: dừng nhập mọi thứ không thiết yếu, đẩy combo, siết chi quảng cáo, đàm phán lại công nợ với nhà cung cấp.',
+     'GIẢM 30%: ưu tiên bảo toàn tiền mặt, xả hàng chậm có kiểm soát, dừng mọi kế hoạch mở rộng.',
+     'Nguyên tắc xuyên suốt: không vay để ôm hàng chậm quay.'],
+   do:['Viết ra ngưỡng doanh thu tuần cụ thể kích hoạt từng kịch bản.'],
+   err:['Phản ứng bằng cách giảm giá toàn bộ — biên vốn đã mỏng, giảm nữa là lỗ nhanh hơn.']},
+ ]},
+};
+function Training({me,roles,isAdmin,done,setDone}){
+  const myRoleId=me.role;
+  const [view,setView]=useState(TRAINING[myRoleId]?myRoleId:(isAdmin?'owner':myRoleId));
+  const [open,setOpen]=useState(null);
+  const cur=TRAINING[view];
+  const roleInfo=roles.find(r=>r.id===view)||{n:'Vai trò',ic:'👤'};
+  const mark=(id)=>setDone({...done,[id]:!done[id]});
+  const lessons=cur?cur.lessons:[];
+  const doneN=lessons.filter(l=>done[l.id]).length;
+  const next=lessons.find(l=>!done[l.id]);
+  /* Vai trò tự thêm chưa có giáo trình → chỉ đường sang giáo trình gần nhất */
+  const coGiaoTrinh=Object.keys(TRAINING);
+
+  return (
+    <div>
+      <div className="chips" style={{marginBottom:14}}>
+        {coGiaoTrinh.map(rid=>{ const r=roles.find(x=>x.id===rid)||{n:rid,ic:'👤'};
+          const dn=TRAINING[rid].lessons.filter(l=>done[l.id]).length, tt=TRAINING[rid].lessons.length;
+          return (
+            <button key={rid} className={'chip'+(view===rid?' on':'')} onClick={()=>{setView(rid);setOpen(null);}}>
+              {TRAINING[rid].ic} {r.n}{rid===myRoleId?' · của tôi':''} <b style={{opacity:.6}}>{dn}/{tt}</b>
+            </button>
+          );
+        })}
+      </div>
+
+      {!cur
+        ? <div className="empty"><i className="ti ti-school"></i><p>Vai trò này chưa có giáo trình riêng.<br/>Chọn một vai trò gần nhất ở trên để học tạm.</p></div>
+        : <React.Fragment>
+          <div className="panel" style={{marginBottom:14}}>
+            <div className="panel-b" style={{padding:'16px 18px',display:'flex',gap:15,alignItems:'center',flexWrap:'wrap'}}>
+              <Ring pct={lessons.length?Math.round(doneN/lessons.length*100):0} size={52} color="#4f46e5"/>
+              <div style={{flex:1,minWidth:210}}>
+                <b style={{fontFamily:'Baloo 2',fontSize:16}}>{roleInfo.ic} {roleInfo.n} — {doneN}/{lessons.length} bài</b>
+                <div style={{fontSize:13,color:'var(--muted)',lineHeight:1.6,marginTop:3}}>{cur.intro}</div>
+              </div>
+            </div>
+          </div>
+
+          {next &&
+            <div onClick={()=>setOpen(next.id)} style={{display:'flex',alignItems:'center',gap:13,background:'linear-gradient(135deg,#312e81,#4f46e5)',borderRadius:16,padding:'15px 18px',marginBottom:16,color:'#fff',cursor:'pointer',boxShadow:'var(--sh)'}}>
+              <div style={{fontSize:26}}>{cur.ic}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:11.5,opacity:.85,fontWeight:600}}>HỌC TIẾP</div>
+                <b style={{fontFamily:'Baloo 2',fontSize:15.5}}>{next.t}</b>
+                <div style={{fontSize:12,opacity:.8}}>{next.min} phút</div>
+              </div>
+              <span className="btn sm" style={{background:'rgba(255,255,255,.2)',pointerEvents:'none'}}>Mở bài</span>
+            </div>}
+
+          {lessons.map((l,i)=>{ const isOpen=open===l.id, ok=!!done[l.id]; return (
+            <div className="panel" key={l.id} style={{marginBottom:10}}>
+              <div className="row" style={{padding:'13px 16px',cursor:'pointer'}} onClick={()=>setOpen(isOpen?null:l.id)}>
+                <span className={'chk'+(ok?' done':'')} onClick={e=>{e.stopPropagation();mark(l.id);}}>{ok&&<i className="ti ti-check"></i>}</span>
+                <div className="rt">
+                  <b style={{fontWeight:600,fontSize:13.5,textDecoration:ok?'line-through':'none',color:ok?'var(--muted)':'var(--ink)'}}>Bài {i+1}. {l.t}</b>
+                  <small>{l.min} phút</small>
+                </div>
+                <i className={'ti '+(isOpen?'ti-chevron-up':'ti-chevron-down')} style={{color:'var(--muted2)',fontSize:20}}></i>
+              </div>
+              {isOpen &&
+                <div className="panel-b" style={{padding:'2px 18px 18px',animation:'fade .2s'}}>
+                  <ul style={{margin:0,paddingLeft:18,fontSize:13.5,lineHeight:1.75,color:'var(--ink)'}}>
+                    {l.body.map((b,j)=><li key={j} style={{marginBottom:6}}>{b}</li>)}
+                  </ul>
+                  {l.box &&
+                    <div style={{marginTop:13,padding:'12px 14px',background:'var(--bg)',borderLeft:'3px solid var(--o)',borderRadius:10}}>
+                      <b style={{fontSize:12.5,color:'var(--o-dk)'}}>📌 {l.box.t}</b>
+                      {l.box.lines.map((x,j)=><div key={j} style={{fontSize:13,lineHeight:1.65,marginTop:5,color:'var(--ink)'}}>{x}</div>)}
+                    </div>}
+                  {l.do&&l.do.length>0 &&
+                    <div style={{marginTop:12,padding:'12px 14px',background:'var(--grn-lt)',borderRadius:11}}>
+                      <b style={{fontSize:12.5,color:'var(--grn)'}}>✅ Làm ngay</b>
+                      <ul style={{margin:'6px 0 0',paddingLeft:18,fontSize:13,lineHeight:1.65,color:'var(--grn)'}}>
+                        {l.do.map((x,j)=><li key={j} style={{marginBottom:3}}>{x}</li>)}
+                      </ul>
+                    </div>}
+                  {l.err&&l.err.length>0 &&
+                    <div style={{marginTop:10,padding:'12px 14px',background:'var(--red-lt)',borderRadius:11}}>
+                      <b style={{fontSize:12.5,color:'var(--red)'}}>⚠️ Sai hay gặp</b>
+                      <ul style={{margin:'6px 0 0',paddingLeft:18,fontSize:13,lineHeight:1.65,color:'var(--red)'}}>
+                        {l.err.map((x,j)=><li key={j} style={{marginBottom:3}}>{x}</li>)}
+                      </ul>
+                    </div>}
+                  <button className={'btn'+(ok?' ghost':'')+' sm'} style={{marginTop:13}} onClick={()=>mark(l.id)}>
+                    <i className={'ti '+(ok?'ti-rotate':'ti-check')}></i>{ok?'Bỏ đánh dấu':'Đã học xong bài này'}
+                  </button>
+                </div>}
+            </div>
+          ); })}
+        </React.Fragment>}
     </div>
   );
 }
