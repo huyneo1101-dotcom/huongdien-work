@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <meta name="theme-color" content="#f97316"/>
+<link rel="manifest" href="manifest.json"/>
 <title>Hương Diện · Quản lý công việc</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📋%3C/text%3E%3C/svg%3E"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -61,6 +62,22 @@ input,textarea,select{font-family:inherit;font-size:14px}
 .srch{display:flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--border);border-radius:11px;padding:8px 13px;min-width:180px}
 .srch i{font-size:18px;color:var(--muted2)}
 .srch input{border:0;outline:0;background:none;color:var(--ink);width:100%}
+
+.bellwrap{position:relative}
+.bellbtn{position:relative;padding:9px;border-radius:11px;color:var(--muted);display:flex}
+.bellbtn:hover{background:var(--o-lt);color:var(--o-dk)}
+.bellbtn i{font-size:20px}
+.bell-dot{position:absolute;top:1px;right:1px;background:var(--red);color:#fff;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid var(--bg)}
+.bell-ov{position:fixed;inset:0;z-index:199}
+.bell-panel{position:absolute;top:calc(100% + 8px);right:0;width:320px;max-width:88vw;max-height:420px;overflow-y:auto;background:var(--card);border:1px solid var(--border);border-radius:var(--r2);box-shadow:var(--sh2);z-index:200;animation:pop .15s ease}
+.bell-panel-h{padding:12px 16px;border-bottom:1px solid var(--border);font-weight:700;font-family:"Baloo 2";font-size:14px;position:sticky;top:0;background:var(--card)}
+.bell-item{display:flex;gap:10px;align-items:flex-start;padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer}
+.bell-item:last-child{border-bottom:0}
+.bell-item:hover{background:var(--o-lt)}
+.bell-item .ic{font-size:15px;flex-shrink:0;line-height:1.4}
+.bell-item .tt{font-size:13px;font-weight:600;color:var(--ink)}
+.bell-item .dd{font-size:11.5px;color:var(--muted);margin-top:1px}
+.bell-empty{padding:26px 16px;text-align:center;color:var(--muted);font-size:13px}
 .btn{display:inline-flex;align-items:center;gap:7px;background:linear-gradient(135deg,var(--o),var(--o-dk));color:#fff;padding:9px 16px;border-radius:11px;font-weight:600;font-size:13.5px;box-shadow:0 4px 12px rgba(249,115,22,.3);transition:transform .12s,box-shadow .12s}
 .btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(249,115,22,.4)}
 .btn:active{transform:translateY(0)}
@@ -367,21 +384,34 @@ function startOfWeek(){ const d=new Date(today()+'T00:00:00'); const wd=(d.getDa
 function genRecurring(rules,tasks){
   const add=[]; const ids=new Set(tasks.map(t=>t.id));
   rules.forEach(rule=>{
-    let period,due;
+    let period,due,title=rule.title;
     if(rule.every==='week'){
       const mon=startOfWeek(); period=dstr(mon);
       const dd=new Date(mon); dd.setDate(mon.getDate()+((rule.day||1)-1)); due=dstr(dd);
+    } else if(rule.every==='quarter'){
+      /* Kỳ khai thuế quý: chỉ sinh việc trong tháng 1/4/7/10 — tháng nộp tờ khai của quý vừa kết thúc.
+         Q1→hạn 30/4 · Q2→31/7 · Q3→31/10 · Q4→31/1 năm sau. */
+      const d=new Date(today()+'T00:00:00'), y=d.getFullYear(), m=d.getMonth()+1;
+      if([1,4,7,10].indexOf(m)<0) return;
+      const q = m===1?4:(m-1)/3, qy = m===1?y-1:y;
+      period=`${qy}-Q${q}`; title=rule.title+' — Q'+q+'/'+qy;
+      const last=new Date(y,m,0).getDate();
+      due=`${y}-${pad(m)}-${pad(Math.min(rule.day||last,last))}`;
     } else {
       const d=new Date(today()+'T00:00:00'), y=d.getFullYear(), m=d.getMonth();
       period=`${y}-${pad(m+1)}`; const last=new Date(y,m+1,0).getDate();
       due=`${y}-${pad(m+1)}-${pad(Math.min(rule.day||1,last))}`;
     }
     const id='r'+rule.id+'-'+period;
-    if(!ids.has(id)) add.push({id,title:rule.title,proj:rule.proj,status:'todo',pri:rule.pri||'med',progress:0,due,note:'🔁 Việc lặp lại tự sinh',checklist:(rule.ck||[]).map(t=>({t,done:false})),created:today(),recur:rule.id,est:rule.est});
+    if(!ids.has(id)) add.push({id,title,proj:rule.proj,status:'todo',pri:rule.pri||'med',progress:0,due,note:'🔁 Việc lặp lại tự sinh',checklist:(rule.ck||[]).map(t=>({t,done:false})),created:today(),recur:rule.id,est:rule.est});
   });
   return add;
 }
-function recurLabel(rule){ return rule.every==='week'?('Mỗi tuần · '+WD[(rule.day||1)-1]):('Mỗi tháng · ngày '+(rule.day||1)); }
+function recurLabel(rule){
+  if(rule.every==='week') return 'Mỗi tuần · '+WD[(rule.day||1)-1];
+  if(rule.every==='quarter') return 'Mỗi quý · hạn cuối tháng khai (1/4/7/10)';
+  return 'Mỗi tháng · ngày '+(rule.day||1);
+}
 
 /* ---------- Âm thanh nền tập trung (Web Audio, không cần file) ---------- */
 const Noise=(()=>{
@@ -457,6 +487,16 @@ const INBOX_TASKS=[
   {id:'hd-2026-07-03-6',title:'Xả hàng ngoài ngách đang chôn vốn (nước hoa, máy khử khuẩn, trà...)',proj:'kho',pri:'med',due:'',note:'Phỏng đoán từ chat Hương Diện 03/07: phân tích doanh thu/lợi nhuận cho thấy ngoài váng sữa lỗ, còn nhóm hàng ngoài ngách (nước hoa, máy khử khuẩn, trà...) bán chậm, chôn vốn. Nên dọn để dồn vốn cho nhóm sữa nhập khẩu + TPCN biên cao.',checklist:[{t:'Lọc các mã hàng ngoài ngách (không phải sữa/TPCN/đồ mẹ bé) đang tồn lâu',done:false},{t:'Xả tồn (giảm giá/combo) để thu hồi vốn',done:false},{t:'Ngừng nhập nhóm ngoài ngách, dồn vốn cho SP biên cao',done:false}],src:'hd-chat'},
   {id:'hd-2026-07-04-1',title:'Chuẩn bị ảnh thật & nội dung cho trang landing Sữa non Avenir',proj:'content',pri:'med',due:'',note:'Phỏng đoán từ chat Hương Diện 04/07: đã dựng xong trang landing riêng cho Sữa non Pháp Avenir trên web (page-avenir, mở bằng menu/banner). Trang đang tái dùng ảnh sản phẩm cũ; cần ảnh banner/lifestyle thật + nội dung bán thuyết phục (nỗi lo của mẹ, cam kết, review thật) để chốt đơn tốt hơn.',checklist:[{t:'Chụp/chuẩn bị 2-3 ảnh banner + ảnh dùng thực tế cho Avenir',done:false},{t:'Viết nội dung bán: công dụng, cách dùng, cam kết, so sánh',done:false},{t:'Xin vài review/hình phản hồi thật của khách đã mua',done:false}],src:'hd-chat'},
   {id:'hd-2026-07-04-2',title:'Kéo khách vào trang landing Avenir (Zalo, tư vấn, bài đăng)',proj:'mkt',pri:'med',due:'',note:'Phỏng đoán từ chat Hương Diện 04/07: trang landing Avenir đã lên web và có link chia sẻ trực tiếp (#avenir). Nên chủ động đưa khách vào trang này để tăng chuyển đổi cho dòng biên cao.',checklist:[{t:'Gửi link trang Avenir cho khách quan tâm qua Zalo/tư vấn',done:false},{t:'Đăng bài giới thiệu Avenir kèm link landing lên kênh của shop',done:false},{t:'Gắn link Avenir vào chữ ký/tin nhắn mẫu để dùng lại',done:false}],src:'hd-chat'},
+  {id:'hd-2026-07-06-1',title:'Tìm nguồn & chốt nhập nhóm TPCN/sữa biên cao MỚI',proj:'nhap',pri:'med',due:'',note:'Phỏng đoán từ chat Hương Diện 06/07: khi tinh chỉnh kế hoạch Metric, mục tiêu chính là "tìm sản phẩm mới để nhập". Các ngách biên cao đáng nhập thử được nhắm tới: men vi sinh cho bé, vitamin D3K2/canxi cho bé, sữa tăng cân–tăng chiều cao. Dựa vào kết quả Metric để chọn SP có cầu tốt + biên ≥30% rồi nhập thử lô nhỏ.',checklist:[{t:'Từ 10 lượt Metric, lọc SP nhóm men vi sinh / D3K2-canxi / sữa tăng cân-chiều cao có cầu tốt',done:false},{t:'Chọn 2-3 SP biên ≥30%, liên hệ NCC lấy báo giá',done:false},{t:'Nhập thử lô nhỏ, theo dõi tốc độ bán trước khi nhập lớn',done:false}],src:'hd-chat'},
+  {id:'hd-2026-07-25-1',title:'Nộp tờ khai thuế Q2/2026 cho cả 2 hộ (114 + Đỗ Quang)',proj:'tc',pri:'high',due:'2026-07-31',note:'Từ việc làm báo cáo thuế 22–25/07: đã dựng bảng cân đối xuất–nhập–tồn Q2 cho cả hai hộ bằng app Báo Cáo Thuế. Hạn nộp tờ khai 01/CNKD của quý 2 là 31/07 — còn rất ít ngày. Nhớ: tồn đầu kỳ lấy từ số CUỐI KỲ của bảng quý 1, KHÔNG lấy cột tồn đầu kỳ của KiotViet.',checklist:[{t:'Chạy tab Kiểm toán viên, xử lý hết mục "lỗi cần sửa" trước khi xuất',done:false},{t:'Xuất Excel bảng cân đối Q2 cho hộ 114',done:false},{t:'Xuất Excel bảng cân đối Q2 cho hộ Đỗ Quang',done:false},{t:'Gõ tờ khai 01/CNKD lên eTax Mobile & nộp trước 31/07',done:false},{t:'Lưu file Q2 vào máy — quý sau cần nó làm tồn đầu kỳ',done:false}],src:'hd-chat'},
+  {id:'hd-2026-07-25-2',title:'Gọi 6 nhà phân phối chính thức ưu tiên (đều ở Hà Nội)',proj:'nhap',pri:'high',due:'',note:'Từ file NPP-chinh-thuc-nhom-A-v2.xlsx (25/07): đã tra ra 24 thương hiệu nhóm A có nhà phân phối chính thức tại VN — phủ 320/826 SKU và 249,8tr tồn kho. Hai cuộc gọi đầu (Magicwave + Bắc Nam) phủ phần lớn giá trị tồn đang có vấn đề chứng từ. Dùng tab Nguồn hàng để theo dõi từng brand.',checklist:[{t:'Magicwave 1900 638097 — Meiji + Merries',done:false},{t:'Bắc Nam 0911 021 717 — Blédina + Healthy Care + Aptamil',done:false},{t:'Diana Unicharm 1900 585896 — Moony',done:false},{t:'Phương Linh 0888 962 929 — HiKid',done:false},{t:'Bristar 0903 45 11 45 — Chicco',done:false},{t:'VN Thịnh Vượng 092 428 6868 — Bio Island',done:false},{t:'Mỗi cuộc hỏi đủ 9 câu trong Kịch bản gọi, ghi kết quả vào app',done:false}],src:'hd-chat'},
+  {id:'hd-2026-07-25-3',title:'GỠ NGAY thuốc Iliadin khỏi kệ và danh mục hàng',proj:'kho',pri:'high',due:'',note:'Phát hiện khi rà danh mục 826 SP (25/07): mã "Nhỏ mũi Iliadin cho trẻ 1-6 tuổi" là THUỐC (hoạt chất oxymetazoline), không phải mỹ phẩm hay TPCN. Bán thuốc cần Giấy chứng nhận đủ điều kiện kinh doanh dược + dược sĩ phụ trách chuyên môn. Shop mẹ&bé không có hai thứ đó → đây là vi phạm rõ ràng, xử lý trước tiên vì chi phí gỡ gần bằng 0.',checklist:[{t:'Gỡ khỏi kệ trưng bày',done:false},{t:'Ẩn/xoá mã khỏi KiotViet và website',done:false},{t:'Rà soát xem còn mã thuốc nào khác lọt vào danh mục không',done:false}],src:'hd-chat'},
+  {id:'hd-2026-07-25-4',title:'Rà tem CR đồ chơi + nhãn phụ tiếng Việt toàn bộ kệ',proj:'kho',pri:'high',due:'',note:'Hai trong bốn thứ quản lý thị trường Hà Nội soi nhiều nhất ở ngành mẹ&bé: (1) đồ chơi trẻ em phải có dấu hợp quy CR theo QCVN 3:2019/BKHCN — không tem là bị thu; (2) hàng nhập khẩu phải có nhãn phụ tiếng Việt ghi nguồn gốc, hạn dùng, đơn vị nhập khẩu.',checklist:[{t:'Lọc toàn bộ mã đồ chơi, kiểm tra tem CR từng mã',done:false},{t:'Mã không có tem CR: gỡ khỏi kệ, đòi NCC bổ sung chứng nhận hợp quy',done:false},{t:'Rà nhãn phụ tiếng Việt trên hàng nhập, mã nào thiếu thì dán bổ sung',done:false}],src:'hd-chat'},
+  {id:'hd-2026-07-25-5',title:'Gỡ mọi quảng cáo sữa dưới 24 tháng, bình bú và núm ti',proj:'mkt',pri:'high',due:'',note:'Nghị định 100/2014 CẤM TUYỆT ĐỐI quảng cáo sản phẩm sữa thay thế sữa mẹ cho trẻ dưới 24 tháng, bình bú và núm vú giả. Danh mục đang có 26 SKU Pigeon (bình bú, núm ti) và nhiều dòng sữa số 1–2. Rất nhiều shop mẹ&bé dính lỗi này mà không biết. Bài đăng cũ trên fanpage cũng tính là quảng cáo đang tồn tại.',checklist:[{t:'Rà lại bài đăng fanpage/TikTok cũ, ẩn bài quảng cáo sữa số 1-2 và bình bú/núm ti',done:false},{t:'Tắt mọi chiến dịch ads đang chạy cho nhóm sản phẩm này',done:false},{t:'Phổ biến cho nhân viên: nhóm này chỉ tư vấn trực tiếp khi khách hỏi, không đăng quảng cáo',done:false},{t:'TPCN/TPBVSK: nội dung quảng cáo phải được xác nhận trước khi đăng',done:false}],src:'hd-chat'},
+  {id:'hd-2026-07-25-6',title:'Chuyển toàn bộ thanh toán nhà cung cấp sang tài khoản HKD',proj:'tc',pri:'high',due:'',note:'Chứng từ chuyển khoản từ tài khoản đứng tên hộ kinh doanh là bằng chứng nguồn gốc hàng mạnh nhất khi bị kiểm tra — mạnh hơn cả lời cam kết "hàng chính hãng". Ngược lại, tài khoản cá nhân nhận/chi tiền hàng đều đặn chính là thứ cơ quan thuế soi đầu tiên khi hộ KD chuyển sang kê khai từ 2026.',checklist:[{t:'Rà lại: NCC nào đang được trả bằng tài khoản cá nhân',done:false},{t:'Báo từng NCC đổi sang tài khoản HKD, ghi rõ nội dung chuyển khoản',done:false},{t:'Đăng ký tài khoản HKD với cơ quan thuế',done:false},{t:'Lưu sao kê theo quý cùng bộ hồ sơ thuế',done:false}],src:'hd-chat'},
+  {id:'hd-2026-07-25-7',title:'Quyết định nhóm B — brand không có đường chính ngạch',proj:'kho',pri:'high',due:'',note:'Phân loại 25/07: nhóm B là các brand tìm không ra nhà nhập khẩu chính thức tại VN — Fruto (52 SP, Nga), Avenir High Colostrum (50,1tr, SKU giá trị lớn nhất kho), Matilia, Marigold, Alula, I am NZ, Milk Safe & Clean (23,7tr), Sysy Pro, Palenum, Pororo, Hestia, Jack N Jill, YoyiC, Alete, Nissin Anpanman. Nhóm này chiếm phần lớn giá trị tồn. Ba lối ra: tự nhập chính ngạch (nếu sản lượng đủ), tìm nhà nhập khẩu có tờ khai hải quan, hoặc bỏ dòng hàng. Không có cách nào hợp thức hoá hàng đã vào ngoài luồng.',checklist:[{t:'Xếp nhóm B theo giá trị tồn, xử lý mã lớn trước (Avenir, Healthy Care, Milk Safe)',done:false},{t:'Với mã sản lượng đủ lớn: hỏi báo giá nhập chính ngạch + chi phí công bố sản phẩm',done:false},{t:'Với mã còn lại: lên kế hoạch xả tồn có kiểm soát rồi ngừng nhập',done:false},{t:'Ghi rõ quyết định từng brand vào tab Nguồn hàng',done:false}],src:'hd-chat'},
+  {id:'hd-2026-07-25-8',title:'Chuẩn bị hoá đơn điện tử từ máy tính tiền + sổ sách TT88',proj:'tc',pri:'med',due:'',note:'Từ 2026 hộ kinh doanh bỏ thuế khoán, chuyển hết sang kê khai theo doanh thu thực. Bán lẻ trực tiếp cho người tiêu dùng bắt buộc dùng hoá đơn điện tử khởi tạo từ máy tính tiền, kết nối cơ quan thuế. Sổ sách theo Thông tư 88/2021 gồm 5 loại sổ, đủ đơn giản để tự làm. Lệ phí môn bài đã được bãi bỏ từ 01/01/2026.',checklist:[{t:'Kiểm tra KiotViet đã bật tính năng HĐĐT từ máy tính tiền chưa',done:false},{t:'Đăng ký/gia hạn chữ ký số và mẫu 01/ĐKTĐ-HĐĐT',done:false},{t:'Lập đủ 5 loại sổ theo TT88 cho từng hộ',done:false},{t:'Đối chiếu doanh thu sổ sách với sao kê ngân hàng theo tháng',done:false}],src:'hd-chat'},
+  {id:'hd-2026-07-25-9',title:'Niêm yết giá đầy đủ trên kệ — nhất là sữa cho trẻ dưới 6 tuổi',proj:'kho',pri:'med',due:'',note:'Sữa cho trẻ em dưới 6 tuổi thuộc danh mục bình ổn giá nên bị kiểm tra niêm yết rất chặt. Đây là lỗi dễ sửa nhất trong bốn thứ quản lý thị trường hay soi, nhưng cũng là lỗi bị lập biên bản nhiều nhất vì shop hay bỏ sót vài kệ.',checklist:[{t:'Rà từng kệ, mã nào thiếu tem giá thì in bổ sung',done:false},{t:'Giá trên kệ khớp giá trên KiotViet và trên web',done:false},{t:'Giao 1 nhân viên kiểm lại tem giá mỗi đầu tuần',done:false}],src:'hd-chat'},
   /* __INBOX_INSERT__ (tác vụ theo lịch chèn task mới phía trên dòng này) */
 ];
 function mergeInbox(existing){
@@ -585,17 +625,46 @@ const DEFENSE_PLAN=[
    ck:['Hàng cồng kềnh/vốn lớn (máy hút Medela, xe đẩy, ghế to) → trưng mẫu / đặt theo y/c, KHÔNG ôm tồn','Hàng tiêu hao gọn nhẹ (bỉm, khăn ướt, túi trữ, núm ti, men/siro) → nhập sâu, bán theo lốc','Cross-sell: tã ↔ khăn ướt, sách ↔ sách vải/teether']},
 ];
 
+/* Gộp một-lần các mục seed mới (việc lặp lại, quy trình) vào dữ liệu người dùng đã lưu,
+   theo dõi qua key `seen` để người dùng xoá rồi thì không bị bơm lại. */
+function mergeSeed(existing,seedArr,seenKey){
+  try{
+    const seen=store.get(seenKey,[]), seenSet=new Set(seen);
+    const have=new Set((existing||[]).map(x=>x.id));
+    const add=seedArr.filter(x=>!have.has(x.id)&&!seenSet.has(x.id));
+    if(!add.length) return existing;
+    store.set(seenKey,seen.concat(add.map(x=>x.id)));
+    return (existing||[]).concat(add);
+  }catch(e){ return existing; }
+}
 const SEED_RECUR=[
   {id:'rc1',title:'Đối soát doanh thu & ghi sổ tuần',proj:'tc',every:'week',day:6,pri:'high',est:1.5,ck:['Tổng doanh thu tuần','Lãi gộp & biên thực tế','Đối chiếu tiền mặt / công nợ NCC']},
   {id:'rc2',title:'Cập nhật bảng điều khiển 10 số',proj:'tc',every:'week',day:7,pri:'med',est:1},
   {id:'rc3',title:'Rà Top 20 mã hàng giam tiền',proj:'kho',every:'week',day:1,pri:'med',est:1},
   {id:'rc4',title:'Kiểm kê tồn kho đầu tháng',proj:'kho',every:'month',day:1,pri:'high',est:3},
   {id:'rc5',title:'Lên kế hoạch nội dung tháng',proj:'content',every:'month',day:2,pri:'med',est:2},
+  {id:'rc6',title:'Làm & nộp tờ khai thuế quý (cả 2 hộ)',proj:'tc',every:'quarter',day:31,pri:'high',est:6,
+   ck:['Xuất file KiotViet: xuất nhập tồn + hàng chưa xuất hoá đơn','Xuất bảng kê chi tiết & tổng hợp từ phần mềm HĐĐT','Nạp bảng cân đối quý trước làm tồn đầu kỳ','Chạy tab Kiểm toán viên, xử lý hết lỗi','Xuất Excel cả 2 hộ (114 + Đỗ Quang)','Gõ tờ khai 01/CNKD trên eTax Mobile & nộp','Lưu file quý này để quý sau dùng làm tồn đầu kỳ']},
+  {id:'rc7',title:'Đối chiếu sao kê ngân hàng với doanh thu sổ sách',proj:'tc',every:'month',day:5,pri:'med',est:1.5,
+   ck:['Tải sao kê tài khoản HKD tháng trước','Đối chiếu tiền vào với doanh thu KiotViet','Đối chiếu tiền ra với hoá đơn nhập hàng','Ghi chú các khoản lệch để giải trình sau']},
+  {id:'rc8',title:'Rà bộ chứng từ các lô hàng nhập trong tháng',proj:'nhap',every:'month',day:10,pri:'high',est:1.5,
+   ck:['Mỗi lô có đủ: hoá đơn điện tử + phiếu giao hàng + chứng từ chuyển khoản từ TK hộ','Sữa/thực phẩm/mỹ phẩm: có bản sao giấy công bố sản phẩm','Hàng nhập khẩu: có tờ khai hải quan','Lô nào thiếu giấy → đòi NCC bổ sung ngay, đừng để tồn đọng']},
+  {id:'rc9',title:'Kiểm tem giá, nhãn phụ & tem CR trên kệ',proj:'kho',every:'week',day:2,pri:'med',est:0.5,
+   ck:['Mọi mã đều có tem giá, khớp giá KiotViet','Hàng nhập có nhãn phụ tiếng Việt','Đồ chơi có dấu hợp quy CR']},
+];
+/* Quy trình bổ sung 07/2026 — sinh ra từ đợt làm báo cáo thuế Q2 và rà chứng từ nguồn hàng.
+   Được gộp một lần vào Sổ tay của người dùng cũ qua mergeSeed(). */
+const SOP_2026=[
+  {id:'s3',title:'Quy trình nhận hàng ĐỦ CHỨNG TỪ (bắt buộc từ 2026)',body:'Mỗi lô hàng nhập về phải kèm đủ bộ hồ sơ dưới đây rồi mới cho lên kệ:\n\n1. Hoá đơn điện tử của nhà cung cấp (hoá đơn bán hàng của hộ KD vẫn hợp lệ)\n2. Hợp đồng / đơn đặt hàng + phiếu giao hàng\n3. Chứng từ chuyển khoản TỪ TÀI KHOẢN HỘ KINH DOANH — không dùng tài khoản cá nhân\n4. Sữa, thực phẩm, mỹ phẩm: bản sao Giấy tiếp nhận đăng ký bản công bố sản phẩm (hoặc bản tự công bố)\n5. Mỹ phẩm: bản sao Phiếu công bố sản phẩm mỹ phẩm\n6. Hàng nhập khẩu: tờ khai hải quan của lô hàng (có thể che giá)\n7. Đồ chơi, xe đẩy, ghế ăn: chứng nhận hợp quy + tem CR\n8. Hàng nhập: nhãn phụ tiếng Việt đã dán sẵn hoặc tự dán trước khi bày\n\nThiếu giấy nào thì đòi nhà cung cấp bổ sung ngay trong tuần. Lô hàng không có tờ khai hải quan → KHÔNG nhận.\nLưu cả bộ theo từng lô, xếp theo quý để dùng luôn cho hồ sơ thuế.'},
+  {id:'s4',title:'Quy trình gọi nhà phân phối chính thức',body:'Hỏi đủ 9 câu, không nhận lời cam kết "hàng chính hãng" bằng miệng:\n\n1. Anh/chị là nhà nhập khẩu trực tiếp hay mua lại qua trung gian? Xin tên pháp nhân + mã số thuế.\n2. Bên em lấy sỉ, xuất hoá đơn điện tử đầy đủ được không? Hoá đơn GTGT hay hoá đơn bán hàng?\n3. Xin bản sao Giấy tiếp nhận đăng ký bản công bố sản phẩm cho từng mã.\n4. Xin bản sao tờ khai hải quan của lô hàng gần nhất (che giá được).\n5. Sản phẩm đã có nhãn phụ tiếng Việt dán sẵn chưa?\n6. Với đồ chơi / xe đẩy / ghế: đã có chứng nhận hợp quy + tem CR chưa?\n7. Với mỹ phẩm: xin bản sao Phiếu công bố sản phẩm mỹ phẩm.\n8. Chính sách giá sỉ theo bậc, công nợ, đổi trả hàng cận date?\n9. Bên em ở Hà Nội — có kho / NPP cấp 1 khu vực miền Bắc không?\n\nLuôn đối chiếu mã số thuế trên masothue.com trước khi đặt cọc. Nhiều website tự xưng "nhà phân phối chính hãng" thực chất là hộ bán lẻ.'},
+  {id:'s5',title:'Quy trình làm báo cáo thuế quý',body:'Hạn nộp: Q1 → 30/4 · Q2 → 31/7 · Q3 → 31/10 · Q4 → 31/1 năm sau.\n\n1. KiotViet: xuất báo cáo xuất–nhập–tồn + danh sách hàng đã bán chưa xuất hoá đơn + danh mục sản phẩm\n2. Phần mềm hoá đơn điện tử: xuất bảng kê chi tiết + bảng kê tổng hợp + hoá đơn đầu vào\n3. Ngân hàng: tải sao kê tài khoản hộ kinh doanh (bỏ mật khẩu trước khi nạp)\n4. Mở app Báo Cáo Thuế, chọn hộ và quý, NẠP BẢNG CÂN ĐỐI QUÝ TRƯỚC để lấy tồn đầu kỳ\n5. Nạp các file đã xuất, kiểm cảnh báo sai kỳ / nhầm hộ\n6. Chạy tab Kiểm toán viên, xử lý hết mục "lỗi cần sửa"\n7. Xuất Excel bảng cân đối, làm cho cả hai hộ\n8. Gõ tờ khai 01/CNKD trên eTax Mobile và nộp\n9. Lưu file quý này lại — quý sau cần nó làm tồn đầu kỳ\n\nNhớ: tồn đầu kỳ lấy từ số cuối kỳ đã chốt trên tờ khai quý trước, KHÔNG lấy cột tồn đầu kỳ của KiotViet.'},
+  {id:'s6',title:'Khi quản lý thị trường tới kiểm tra',body:'Bốn thứ bị soi nhiều nhất ở ngành mẹ&bé, chuẩn bị sẵn:\n\n1. Hoá đơn chứng từ nguồn gốc hàng — rủi ro lớn nhất, lớn hơn cả thuế. Hàng không chứng từ bị coi là hàng nhập lậu: tịch thu + phạt theo giá trị lô hàng.\n2. Dấu hợp quy CR trên đồ chơi trẻ em (QCVN 3:2019/BKHCN).\n3. Niêm yết giá đầy đủ — sữa cho trẻ dưới 6 tuổi thuộc danh mục bình ổn giá, kiểm rất chặt.\n4. Quảng cáo: cấm tuyệt đối quảng cáo sữa thay thế sữa mẹ cho trẻ dưới 24 tháng, bình bú và núm vú giả (NĐ 100/2014).\n\nỨng xử: bình tĩnh, hợp tác, xuất trình hồ sơ theo lô. Chỉ ba loại giấy có giá trị khi kiểm tra — hoá đơn điện tử hợp lệ, giấy công bố sản phẩm, tờ khai hải quan. Đọc kỹ biên bản trước khi ký, ghi ý kiến của mình vào biên bản nếu không đồng ý.'},
 ];
 const SEED_NOTEBOOK={
   sop:[
     {id:'s1',title:'Quy trình chốt đơn online',body:'1. Xác nhận sản phẩm + size/số\n2. Báo giá + phí ship\n3. Lấy SĐT/Zalo + địa chỉ\n4. Lên đơn trên phần mềm\n5. Đóng gói, dán nhãn, bàn giao bưu tá\n6. Nhắn mã vận đơn cho khách'},
     {id:'s2',title:'Quy trình nhập hàng',body:'1. Kiểm kế hoạch bán ra trước khi đặt\n2. Đối chiếu giá NCC + chiết khấu\n3. Nhận hàng: kiểm số lượng, date, tình trạng\n4. Nhập kho + cập nhật tồn\n5. Lưu hoá đơn/công nợ'},
+    ...SOP_2026,
   ],
   prompts:[
     {id:'p1',title:'Viết caption bán hàng',body:'Bạn là nhân viên marketing cửa hàng Mẹ&Bé Hương Diện. Viết caption Facebook bán [TÊN SẢN PHẨM] cho mẹ bỉm, giọng thân thiện, nhấn lợi ích cho bé, kèm CTA nhắn tin + 3 hashtag. Dưới 120 từ.'},
@@ -632,10 +701,15 @@ function Ring({pct,size=46,color='#f97316'}){
 function App(){
   const [tasks,setTasks]=useState(()=>{const t=store.get('hdw.tasks',null);return mergeInbox(t||seed());});
   const [daily,setDaily]=useState(()=>store.get('hdw.daily',SEED_DAILY));
-  const [recurring,setRecurring]=useState(()=>store.get('hdw.recurring',SEED_RECUR));
+  const [recurring,setRecurring]=useState(()=>mergeSeed(store.get('hdw.recurring',SEED_RECUR),SEED_RECUR,'hdw.recurSeen'));
   const [bizmetrics,setBizmetrics]=useState(()=>store.get('hdw.bizmetrics',[]));
   const [bizconfig,setBizconfig]=useState(()=>store.get('hdw.bizconfig',{breakeven:425}));
-  const [notebook,setNotebook]=useState(()=>store.get('hdw.notebook',SEED_NOTEBOOK));
+  const [notebook,setNotebook]=useState(()=>{
+    const nb=store.get('hdw.notebook',SEED_NOTEBOOK);
+    return {...nb,sop:mergeSeed(nb.sop||[],SOP_2026,'hdw.sopSeen')};
+  });
+  const [sourcing,setSourcing]=useState(()=>store.get('hdw.sourcing',{}));
+  const [compliance,setCompliance]=useState(()=>store.get('hdw.compliance',{}));
   const [focusTask,setFocusTask]=useState(null);
   const [deepIds,setDeepIds]=useState(null);
   const [breath,setBreath]=useState(false);
@@ -649,6 +723,7 @@ function App(){
   const [todayPlan,setTodayPlan]=useState(()=>store.get('hdw.todayPlan',null));
   const [dark,setDark]=useState(()=>store.get('hdw.dark',0)==1||store.get('hdw.dark',false)===true||localStorage.getItem('hdw.dark')==='1');
   const [editing,setEditing]=useState(null); // task object or null
+  const [bellOpen,setBellOpen]=useState(false);
   const [q,setQ]=useState('');
   const [projFilter,setProjFilter]=useState('all');
 
@@ -660,6 +735,8 @@ function App(){
   useEffect(()=>store.set('hdw.bizmetrics',bizmetrics),[bizmetrics]);
   useEffect(()=>store.set('hdw.bizconfig',bizconfig),[bizconfig]);
   useEffect(()=>store.set('hdw.notebook',notebook),[notebook]);
+  useEffect(()=>store.set('hdw.sourcing',sourcing),[sourcing]);
+  useEffect(()=>store.set('hdw.compliance',compliance),[compliance]);
   useEffect(()=>store.set('hdw.zen',zen),[zen]);
   useEffect(()=>store.set('hdw.brainlog',brainlog),[brainlog]);
   useEffect(()=>store.set('hdw.carecfg',carecfg),[carecfg]);
@@ -834,6 +911,24 @@ function App(){
 
   const overdueCount=stats.overdue;
 
+  const alerts=useMemo(()=>{
+    const t=today(), soon=addDays(3);
+    const list=[];
+    tasks.forEach(x=>{
+      if(x.status==='done'||!x.due) return;
+      let kind=null;
+      if(x.due<t) kind='over';
+      else if(x.due===t) kind='today';
+      else if(x.due<=soon) kind='soon';
+      if(kind) list.push({kind,task:x});
+    });
+    const order={over:0,today:1,soon:2};
+    list.sort((a,b)=>order[a.kind]-order[b.kind]||(a.task.due||'').localeCompare(b.task.due||''));
+    return list.slice(0,20);
+  },[tasks]);
+  const urgentCount=alerts.filter(a=>a.kind==='over'||a.kind==='today').length;
+
+  const riskOpen=useMemo(()=>COMPLIANCE.reduce((n,g)=>n+g.items.filter(i=>i.risk==='high'&&compliance[i.id]!=='done').length,0),[compliance]);
   const NAV=[
     {id:'dash',name:'Tổng quan',icon:'ti-layout-dashboard'},
     {id:'today',name:'Hôm nay',icon:'ti-target-arrow'},
@@ -844,6 +939,8 @@ function App(){
     {id:'stats',name:'Thống kê',icon:'ti-chart-histogram'},
     {id:'kd',name:'Sổ KD',icon:'ti-report-money'},
     {id:'sales',name:'Bán hàng',icon:'ti-shopping-cart'},
+    {id:'ncc',name:'Nguồn hàng',icon:'ti-truck-delivery'},
+    {id:'law',name:'Tuân thủ',icon:'ti-shield-check',badge:riskOpen},
     {id:'learn',name:'Kiến thức',icon:'ti-school'},
     {id:'book',name:'Sổ tay',icon:'ti-book'},
     {id:'daily',name:'Việc lặp lại',icon:'ti-checkup-list'},
@@ -858,6 +955,8 @@ function App(){
     stats:{t:'Thống kê hiệu suất',s:'Tổng kết tuần, năng suất, đúng hạn và phân bổ'},
     kd:{t:'Sổ kinh doanh',s:'Bảng điều khiển 10 số mỗi tuần — buồng lái cửa hàng'},
     sales:{t:'Bán hàng (KiotViet)',s:'Doanh thu, đơn hàng, sản phẩm bán chạy & tồn kho — đồng bộ tự động từ KiotViet'},
+    ncc:{t:'Nguồn hàng chính ngạch',s:'24 thương hiệu nhóm A · theo dõi chuyển nguồn sang nhà phân phối chính thức'},
+    law:{t:'Tuân thủ & Thuế',s:'Rủi ro pháp lý đang có, hồ sơ chứng từ và lịch khai thuế theo quý'},
     learn:{t:'Kiến thức kinh doanh',s:'Bài học ngắn về tài chính, định giá, khách hàng… cho chủ shop'},
     book:{t:'Sổ tay vận hành',s:'Quy trình, prompt AI, nhà cung cấp & sao lưu dữ liệu'},
     daily:{t:'Việc lặp lại',s:'Thói quen mỗi ngày + việc tự sinh theo tuần/tháng'},
@@ -915,6 +1014,28 @@ function App(){
           {(view==='board'||view==='proj'||view==='cal')&&(
             <div className="srch"><i className="ti ti-search"></i><input placeholder="Tìm việc…" value={q} onChange={e=>setQ(e.target.value)}/></div>
           )}
+          <div className="bellwrap">
+            <button className="bellbtn" onClick={()=>setBellOpen(o=>!o)} title="Nhắc việc đến hạn">
+              <i className="ti ti-bell"></i>
+              {urgentCount>0 && <span className="bell-dot">{urgentCount>9?'9+':urgentCount}</span>}
+            </button>
+            {bellOpen && <React.Fragment>
+              <div className="bell-ov" onClick={()=>setBellOpen(false)}></div>
+              <div className="bell-panel">
+                <div className="bell-panel-h">🔔 Nhắc việc đến hạn</div>
+                {alerts.length===0 && <div className="bell-empty">✅ Không có việc nào sắp đến hạn</div>}
+                {alerts.map(a=>(
+                  <div key={a.task.id} className="bell-item" onClick={()=>{setBellOpen(false);setView('board');setEditing(a.task);}}>
+                    <span className="ic">{a.kind==='over'?'🔴':a.kind==='today'?'🟠':'🟡'}</span>
+                    <div>
+                      <div className="tt">{a.task.title}</div>
+                      <div className="dd">{a.kind==='over'?'Quá hạn':a.kind==='today'?'Đến hạn hôm nay':'Sắp đến hạn'} · {a.task.due}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </React.Fragment>}
+          </div>
           <button className="btn" onClick={()=>openNew(projFilter!=='all'?projFilter:null)}><i className="ti ti-plus"></i>Thêm việc</button>
         </div>
 
@@ -928,6 +1049,8 @@ function App(){
           {view==='stats' && <Stats tasks={tasks}/>}
           {view==='kd' && <BizBook metrics={bizmetrics} setMetrics={setBizmetrics} config={bizconfig} setConfig={setBizconfig}/>}
           {view==='sales' && <Sales/>}
+          {view==='ncc' && <Sourcing st={sourcing} setSt={setSourcing}/>}
+          {view==='law' && <Compliance st={compliance} setSt={setCompliance}/>}
           {view==='learn' && <Knowledge learned={learned} setLearned={setLearned}/>}
           {view==='book' && <Notebook nb={notebook} setNb={setNotebook} onExport={exportData} onImport={importData}/>}
           {view==='daily' && <Daily daily={daily} setDaily={setDaily} st={dailyState} toggle={toggleDaily} recurring={recurring} setRecurring={setRecurring}/>}
@@ -2075,6 +2198,13 @@ const PROMPT_LIBRARY=[
    {id:'pl_ops3',t:'Mẫu đàm phán nhà cung cấp',p:'Viết tin nhắn đàm phán với nhà cung cấp xin chiết khấu tốt hơn / công nợ / đổi trả hàng cận date, cho cửa hàng mẹ&bé nhập số lượng vừa. Lịch sự, có lý lẽ.'},
    {id:'pl_ops4',t:'Checklist mở & đóng cửa hàng',p:'Tạo checklist công việc đầu ngày (mở cửa) và cuối ngày (đóng cửa) cho cửa hàng mẹ&bé: trưng bày, kiểm đơn online, tồn kho, doanh thu, vệ sinh.'},
  ]},
+ {cat:'Thuế · Chứng từ · Nhà cung cấp',ic:'🧾',items:[
+   {id:'pl_tax1',t:'Rà file danh mục tìm mã có rủi ro pháp lý',p:'Tôi là chủ cửa hàng mẹ&bé ở Hà Nội, hộ kinh doanh. Dưới đây là danh mục sản phẩm (tên hàng, mã vạch, tồn kho). Hãy rà và chỉ ra: (1) mã nào thực chất là THUỐC chứ không phải mỹ phẩm/TPCN; (2) mã nào thuộc nhóm cấm quảng cáo theo NĐ 100/2014 (sữa cho trẻ dưới 24 tháng, bình bú, núm ti); (3) mã nào là đồ chơi cần dấu hợp quy CR; (4) mã nào là thực phẩm dinh dưỡng y học phải đăng ký công bố tại Cục ATTP. Nêu rõ căn cứ, đừng đoán bừa.\n\n[DÁN DANH MỤC]'},
+   {id:'pl_tax2',t:'Tra nhà phân phối chính thức của một thương hiệu',p:'Tìm nhà nhập khẩu / nhà phân phối CHÍNH THỨC tại Việt Nam của thương hiệu [TÊN BRAND] ngành mẹ&bé. Yêu cầu: nêu tên pháp nhân đầy đủ, mã số thuế, địa chỉ, số điện thoại lấy trực tiếp từ website chính thức hoặc tra cứu mã số thuế. Ghi rõ mức độ xác minh của từng thông tin và nói thẳng nếu không tìm được — KHÔNG bịa số điện thoại. Cảnh báo nếu gặp website tự xưng chính hãng nhưng mã số thuế là hộ bán lẻ.'},
+   {id:'pl_tax3',t:'Soạn tin nhắn xin bộ chứng từ từ nhà cung cấp',p:'Viết tin nhắn Zalo lịch sự gửi nhà cung cấp [TÊN], xin bổ sung bộ chứng từ cho lô hàng đã nhập: hoá đơn điện tử, giấy tiếp nhận đăng ký bản công bố sản phẩm cho từng mã, tờ khai hải quan (che giá được), và xác nhận hàng đã có nhãn phụ tiếng Việt. Giải thích ngắn gọn là để hoàn thiện hồ sơ theo quy định mới, giọng hợp tác chứ không đối đầu.'},
+   {id:'pl_tax4',t:'Đối chiếu số liệu trước khi nộp tờ khai',p:'Tôi làm báo cáo thuế quý cho hộ kinh doanh bán lẻ. Dưới đây là bảng cân đối xuất–nhập–tồn và số liệu hoá đơn. Đóng vai kiểm toán viên: chỉ ra các điểm bất thường (tồn âm, lệch giữa số lượng bán và số xuất hoá đơn, giá vốn bất thường, nhóm hàng lệch lớn so với quý trước), chia thành "lỗi phải sửa trước khi nộp" và "điểm cần để ý". Nêu rõ dòng nào, lệch bao nhiêu.\n\n[DÁN SỐ LIỆU]'},
+   {id:'pl_tax5',t:'So sánh biên lợi nhuận sau khi chuyển nguồn chính ngạch',p:'Tôi đang chuyển từ hàng nội địa nước ngoài sang mua của nhà phân phối chính thức tại VN. Dưới đây là giá nhập cũ, giá nhập mới từ NPP, và giá bán hiện tại của từng mã. Tính biên lợi nhuận trước và sau, chỉ ra mã nào còn lãi, mã nào phải tăng giá bán bao nhiêu để giữ biên, mã nào nên bỏ. Trình bày dạng bảng.\n\n[DÁN SỐ LIỆU]'},
+ ]},
  {cat:'Hình ảnh AI',ic:'🖼️',items:[
    {id:'pl_img1',t:'Prompt ảnh sản phẩm',p:'(Dùng cho Gemini/Canva/Midjourney) Ảnh sản phẩm [TÊN] cho cửa hàng mẹ&bé: nền sạch màu pastel sáng, ánh sáng mềm, bố cục gọn, đạo cụ nhẹ liên quan (đồ sơ sinh/ăn dặm), phong cách ấm áp tin cậy, chất lượng quảng cáo, tỷ lệ 1:1.'},
    {id:'pl_img2',t:'Prompt banner khuyến mãi',p:'(Tạo ảnh) Banner khuyến mãi Mẹ&Bé "[NỘI DUNG, vd: Sale cuối tháng]": tông màu cam/pastel thương hiệu, hình minh họa mẹ&bé dễ thương, chừa chỗ cho chữ lớn, phong cách sạch hiện đại, tỷ lệ [16:9 / 9:16].'},
@@ -2478,11 +2608,21 @@ const KNOWLEDGE=[
    {id:'mind2',t:'Gấp vs Quan trọng (ma trận Eisenhower)',min:2,body:['Quan trọng + gấp: làm ngay.','Quan trọng + không gấp: LÊN LỊCH (quyết định tương lai, dễ bị bỏ quên).','Gấp + không quan trọng: giao bớt. Không gì cả: bỏ.'],a:'Việc "xây hệ thống, chăm khách thân" là quan trọng-không-gấp — đừng để việc vặt nuốt hết.'},
    {id:'mind3',t:'Quản trị rủi ro & năm xấu',min:2,body:['Chuẩn bị kịch bản TRƯỚC khi xấu xảy ra (DT giảm 10/20/30%).','Năm tốt doanh thu cứu bạn; năm xấu DÒNG TIỀN cứu bạn.'],a:'Giữ quỹ oxy, giảm tồn chậm, giữ khách thân — đã có trong kế hoạch phòng thủ.'},
  ]},
- {id:'law',name:'Thuế & Pháp lý hộ KD',ic:'🧾',color:'#0d9488',bg:'#ccfbf1',tag:'CẬP NHẬT 2026',lessons:[
-   {id:'law1',t:'Thuế khoán vs kê khai — đang đổi từ 2026',min:3,body:['Trước đây hộ KD nộp THUẾ KHOÁN (mức cố định ấn định).','Lộ trình 2026: bỏ dần thuế khoán, hộ doanh thu lớn chuyển sang KÊ KHAI theo doanh thu thực + sổ sách.','Thuế GTGT+TNCN ngành bán lẻ hàng hóa khoảng 1,5% doanh thu.'],a:'Dữ liệu bán hàng sạch (1 phần mềm) giúp kê khai dễ. Nên có kế toán/đại lý thuế tư vấn theo quy định mới nhất.'},
-   {id:'law2',t:'Hóa đơn điện tử từ máy tính tiền',min:2,body:['Hộ KD doanh thu lớn phải dùng HÓA ĐƠN ĐIỆN TỬ khởi tạo từ máy tính tiền, kết nối cơ quan thuế.','Phần mềm bán hàng (KiotViet/Sapo…) thường tích hợp sẵn HĐĐT.'],a:'Chọn phần mềm có HĐĐT để vừa quản lý vừa đúng luật, đỡ làm tay.'},
+ {id:'law',name:'Thuế & Pháp lý hộ KD',ic:'🧾',color:'#0d9488',bg:'#ccfbf1',tag:'CẬP NHẬT 7/2026',lessons:[
+   {id:'law1',t:'Bỏ thuế khoán — hộ KD kê khai thực từ 2026',min:3,body:['Từ 2026 bỏ thuế khoán, toàn bộ hộ kinh doanh chuyển sang KÊ KHAI theo doanh thu thực + sổ sách.','Ngành phân phối hàng hoá nộp 1% GTGT + 0,5% TNCN = 1,5% TRÊN DOANH THU — không tính theo lãi, không phụ thuộc hoá đơn đầu vào.','Doanh thu ≤ 200 triệu/năm được miễn GTGT và TNCN (nâng từ 100 triệu, áp dụng 01/01/2026).','Lệ phí môn bài đã bãi bỏ từ 01/01/2026 (Nghị quyết 198/2025/QH15).'],f:'Thuế phải nộp ≈ Doanh thu × 1,5%',a:'Vì nộp trên doanh thu, hàng thiếu hoá đơn đầu vào cũng không làm tăng thuế — đổi lấy rủi ro pháp lý để giấu doanh thu là lỗ.'},
+   {id:'law2',t:'Hoá đơn điện tử từ máy tính tiền',min:2,body:['Bán lẻ trực tiếp cho người tiêu dùng bắt buộc dùng HOÁ ĐƠN ĐIỆN TỬ khởi tạo từ máy tính tiền, kết nối cơ quan thuế.','Phần mềm bán hàng (KiotViet/Sapo…) thường tích hợp sẵn.','Kèm theo: chữ ký số + mẫu 01/ĐKTĐ-HĐĐT + tài khoản ngân hàng đứng tên hộ, đăng ký với thuế.'],a:'Bật HĐĐT ngay trên KiotViet — vừa quản lý vừa đúng luật, đỡ làm tay.'},
+   {id:'law5',t:'Hộ kinh doanh hay công ty — ở mức 3 tỷ',min:3,body:['HKD ở mức 3 tỷ: 1% GTGT (30tr) + 0,5% TNCN (15tr), sổ TT88 tự làm được → khoảng 45tr/năm.','Công ty TNHH: 10% GTGT trên giá trị gia tăng + 15% thuế TNDN + thuê kế toán 36–72tr/năm → khoảng 120–180tr/năm.','Điểm quyết định: hàng mẹ&bé đầu vào thường thiếu hoá đơn. Công ty không có hoá đơn đầu vào thì không được khấu trừ VAT và không được tính chi phí → thuế vọt lên gấp mấy lần.'],a:'Ở quy mô hiện tại chọn HKD. Chỉ lên công ty khi cần xuất hoá đơn VAT cho khách sỉ/đại lý, gọi vốn, hoặc mở chuỗi.'},
+   {id:'law6',t:'Bốn thứ quản lý thị trường soi nhiều nhất',min:3,body:['1. Hoá đơn chứng từ nguồn gốc hàng — rủi ro số 1, lớn hơn thuế nhiều. Hàng không chứng từ bị coi là nhập lậu: tịch thu + phạt theo giá trị lô.','2. Dấu hợp quy CR trên đồ chơi trẻ em (QCVN 3:2019/BKHCN).','3. Niêm yết giá đầy đủ — sữa cho trẻ dưới 6 tuổi thuộc danh mục bình ổn giá.','4. Quảng cáo: cấm tuyệt đối quảng cáo sữa thay thế sữa mẹ cho trẻ dưới 24 tháng, bình bú và núm vú giả (NĐ 100/2014).'],a:'Ba lỗi sau sửa gần như miễn phí trong một buổi. Lỗi đầu mới là việc dài hạn — xem tab Nguồn hàng.'},
+   {id:'law7',t:'Mỗi người chỉ đứng tên được 1 hộ kinh doanh',min:2,body:['Một cá nhân chỉ được đứng tên 1 HKD trên toàn quốc. Hộ thứ hai phải để người khác đứng tên, và người đó là chủ thật về pháp lý, chịu trách nhiệm vô hạn bằng tài sản riêng.','Hai HKD cùng địa điểm, cùng ngành, cùng kho, cùng nhân viên bị xác định là chia tách nhân tạo → cơ quan thuế GỘP doanh thu lại tính, cộng phạt.'],a:'Hai hộ 114 và Đỗ Quang phải tách thật: địa điểm riêng, kho riêng, hợp đồng riêng, nhân viên riêng — nếu không thì đừng tách.'},
+   {id:'law8',t:'Thủ tục mở hộ kinh doanh mới',min:3,body:['Hồ sơ: giấy đề nghị đăng ký (Phụ lục III-1) + bản sao CCCD chủ hộ + hợp đồng thuê địa điểm/giấy tờ nhà.','Nộp tại bộ phận một cửa UBND cấp xã/phường nơi đặt địa điểm (từ 01/07/2025 bỏ cấp huyện), hoặc online tại dangkykinhdoanh.gov.vn. Xử lý 3 ngày làm việc, lệ phí khoảng 100.000đ.','Mã ngành nên đăng ký rộng ngay: 4719, 4722, 4772, 4771, 4764, 4759, 4791 (bán lẻ qua internet).','Căn hộ chung cư để ở KHÔNG đăng ký kinh doanh được.','Sau khi có giấy chứng nhận: mã số thuế (dùng số định danh cá nhân) → chữ ký số + HĐĐT → máy tính tiền → tài khoản ngân hàng đứng tên hộ → sổ TT88 → kê khai quý.'],a:'Phần tốn thời gian nằm ở sau khi có giấy phép, không phải ở khâu đăng ký.'},
    {id:'law3',t:'ATTP & nhãn mác hàng mẹ&bé',min:3,body:['Sữa, thực phẩm ăn dặm, TPCN cần công bố/đủ điều kiện ATTP.','Hàng nhập khẩu phải có TEM NHÃN PHỤ tiếng Việt, nguồn gốc, hạn dùng rõ ràng.','Giữ hóa đơn/chứng từ nhập để chứng minh hàng chính hãng.'],a:'Tránh nhập hàng trôi nổi không giấy tờ — rủi ro phạt & mất niềm tin khách.'},
    {id:'law4',t:'Chính sách đổi trả & quyền lợi khách',min:2,body:['Chính sách đổi trả rõ ràng, công khai làm khách yên tâm mua.','Bán đúng hàng chính hãng, tư vấn trung thực, không nhập nhèm thông tin.'],a:'Niềm tin là lợi thế cạnh tranh lớn nhất của shop mẹ&bé.'},
+ ]},
+ {id:'src',name:'Chứng từ & Nguồn hàng',ic:'📑',color:'#b45309',bg:'#fef3c7',tag:'MỚI 7/2026',lessons:[
+   {id:'src1',t:'Ba loại giấy duy nhất có giá trị khi bị kiểm tra',min:2,body:['Lời cam kết "hàng chính hãng" của nhà cung cấp không có giá trị pháp lý nào.','Chỉ ba thứ này chứng minh được nguồn gốc: hoá đơn điện tử hợp lệ · giấy công bố sản phẩm · tờ khai hải quan của lô hàng.','Thêm một chứng cứ mạnh nữa: chứng từ chuyển khoản từ tài khoản đứng tên hộ kinh doanh.'],a:'Mỗi lô hàng nhập về đều phải đủ bộ này rồi mới cho lên kệ. Quy trình chi tiết ở Sổ tay → Quy trình nhận hàng đủ chứng từ.'},
+   {id:'src2',t:'Hàng xách tay không hợp thức hoá được',min:3,body:['Hàng nhập khẩu không có tờ khai hải quan, chưa nộp thuế nhập khẩu và VAT khâu nhập là hàng nhập lậu (NĐ 98/2020).','Không tồn tại thủ tục nào biến nó thành hợp pháp sau khi đã vào Việt Nam ngoài luồng. Bảng kê mua của cá nhân, hợp đồng với người xách về, hoá đơn nội địa mua đi bán lại đều không phải chứng từ nhập khẩu.','Ba lớp rủi ro cộng dồn với hàng mẹ&bé: tịch thu + phạt theo giá trị lô · vi phạm ATTP nếu chưa công bố sản phẩm · hàng cho trẻ em thuộc nhóm tình tiết tăng nặng.','Có cửa hàng, biển hiệu, địa chỉ đăng ký mà bày hàng xách tay trên kệ thì rủi ro TĂNG so với bán chui.'],a:'Ba lối ra: mua từ nhà nhập khẩu chính thức · tự nhập chính ngạch nếu sản lượng đủ · hoặc bỏ dòng hàng.'},
+   {id:'src3',t:'Nhập khẩu chính ngạch cần bộ hồ sơ gì',min:2,body:['Tờ khai hải quan, hợp đồng ngoại thương, invoice, packing list, vận đơn.','Chứng từ nộp thuế nhập khẩu + VAT khâu nhập khẩu; C/O nếu muốn ưu đãi thuế.','Với thực phẩm: kiểm tra nhà nước về ATTP tại cửa khẩu.','Công bố sản phẩm TRƯỚC khi bán — tự công bố với thực phẩm thường; đăng ký bản công bố tại Cục ATTP với sản phẩm cho trẻ dưới 36 tháng và thực phẩm dinh dưỡng y học.'],a:'Chỉ đáng làm khi sản lượng một mã đủ lớn để gánh chi phí công bố và thông quan.'},
+   {id:'src4',t:'Nhận diện nhà phân phối thật',min:2,body:['Nhiều website tự xưng "nhà phân phối chính hãng" thực chất là hộ bán lẻ tự dựng web mang tên thương hiệu.','Cách kiểm: xin tên pháp nhân + mã số thuế rồi đối chiếu trên masothue.com trước khi đặt cọc.','Nhà cung cấp đòi cộng thêm 5–10% "để xuất hoá đơn" nghĩa là họ đang giấu doanh thu — đàm phán lại giá gốc hoặc đổi nguồn.'],a:'Danh sách 24 nhà phân phối đã tra và xác minh nằm ở tab Nguồn hàng, kèm mã số thuế và mức độ xác minh từng dòng.'},
  ]},
  {id:'hr',name:'Nhân sự & Đội nhóm',ic:'👥',color:'#ea580c',bg:'#ffedd5',lessons:[
    {id:'hr1',t:'Tuyển đúng người',min:2,body:['Với cửa hàng nhỏ: THÁI ĐỘ & sự tin cậy quan trọng hơn kỹ năng (kỹ năng dạy được).','Thử việc rõ ràng: kỳ vọng, tiêu chí đánh giá cụ thể.'],a:'Tuyển người chịu học chốt Zalo, chăm khách, kiểm kho — không chỉ đứng bán.'},
@@ -2575,6 +2715,471 @@ function Knowledge({learned,setLearned}){
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/* ================= NGUỒN HÀNG CHÍNH NGẠCH =================
+   Dữ liệu tra ngày 25/07/2026 từ website chính thức của nhà phân phối + masothue.com.
+   Nguồn SKU: 'Danh sach SP NK.xlsx' (436 SP) + 'Danh sách SP DQ.xlsx' (390 SP).
+   Nhóm A = thương hiệu CÓ nhà phân phối chính thức tại VN nhưng shop đang bán bản nội địa nước ngoài. */
+const SRC_STATUS=[
+  {k:'todo',n:'Chưa gọi',ic:'ti-phone',c:'var(--muted)',bg:'var(--bg)'},
+  {k:'called',n:'Đã gọi',ic:'ti-phone-check',c:'var(--amber)',bg:'var(--amber-lt)'},
+  {k:'papers',n:'Có báo giá + giấy tờ',ic:'ti-file-check',c:'var(--blue)',bg:'var(--blue-lt)'},
+  {k:'switched',n:'Đã chuyển nguồn',ic:'ti-circle-check',c:'var(--grn)',bg:'var(--grn-lt)'},
+  {k:'drop',n:'Bỏ dòng hàng',ic:'ti-ban',c:'var(--red)',bg:'var(--red-lt)'},
+];
+const SOURCING_BRANDS=[
+ {id:'meiji',name:'Meiji',sku:10,ton:4.78,prio:1,issue:'Bản nội địa Nhật (hộp 30 thanh)',
+  npp:'CTCP Sóng Thần Hà Nội (Magicwave) — NPP độc quyền Meiji tại VN',addr:'26/26 Vương Thừa Vũ, P. Khương Đình, Hà Nội',
+  phone:'1900 638097 / 024 3568 3810',tel:'1900638097',mst:'0106573709',web:'magicwave.com.vn',
+  verify:'Xác minh: web chính thức + masothue',todo:'Ưu tiên 1 — Hà Nội, một đầu mối phủ cả Meiji lẫn Merries'},
+ {id:'merries',name:'Merries (Kao)',sku:14,ton:0.26,prio:1,issue:'Bản nội địa Nhật',
+  npp:'CTCP Sóng Thần Hà Nội (Magicwave) — hợp tác chiến lược Kao Corporation',addr:'26/26 Vương Thừa Vũ, P. Khương Đình, Hà Nội',
+  phone:'1900 638097 / 024 3568 3810',tel:'1900638097',mst:'0106573709',web:'kao.com/vn',
+  verify:'Xác minh: web chính thức + masothue',todo:'Gộp đơn cùng Meiji'},
+ {id:'bledina',name:'Blédina / Bledilait',sku:48,ton:7.44,prio:2,issue:'48 SKU đang bán bản nội địa Pháp',
+  npp:'Cty TNHH Dịch vụ Quốc tế Bắc Nam — nhập khẩu & phân phối Bledilait tại VN',addr:'Số 7C, đường 2, P. Mai Đình, H. Sóc Sơn, Hà Nội',
+  phone:'0911 021 717 (Zalo cùng số)',tel:'0911021717',mst:'',web:'quoctebacnam.vn',
+  verify:'Xác minh: web NPP',todo:'Ưu tiên 2 — Hà Nội, một cuộc gọi phủ cả Blédina + Healthy Care + Aptamil'},
+ {id:'healthycare',name:'Healthy Care',sku:14,ton:60.06,prio:2,flag:'Giá trị tồn lớn nhất kho — từng có 3–4 đơn vị cùng tự nhận là nhà nhập khẩu chính hãng. Xác định ai thực sự giữ giấy công bố cho từng mã trước khi đặt.',
+  issue:'TPCN Úc — tồn 60tr, lớn nhất danh mục',
+  npp:'Cty TNHH Dịch vụ Quốc tế Bắc Nam (nhập khẩu & phân phối); Baby Earth (dòng sữa)',addr:'Số 7C, đường 2, P. Mai Đình, H. Sóc Sơn, Hà Nội',
+  phone:'0911 021 717',tel:'0911021717',mst:'',web:'healthycarevietnam.com.vn',
+  verify:'Xác minh: web NPP',todo:'Gộp đơn cùng Blédina — xin giấy công bố từng mã'},
+ {id:'moony',name:'Moony',sku:16,ton:0.22,prio:3,issue:'Bản nội địa Nhật',
+  npp:'CTCP Diana Unicharm (thành viên Unicharm Nhật Bản)',addr:'KCN Vĩnh Tuy, đường Lĩnh Nam, P. Vĩnh Hưng, Hoàng Mai, Hà Nội',
+  phone:'1900 585896 / 024 3644 5758',tel:'1900585896',mst:'',web:'unicharm.vn',
+  verify:'Xác minh: web chính thức Unicharm VN',todo:'Trụ sở Hà Nội — dễ làm việc trực tiếp'},
+ {id:'hikid',name:'HiKid (Ildong)',sku:17,ton:19.8,prio:4,issue:'13 SKU, tồn 17,2tr',
+  npp:'Cty TNHH XNK & TM Phương Linh — NPP độc quyền HiKid tại VN từ 2014',addr:'33 Nguyễn Như Đổ, Văn Miếu – Quốc Tử Giám, Đống Đa, Hà Nội',
+  phone:'0888 962 929',tel:'0888962929',mst:'',web:'hikid.vn',
+  verify:'Xác minh: web chính thức',todo:'Hà Nội — hàng thật có tem vàng Bộ Công an'},
+ {id:'chicco',name:'Chicco',sku:14,ton:0.45,prio:5,issue:'Đồ dùng & mỹ phẩm cho bé (Artsana, Ý)',
+  npp:'Cty TNHH BRISTAR — nhập khẩu & phân phối chính thức Chicco tại VN',addr:'6A, ngõ 639 Hoàng Hoa Thám, P. Vĩnh Phúc, Ba Đình, Hà Nội',
+  phone:'0903 45 11 45',tel:'0903451145',mst:'0105606609',web:'chicco.com.vn',
+  verify:'Xác minh: web chính thức',todo:'Hà Nội — làm việc T2–T6, 8:00–17:30'},
+ {id:'bioisland',name:'Bio Island',sku:10,ton:4.55,prio:6,issue:'10 SKU — TPCN Úc',
+  npp:'Cty TNHH TM & XNK Việt Nam Thịnh Vượng — NPP chính thức đầu tiên tại VN',addr:'U04 – L43 KĐT Đô Nghĩa, P. Yên Nghĩa, Hà Nội',
+  phone:'092 428 6868',tel:'0924286868',mst:'',web:'bioisland.vn',
+  verify:'Xác minh: web chính thức',todo:'Hà Nội — xin giấy công bố từng mã'},
+ {id:'wakodo',name:'Wakodo',sku:10,ton:0,issue:'Bột ăn dặm Nhật',
+  npp:'Sakuko Việt Nam (NPP chính hãng, Hà Nội); Nutifood (nhập khẩu từ 2007)',addr:'Sakuko: Tầng 2 toà AT, số 9 ngõ 7 Lê Đức Thọ, P. Từ Liêm, Hà Nội',
+  phone:'Sakuko 1800 0010 / Nutifood 028 3826 7999',tel:'18000010',mst:'0105483587',web:'sakukostore.com.vn',
+  verify:'Xác minh: web chính thức',todo:'Sakuko ở Hà Nội, 35 điểm bán'},
+ {id:'a2',name:'a2 Platinum',sku:4,ton:9.12,issue:'Sữa New Zealand',
+  npp:'CTCP Tiếp thị và Phân phối Sống Lành — NPP độc quyền a2 Milk tại VN',addr:'Toà Hancorp Plaza, 72 Trần Đăng Ninh, P. Cầu Giấy, Hà Nội',
+  phone:'1800 646 800 / 024 7306 6800',tel:'1800646800',mst:'',web:'a2milk.vn',
+  verify:'Xác minh: web a2milk.vn',todo:'Hà Nội — nhập nguyên lon từ New Zealand'},
+ {id:'aptamil',name:'Aptamil / Aptakid',sku:11,ton:10.32,flag:'aptamil.vn KHÔNG phải trang của Danone — đó là một hộ bán lẻ ở Đan Phượng (MST 8218635122) tự dựng web mang tên thương hiệu. Đừng lấy sỉ qua đó.',
+  issue:'Đang bán bản Úc (Gold+); Nutricia VN phân phối bản Đức/Anh',
+  npp:'CTCP TM DV SX Hương Thuỷ (NPP Danone Nutricia, TP.HCM) / Cty TNHH DV Quốc tế Bắc Nam (nhà nhập khẩu, Hà Nội)',
+  addr:'Hương Thuỷ: Nguyễn Hữu Thọ, Phước Kiển, Nhà Bè, TP.HCM · Bắc Nam: Mai Đình, Sóc Sơn, HN',
+  phone:'Hương Thuỷ 028 3620 9955 / Bắc Nam 0911 021 717',tel:'0911021717',mst:'0304898593',web:'huongthuy.com.vn',
+  verify:'Xác minh: masothue + web NPP',todo:'Gọi Bắc Nam trước — cùng đầu mối với Blédina'},
+ {id:'abbott',name:'PediaSure / Glucerna / Ensure',sku:26,ton:78.87,issue:'Đang bán bản Nga + bản Úc 850g',
+  npp:'Cty TNHH Dinh dưỡng 3A (Việt Nam) — NPP độc quyền Abbott tại VN',addr:'Centec Tower, 72-74 Nguyễn Thị Minh Khai, P. Xuân Hoà, TP.HCM',
+  phone:'VP Abbott VN: 028 3825 6551',tel:'02838256551',mst:'',web:'3anutrition.com',
+  verify:'Xác minh địa chỉ; hotline CSKH chưa chắc chắn',todo:'Gọi VP Abbott xin đầu mối NPP cấp 1 miền Bắc'},
+ {id:'nan',name:'NAN (Nestlé)',sku:9,ton:6.26,issue:'Đang bán bản NGA — Nestlé VN có bản chính hãng',
+  npp:'Cty TNHH Nestlé Việt Nam',addr:'Lầu 5 Empress Tower, 138-142 Hai Bà Trưng, Q.1, TP.HCM',
+  phone:'028 3911 3737',tel:'02839113737',mst:'3600235305',web:'nestle.com.vn',
+  verify:'Xác minh: web chính thức + masothue',todo:'Xin danh sách NPP cấp 1 khu vực Hà Nội'},
+ {id:'nutren',name:'Nutren (Nestlé Health Science)',sku:2,ton:0,issue:'Thực phẩm dinh dưỡng y học',
+  npp:'Cty TNHH Nestlé Việt Nam',addr:'Lầu 5 Empress Tower, 138-142 Hai Bà Trưng, Q.1, TP.HCM',
+  phone:'028 3911 3737',tel:'02839113737',mst:'3600235305',web:'nestle.com.vn',
+  verify:'Xác minh: web chính thức',todo:'Nhóm y học — bắt buộc đăng ký bản công bố tại Cục ATTP'},
+ {id:'morinaga',name:'Morinaga',sku:7,ton:6.74,issue:'Sữa bầu vị cafe = bản nội địa Nhật',
+  npp:'Cty TNHH SX DV TM Lê Mây / CTCP Morinaga Lê Mây VN — NPP độc quyền từ 2010',addr:'Hà Nội: Tầng 1 toà Housinco Phùng Khoang, P. Thanh Xuân',
+  phone:'1900 633 578 / Hà Nội 024 3782 0725',tel:'1900633578',mst:'',web:'morinagalemay.com.vn',
+  verify:'Xác minh: web chính thức',todo:'Chỉ số 1 Hagukumi / số 2 Chilmil / số 3 Kodomil là hàng nhập chính hãng'},
+ {id:'nordic',name:'Nordic Naturals',sku:15,ton:16.25,issue:'15 SKU, tồn 16,3tr',
+  npp:'Cty TNHH Greenwise International — NPP độc quyền tại VN',addr:'Tầng 46, Bitexco Financial Tower, 2 Hải Triều, Q.1, TP.HCM',
+  phone:'035 500 1340',tel:'0355001340',mst:'',web:'nordicnaturals.vn',
+  verify:'Xác minh: web chính thức',todo:'Hàng thật có tem chống giả Bộ Công an + nhãn phụ'},
+ {id:'optibac',name:'Optibac',sku:4,ton:7.56,issue:'5 SKU, tồn 7,6tr',
+  npp:'Cty TNHH Optibac Probiotics (Vietnam)',addr:'108/44A1 Trần Quang Diệu, P.14, Q.3, TP.HCM',
+  phone:'0909 763 872 (T2–T6, 9:00–18:00)',tel:'0909763872',mst:'0317904156',web:'optibacprobiotics.com/vn',
+  verify:'Xác minh: web chính thức + MST',todo:'Kênh sỉ: PharmaDi, Pharmart, FPT Long Châu'},
+ {id:'pigeon',name:'Pigeon',sku:26,ton:0.83,issue:'26 SKU — NHÓM CẤM QUẢNG CÁO (NĐ 100/2014)',
+  npp:'CTCP Quốc tế Minh Việt (IMV) — NPP độc quyền Pigeon tại VN hơn 20 năm',addr:'KCN Tân Phú Trung, Củ Chi, TP.HCM',
+  phone:'0989 812 028',tel:'0989812028',mst:'0300721002',web:'pigeon.com.vn',
+  verify:'Xác minh: web chính thức',todo:'Tuyệt đối không quảng cáo bình bú / núm ti'},
+ {id:'mustela',name:'Mustela',sku:6,ton:1.22,issue:'Mỹ phẩm cho bé (Pháp)',
+  npp:'Mustela Vietnam — nhà nhập khẩu chính thức',addr:'60 Hoa Phượng, P.2, Phú Nhuận, TP.HCM',
+  phone:'0908 267 646 / 028 3526 8385',tel:'0908267646',mst:'',web:'mustelavietnam.com',
+  verify:'Xác minh: trang liên hệ chính thức',todo:'Xin kèm bản sao Phiếu công bố sản phẩm mỹ phẩm'},
+ {id:'cetaphil',name:'Cetaphil (Galderma)',sku:1,ton:1.52,issue:'Dược mỹ phẩm',
+  npp:'Cty TNHH Galderma Việt Nam — nhập khẩu Cetaphil',addr:'Phòng 805, Tầng 8, 235 Đồng Khởi, Q.1, TP.HCM',
+  phone:'1800 545402 / VP 028 7106 5768',tel:'1800545402',mst:'0316643832',web:'cetaphil.com.vn',
+  verify:'Xác minh một phần: MST + hotline chính thức',todo:'Trước đây phân phối qua DKSH — hỏi rõ đơn vị ghi trên tem phụ hiện hành'},
+ {id:'heinz',name:'Heinz',sku:10,ton:4.79,issue:'Bột ăn dặm',
+  npp:'CTCP Quảng Xuân — NPP độc quyền Heinz tại VN; Cty TNHH Đất Mới (nhập khẩu)',addr:'12 Trần Xuân Hoà, P.7, Q.5, TP.HCM',
+  phone:'0903 925 758 / 028 3824 8034',tel:'0903925758',mst:'',web:'heinz.com.vn',
+  verify:'Xác minh: web chính thức',todo:'Hàng chính hãng xuất xứ Bồ Đào Nha'},
+ {id:'arla',name:'Arla',sku:14,ton:0.82,issue:'Sữa tươi hữu cơ Đan Mạch',
+  npp:'Cty TNHH TM Dược phẩm Anh Minh — nhập khẩu & phân phối Arla Organic / Arla Baby&Me',addr:'Cao Xá, P. Sơn Nam, tỉnh Hưng Yên',
+  phone:'0988 399 773',tel:'0988399773',mst:'',web:'arlababyme.vn',
+  verify:'Xác minh một phần — nên gọi kiểm chứng',todo:'Gần Hà Nội, thuận tiện giao hàng'},
+ {id:'dnee',name:'Dnee',sku:24,ton:1.33,flag:'Xác minh được pháp nhân và MST nhưng KHÔNG tìm được số điện thoại công khai. Kênh duy nhất là fanpage chính thức facebook.com/dneevietnamofficial.',
+  issue:'Nước giặt / sữa tắm Thái Lan',
+  npp:'Cty TNHH DV TM & XNK Đại Thịnh — NPP độc quyền duy nhất Dnee tại VN',addr:'Lô A, tổ 100, P. Ô Chợ Dừa, Đống Đa, Hà Nội',
+  phone:'Chưa có số — nhắn fanpage',tel:'',mst:'0101782441',web:'facebook.com/dneevietnamofficial',
+  verify:'Xác minh pháp nhân + MST; chưa có SĐT',todo:'Nhắn fanpage xin đầu mối sỉ — công ty ở Đống Đa, cùng Hà Nội'},
+ {id:'blackmores',name:'Blackmores',sku:8,ton:6.67,flag:'Số điện thoại tra ra trùng với số nhiễu của công cụ tìm kiếm nên không ghi vào đây. Lấy hotline hiện hành trên nhathuoclongchau.com.vn.',
+  issue:'TPCN Úc — 8 SKU, tồn 6,7tr',
+  npp:'FPT Long Châu — NPP chính thức tại VN (hơn 1.000 nhà thuốc)',addr:'Tầng 18, toà VNTA, 68 Dương Đình Nghệ, Cầu Giấy, Hà Nội',
+  phone:'Chưa xác minh',tel:'',mst:'',web:'nhathuoclongchau.com.vn',
+  verify:'Vai trò NPP đã xác minh; số điện thoại chưa chắc',todo:'Long Châu là chuỗi bán lẻ — hỏi thêm kênh sỉ / nhà nhập khẩu gốc'},
+];
+const CALL_SCRIPT=[
+ 'Anh/chị là nhà nhập khẩu trực tiếp hay mua lại qua trung gian? Xin tên pháp nhân + mã số thuế.',
+ 'Bên em lấy sỉ, xuất hoá đơn điện tử đầy đủ được không? Hoá đơn GTGT hay hoá đơn bán hàng?',
+ 'Xin bản sao GIẤY TIẾP NHẬN ĐĂNG KÝ BẢN CÔNG BỐ SẢN PHẨM (hoặc bản tự công bố) cho từng mã.',
+ 'Xin bản sao TỜ KHAI HẢI QUAN của lô hàng gần nhất (che giá được).',
+ 'Sản phẩm đã có NHÃN PHỤ TIẾNG VIỆT dán sẵn chưa, hay bên em phải tự dán?',
+ 'Với đồ chơi / xe đẩy / ghế: đã có CHỨNG NHẬN HỢP QUY + TEM CR chưa?',
+ 'Với mỹ phẩm: xin bản sao PHIẾU CÔNG BỐ SẢN PHẨM MỸ PHẨM (Cục Quản lý Dược).',
+ 'Chính sách giá sỉ theo bậc, công nợ, đổi trả hàng cận date?',
+ 'Bên em ở Hà Nội — có kho / NPP cấp 1 khu vực miền Bắc không?',
+];
+const GROUP_B=[
+ {n:'Avenir High Colostrum',t:'50,1tr — SKU giá trị lớn nhất toàn danh mục'},
+ {n:'Milk Safe & Clean',t:'23,7tr — SKU bỉm chủ lực'},
+ {n:'Fruto',t:'52 SP, hàng Nga'},
+ {n:'Matilia',t:''},{n:'Marigold',t:''},{n:'Alula',t:''},{n:'I am NZ',t:''},
+ {n:'Sysy Pro',t:''},{n:'Palenum',t:'Thực phẩm dinh dưỡng y học'},{n:'Pororo',t:''},
+ {n:'Hestia',t:''},{n:"Jack N'Jill",t:''},{n:'YoyiC',t:''},{n:'Alete',t:''},{n:'Nissin Anpanman',t:''},
+];
+function Sourcing({st,setSt}){
+  const [seg,setSeg]=useState('list');
+  const [filter,setFilter]=useState('all');
+  const [open,setOpen]=useState(null);
+  const [copied,setCopied]=useState(null);
+  const set=(id,patch)=>setSt({...st,[id]:{...(st[id]||{}),...patch}});
+  const stat=(id)=>(st[id]&&st[id].s)||'todo';
+  const copy=(txt,id)=>{ try{navigator.clipboard.writeText(txt);}catch(e){} setCopied(id); setTimeout(()=>setCopied(c=>c===id?null:c),1500); };
+
+  const totalTon=SOURCING_BRANDS.reduce((a,b)=>a+b.ton,0);
+  const doneTon=SOURCING_BRANDS.filter(b=>stat(b.id)==='switched').reduce((a,b)=>a+b.ton,0);
+  const cnt={}; SRC_STATUS.forEach(s=>cnt[s.k]=SOURCING_BRANDS.filter(b=>stat(b.id)===s.k).length);
+  const totalSku=SOURCING_BRANDS.reduce((a,b)=>a+b.sku,0);
+
+  const list=SOURCING_BRANDS.filter(b=>filter==='all'?true:filter==='prio'?!!b.prio:stat(b.id)===filter)
+    .sort((a,b)=>(a.prio||99)-(b.prio||99)||b.ton-a.ton);
+  const inp={width:'100%',background:'var(--bg)',border:'1.5px solid var(--border)',borderRadius:10,padding:'9px 11px',color:'var(--ink)',outline:'none',fontFamily:'inherit'};
+
+  return (
+    <div>
+      <div className="chips" style={{marginBottom:16}}>
+        <button className={'chip'+(seg==='list'?' on':'')} onClick={()=>setSeg('list')}><i className="ti ti-list"></i> 24 thương hiệu nhóm A</button>
+        <button className={'chip'+(seg==='script'?' on':'')} onClick={()=>setSeg('script')}><i className="ti ti-phone-call"></i> Kịch bản gọi</button>
+        <button className={'chip'+(seg==='b'?' on':'')} onClick={()=>setSeg('b')}><i className="ti ti-alert-triangle"></i> Nhóm B</button>
+      </div>
+
+      {seg==='list' && <React.Fragment>
+        <div className="panel" style={{marginBottom:14}}>
+          <div className="panel-b" style={{padding:'16px 18px',display:'flex',alignItems:'center',gap:16,flexWrap:'wrap'}}>
+            <Ring pct={totalTon?Math.round(doneTon/totalTon*100):0} size={54} color="#16a34a"/>
+            <div style={{flex:1,minWidth:190}}>
+              <b style={{fontFamily:'Baloo 2',fontSize:16}}>Đã chuyển nguồn {doneTon.toFixed(1)}tr / {totalTon.toFixed(1)}tr tồn kho</b>
+              <div style={{fontSize:12.5,color:'var(--muted)'}}>{cnt.switched}/{SOURCING_BRANDS.length} thương hiệu · {totalSku} SKU thuộc diện chuyển nguồn</div>
+            </div>
+            <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+              {SRC_STATUS.map(s=>(
+                <div key={s.k} style={{textAlign:'center',minWidth:64,padding:'8px 10px',borderRadius:11,background:s.bg}}>
+                  <b style={{display:'block',fontFamily:'Baloo 2',fontSize:18,color:s.c}}>{cnt[s.k]}</b>
+                  <span style={{fontSize:10.5,color:'var(--muted)',fontWeight:600}}>{s.n}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div style={{padding:'12px 14px',background:'var(--o-lt)',borderRadius:12,fontSize:12.5,color:'var(--o-dk)',lineHeight:1.55,marginBottom:14}}>
+          <i className="ti ti-info-circle"></i> Danh sách tra ngày <b>25/07/2026</b> từ website chính thức của nhà phân phối và masothue.com — <b>chưa gọi kiểm chứng số nào</b>. Gọi xong nhớ bấm đổi trạng thái và ghi kết quả để lần sau khỏi tra lại.
+        </div>
+
+        <div className="chips" style={{marginBottom:14}}>
+          <button className={'chip'+(filter==='all'?' on':'')} onClick={()=>setFilter('all')}>Tất cả ({SOURCING_BRANDS.length})</button>
+          <button className={'chip'+(filter==='prio'?' on':'')} onClick={()=>setFilter('prio')}>⭐ Gọi trước ({SOURCING_BRANDS.filter(b=>b.prio).length})</button>
+          {SRC_STATUS.map(s=>(<button key={s.k} className={'chip'+(filter===s.k?' on':'')} onClick={()=>setFilter(s.k)}>{s.n} ({cnt[s.k]})</button>))}
+        </div>
+
+        {list.length===0 && <div className="empty"><i className="ti ti-mood-empty"></i><p>Không có thương hiệu nào ở trạng thái này.</p></div>}
+        {list.map(b=>{
+          const s=SRC_STATUS.find(x=>x.k===stat(b.id)), isOpen=open===b.id, my=st[b.id]||{};
+          return (
+            <div className="panel" key={b.id} style={{marginBottom:10,borderLeft:'4px solid '+s.c}}>
+              <div className="panel-h" style={{cursor:'pointer'}} onClick={()=>setOpen(isOpen?null:b.id)}>
+                <div style={{flex:1,minWidth:0}}>
+                  <b style={{fontSize:14.5,fontFamily:'Baloo 2'}}>{b.prio?'⭐'+b.prio+' ':''}{b.name}</b>
+                  <div style={{fontSize:12,color:'var(--muted)'}}>{b.sku} SKU · tồn {b.ton.toFixed(2)}tr · {b.issue}</div>
+                </div>
+                <span className="tag" style={{background:s.bg,color:s.c}}><i className={'ti '+s.ic}></i>{s.n}</span>
+                <i className={'ti '+(isOpen?'ti-chevron-up':'ti-chevron-down')} style={{color:'var(--muted2)',fontSize:20}}></i>
+              </div>
+              {isOpen &&
+                <div className="panel-b" style={{padding:'14px 18px 18px',animation:'fade .2s'}}>
+                  {b.flag && <div style={{padding:'11px 13px',background:'var(--amber-lt)',color:'var(--amber)',borderRadius:11,fontSize:12.5,lineHeight:1.55,marginBottom:12}}><i className="ti ti-alert-triangle"></i> <b>Lưu ý:</b> {b.flag}</div>}
+                  <div style={{fontSize:13.5,lineHeight:1.7,marginBottom:10}}>
+                    <div><b>Nhà phân phối:</b> {b.npp}</div>
+                    <div style={{color:'var(--muted)'}}><b style={{color:'var(--ink)'}}>Địa chỉ:</b> {b.addr}</div>
+                    {b.mst && <div style={{color:'var(--muted)'}}><b style={{color:'var(--ink)'}}>MST:</b> {b.mst}</div>}
+                    <div style={{color:'var(--muted)'}}><b style={{color:'var(--ink)'}}>Web:</b> {b.web}</div>
+                    <div style={{color:'var(--muted2)',fontSize:12.5,marginTop:4}}>{b.verify}</div>
+                  </div>
+                  <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center',marginBottom:12}}>
+                    <div style={{flex:1,minWidth:180,padding:'10px 13px',background:'var(--red-lt)',color:'var(--red)',borderRadius:11,fontWeight:700,fontSize:14.5}}>
+                      <i className="ti ti-phone"></i> {b.phone}
+                    </div>
+                    {b.tel && <a className="btn sm" href={'tel:'+b.tel} style={{textDecoration:'none'}}><i className="ti ti-phone-call"></i>Gọi</a>}
+                    <button className="btn ghost sm" onClick={()=>copy(b.phone,b.id)}><i className={'ti '+(copied===b.id?'ti-check':'ti-copy')}></i>{copied===b.id?'Đã copy':'Copy số'}</button>
+                  </div>
+                  <div style={{padding:'10px 13px',background:'var(--o-lt)',color:'var(--o-dk)',borderRadius:11,fontSize:12.5,lineHeight:1.55,marginBottom:14}}><b>Việc cần làm:</b> {b.todo}</div>
+
+                  <div style={{fontSize:11.5,fontWeight:700,color:'var(--muted)',marginBottom:7}}>TRẠNG THÁI</div>
+                  <div className="chips" style={{marginBottom:12}}>
+                    {SRC_STATUS.map(x=>(
+                      <button key={x.k} className={'chip'+(stat(b.id)===x.k?' on':'')} onClick={()=>set(b.id,{s:x.k,at:today()})}><i className={'ti '+x.ic}></i> {x.n}</button>
+                    ))}
+                  </div>
+                  <textarea placeholder="Kết quả cuộc gọi: ai nghe máy, giá sỉ, có xuất hoá đơn không, giấy tờ nào đã xin được…"
+                    value={my.note||''} onChange={e=>set(b.id,{note:e.target.value})} style={{...inp,minHeight:70,resize:'vertical'}}/>
+                  {my.at && <div style={{fontSize:11.5,color:'var(--muted2)',marginTop:6}}>Cập nhật lần cuối: {my.at}</div>}
+                </div>}
+            </div>
+          );
+        })}
+      </React.Fragment>}
+
+      {seg==='script' && <React.Fragment>
+        <div className="panel" style={{marginBottom:12}}>
+          <div className="panel-h"><i className="ti ti-phone-call lead"></i><b>9 câu hỏi bắt buộc khi gọi nhà phân phối</b>
+            <button className="btn ghost sm" style={{marginLeft:'auto'}} onClick={()=>copy(CALL_SCRIPT.map((q,i)=>(i+1)+'. '+q).join('\n'),'script')}><i className={'ti '+(copied==='script'?'ti-check':'ti-copy')}></i>{copied==='script'?'Đã copy':'Copy cả bộ'}</button>
+          </div>
+          <div className="panel-b" style={{padding:'6px 18px 14px'}}>
+            {CALL_SCRIPT.map((q,i)=>(
+              <div key={i} style={{display:'flex',gap:11,padding:'11px 0',borderTop:i?'1px solid var(--border)':'none'}}>
+                <b style={{fontFamily:'Baloo 2',color:'var(--o)',minWidth:18}}>{i+1}</b>
+                <div style={{fontSize:13.5,lineHeight:1.6}}>{q}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="panel" style={{marginBottom:12}}>
+          <div className="panel-h"><i className="ti ti-list-numbers lead"></i><b>Thứ tự gọi — 6 đầu mối đều ở Hà Nội</b></div>
+          <div className="panel-b" style={{padding:'6px 18px 14px'}}>
+            {SOURCING_BRANDS.filter(b=>b.prio).sort((a,b)=>a.prio-b.prio).reduce((acc,b)=>{
+              const ex=acc.find(x=>x.tel===b.tel); if(ex){ex.names.push(b.name);} else acc.push({tel:b.tel,phone:b.phone,npp:b.npp.split('—')[0].trim(),names:[b.name],prio:b.prio}); return acc;
+            },[]).map((g,i)=>(
+              <div className="row" key={i} style={{padding:'11px 0'}}>
+                <b style={{fontFamily:'Baloo 2',color:'var(--o)',minWidth:18}}>{i+1}</b>
+                <div className="rt"><b>{g.npp}</b><small>{g.names.join(' + ')}</small></div>
+                <span style={{fontWeight:700,color:'var(--red)',fontSize:13.5}}>{g.phone}</span>
+              </div>
+            ))}
+            <div style={{marginTop:12,padding:'11px 13px',background:'var(--grn-lt)',color:'var(--grn)',borderRadius:11,fontSize:12.5,lineHeight:1.55}}>
+              <i className="ti ti-bulb"></i> Hai cuộc gọi đầu tiên phủ phần lớn giá trị tồn kho đang có vấn đề chứng từ.
+            </div>
+          </div>
+        </div>
+        <div className="panel">
+          <div className="panel-h"><i className="ti ti-alert-triangle lead" style={{color:'var(--red)'}}></i><b>Cảnh báo & bẫy đã gặp</b></div>
+          <div className="panel-b" style={{padding:'14px 18px 18px',fontSize:13.5,lineHeight:1.7}}>
+            <p style={{marginBottom:10}}><b>Không nhận lời "hàng chính hãng" bằng miệng.</b> Chỉ ba loại giấy tờ có giá trị khi quản lý thị trường kiểm tra: hoá đơn điện tử hợp lệ · giấy công bố sản phẩm · tờ khai hải quan của lô hàng.</p>
+            <p style={{marginBottom:10}}>Nhiều website tự xưng "nhà phân phối chính hãng". Luôn đối chiếu mã số thuế trên <b>masothue.com</b> trước khi đặt cọc. Ví dụ đã gặp: <b>aptamil.vn</b> không phải trang của Danone mà là một hộ bán lẻ ở Đan Phượng.</p>
+            <p style={{marginBottom:10}}>Nếu nhà cung cấp đòi cộng thêm 5–10% "để xuất hoá đơn" nghĩa là họ đang giấu doanh thu. Đàm phán lại giá gốc hoặc đổi nguồn — đừng mua không hoá đơn để rẻ.</p>
+            <div style={{marginTop:12,padding:'12px 14px',background:'var(--red-lt)',color:'var(--red)',borderRadius:12,fontSize:12.5,lineHeight:1.6}}>
+              <b>Lưu ý pháp lý khi nhập các nhóm này:</b><br/>
+              · Sữa cho trẻ dưới 24 tháng, bình bú, núm ti: cấm quảng cáo tuyệt đối (NĐ 100/2014).<br/>
+              · Sản phẩm dinh dưỡng cho trẻ dưới 36 tháng: Bộ Y tế quản lý, phải đăng ký bản công bố.<br/>
+              · Thực phẩm dinh dưỡng y học (Glucerna, Nutren, Palenum): đăng ký bản công bố tại Cục ATTP.<br/>
+              · TPCN/TPBVSK: nội dung quảng cáo phải được xác nhận trước khi đăng.
+            </div>
+          </div>
+        </div>
+      </React.Fragment>}
+
+      {seg==='b' && <div className="panel">
+        <div className="panel-h"><i className="ti ti-alert-triangle lead" style={{color:'var(--amber)'}}></i><b>Nhóm B — chưa tìm ra đường chính ngạch</b></div>
+        <div className="panel-b" style={{padding:'14px 18px 18px'}}>
+          <p style={{fontSize:13.5,lineHeight:1.7,marginBottom:14}}>Các thương hiệu này không tra ra nhà nhập khẩu chính thức tại Việt Nam. Nhóm B chiếm <b>phần lớn giá trị tồn kho</b>. Ba lối ra: tự nhập chính ngạch nếu sản lượng đủ · tìm nhà nhập khẩu có tờ khai hải quan · hoặc bỏ dòng hàng. <b>Không có thủ tục nào hợp thức hoá được hàng đã vào Việt Nam ngoài luồng.</b></p>
+          {GROUP_B.map((g,i)=>(
+            <div className="row" key={i} style={{padding:'10px 0'}}>
+              <span className="tag" style={{background:'var(--amber-lt)',color:'var(--amber)'}}>B</span>
+              <div className="rt"><b>{g.n}</b>{g.t&&<small>{g.t}</small>}</div>
+            </div>
+          ))}
+          <div style={{marginTop:14,padding:'12px 14px',background:'var(--o-lt)',borderRadius:12,fontSize:12.5,color:'var(--o-dk)',lineHeight:1.6}}>
+            <i className="ti ti-bulb"></i> Xử lý theo giá trị tồn: <b>Avenir High Colostrum (50,1tr)</b> và <b>Milk Safe &amp; Clean (23,7tr)</b> trước, vì đó là chỗ vốn đang bị giam nhiều nhất.
+          </div>
+        </div>
+      </div>}
+    </div>
+  );
+}
+
+/* ================= TUÂN THỦ & THUẾ =================
+   Tổng hợp từ đợt rà soát danh mục 826 SP và làm báo cáo thuế Q2/2026 (22–25/07/2026). */
+const RISK={high:{n:'Rủi ro cao',c:'var(--red)',bg:'var(--red-lt)'},med:{n:'Cần xử lý',c:'var(--amber)',bg:'var(--amber-lt)'},info:{n:'Cần biết',c:'var(--blue)',bg:'var(--blue-lt)'}};
+const COMPLIANCE=[
+ {g:'Rủi ro đang có trong cửa hàng',ic:'🚨',items:[
+  {id:'cp1',t:'Đang bán thuốc trong shop mẹ&bé',risk:'high',
+   why:['Mã "Nhỏ mũi Iliadin cho trẻ 1-6 tuổi" là THUỐC (oxymetazoline), không phải mỹ phẩm hay thực phẩm chức năng.','Bán thuốc cần Giấy chứng nhận đủ điều kiện kinh doanh dược và dược sĩ phụ trách chuyên môn.'],
+   act:['Gỡ khỏi kệ và khỏi danh mục KiotViet/web','Rà xem còn mã thuốc nào khác lọt vào danh mục'],law:'Luật Dược 2016'},
+  {id:'cp2',t:'Hàng xách tay không có tờ khai hải quan',risk:'high',
+   why:['Hàng nhập khẩu không có tờ khai hải quan, chưa nộp thuế nhập khẩu và VAT khâu nhập là hàng nhập lậu.','Không tồn tại thủ tục nào hợp thức hoá sau khi hàng đã vào Việt Nam ngoài luồng.','Mở cửa hàng có biển hiệu, có địa chỉ đăng ký làm rủi ro này TĂNG chứ không giảm.','Hàng dành cho trẻ em thuộc nhóm tình tiết tăng nặng.'],
+   act:['Chuyển các brand nhóm A sang nhà phân phối chính thức (xem tab Nguồn hàng)','Nhóm B: tự nhập chính ngạch hoặc bỏ dòng hàng','Không nhận lô hàng nào không có tờ khai hải quan'],law:'Nghị định 98/2020'},
+  {id:'cp3',t:'Quảng cáo sữa dưới 24 tháng, bình bú, núm ti',risk:'high',
+   why:['Cấm tuyệt đối quảng cáo sản phẩm sữa thay thế sữa mẹ cho trẻ dưới 24 tháng, bình bú và núm vú giả.','Danh mục đang có 26 SKU Pigeon và nhiều dòng sữa số 1–2.','Bài đăng cũ còn trên fanpage cũng tính là quảng cáo đang tồn tại.'],
+   act:['Ẩn bài đăng cũ về nhóm này trên fanpage/TikTok','Tắt mọi chiến dịch ads cho nhóm này','Phổ biến cho nhân viên: chỉ tư vấn trực tiếp khi khách hỏi'],law:'Nghị định 100/2014'},
+  {id:'cp4',t:'Đồ chơi trẻ em thiếu dấu hợp quy CR',risk:'high',
+   why:['Đồ chơi trẻ em bắt buộc có chứng nhận hợp quy và dấu CR.','Không có tem CR là bị thu hàng — đây là một trong bốn thứ quản lý thị trường Hà Nội soi nhiều nhất.'],
+   act:['Lọc toàn bộ mã đồ chơi, kiểm tem CR từng mã','Mã thiếu tem: gỡ khỏi kệ, đòi NCC bổ sung chứng nhận hợp quy'],law:'QCVN 3:2019/BKHCN'},
+  {id:'cp5',t:'Nhãn phụ tiếng Việt trên hàng nhập khẩu',risk:'med',
+   why:['Hàng nhập khẩu phải có nhãn phụ tiếng Việt: tên hàng, nguồn gốc, hạn dùng, đơn vị nhập khẩu.','Hơn 95% danh mục là hàng ngoại nên đây không phải lỗi lẻ tẻ mà là việc phải làm hệ thống.'],
+   act:['Rà từng kệ, mã nào thiếu thì dán bổ sung','Khi đặt hàng, hỏi NPP đã dán nhãn phụ sẵn chưa'],law:'Nghị định 43/2017'},
+  {id:'cp6',t:'Niêm yết giá — sữa trẻ dưới 6 tuổi thuộc diện bình ổn giá',risk:'med',
+   why:['Sữa cho trẻ em dưới 6 tuổi thuộc danh mục bình ổn giá, bị kiểm tra niêm yết rất chặt.','Lỗi dễ sửa nhất nhưng bị lập biên bản nhiều nhất vì hay bỏ sót vài kệ.'],
+   act:['Rà từng kệ, in bổ sung tem giá','Giá trên kệ khớp giá KiotViet và web','Giao 1 nhân viên kiểm lại mỗi đầu tuần'],law:'Luật Giá'},
+  {id:'cp7',t:'Công bố sản phẩm cho sữa & thực phẩm trẻ nhỏ',risk:'high',
+   why:['Sản phẩm dinh dưỡng cho trẻ dưới 36 tháng do Bộ Y tế quản lý, phải đăng ký bản công bố.','Thực phẩm dinh dưỡng y học (Glucerna, Nutren, Palenum) phải đăng ký bản công bố tại Cục ATTP.','Nhiều shop chỉ có hoá đơn mà không có giấy công bố vẫn bị lập biên bản.'],
+   act:['Xin bản sao giấy công bố từ NPP cho từng mã sữa/thực phẩm','Lưu thành tập, để sẵn ở cửa hàng'],law:'Nghị định 15/2018'},
+  {id:'cp8',t:'Quảng cáo thực phẩm chức năng chưa xác nhận nội dung',risk:'med',
+   why:['Nội dung quảng cáo TPCN/TPBVSK phải được cơ quan y tế xác nhận trước khi đăng.','Danh mục đang có nhiều TPCN Úc (Healthy Care, Bio Island, Blackmores, Nordic Naturals).'],
+   act:['Xin giấy xác nhận nội dung quảng cáo từ NPP hoặc tự đăng ký','Trong lúc chờ: chỉ đăng thông tin sản phẩm, không đăng công dụng chữa bệnh'],law:'Nghị định 15/2018'},
+ ]},
+ {g:'Hồ sơ & dòng tiền',ic:'📁',items:[
+  {id:'cp9',t:'Thanh toán nhà cung cấp qua tài khoản hộ kinh doanh',risk:'high',
+   why:['Chứng từ chuyển khoản từ tài khoản đứng tên hộ kinh doanh là bằng chứng nguồn gốc hàng mạnh nhất khi bị kiểm tra.','Tài khoản cá nhân nhận/chi tiền hàng đều đặn là thứ bị soi đầu tiên khi hộ KD chuyển sang kê khai.'],
+   act:['Rà lại NCC nào đang trả bằng tài khoản cá nhân','Báo NCC đổi sang tài khoản HKD, ghi rõ nội dung chuyển khoản','Đăng ký tài khoản HKD với cơ quan thuế'],law:''},
+  {id:'cp10',t:'Bộ hồ sơ lưu theo từng lô hàng',risk:'med',
+   why:['Đủ bộ gồm: hoá đơn điện tử · hợp đồng/đơn đặt hàng + phiếu giao hàng · chứng từ chuyển khoản từ TK hộ · giấy công bố sản phẩm · phiếu công bố mỹ phẩm · tờ khai hải quan · chứng nhận hợp quy đồ chơi.','Hồ sơ này dùng chung cho cả kiểm tra thị trường lẫn hồ sơ thuế.'],
+   act:['Lập cặp hồ sơ theo quý','Thiếu giấy nào đòi NCC bổ sung trong tuần','Xem quy trình chi tiết ở Sổ tay → Quy trình'],law:''},
+  {id:'cp11',t:'Giấy chứng nhận ATTP — nhiều khả năng KHÔNG cần',risk:'info',
+   why:['Cơ sở chỉ kinh doanh thực phẩm bao gói sẵn được miễn cấp Giấy chứng nhận đủ điều kiện ATTP.','Shop bán sữa hộp, ăn dặm đóng gói thuộc diện miễn này.','Chỉ cần giấy nếu có pha chế, chia lẻ, hoặc bán kèm đồ ăn tại chỗ.'],
+   act:['Xác nhận shop không pha chế/chia lẻ gì','Nếu có thì làm thủ tục xin giấy'],law:'Điều 12 Nghị định 15/2018'},
+ ]},
+ {g:'Thuế & hộ kinh doanh từ 2026',ic:'🧾',items:[
+  {id:'cp12',t:'Bỏ thuế khoán — chuyển sang kê khai theo doanh thu thực',risk:'high',
+   why:['Từ 2026 hộ kinh doanh bỏ thuế khoán, kê khai theo doanh thu thực tế kèm sổ sách.','Ngành phân phối hàng hoá nộp 1% GTGT + 0,5% TNCN = 1,5% trên doanh thu, không phụ thuộc lãi lỗ.','Dữ liệu ngân hàng được đối chiếu chặt hơn hẳn so với trước.'],
+   act:['Giữ dữ liệu bán hàng sạch trên một phần mềm duy nhất','Làm tờ khai 01/CNKD đúng hạn từng quý'],law:''},
+  {id:'cp13',t:'Hoá đơn điện tử khởi tạo từ máy tính tiền',risk:'high',
+   why:['Bán lẻ trực tiếp cho người tiêu dùng bắt buộc dùng HĐĐT từ máy tính tiền, kết nối cơ quan thuế.','KiotViet và các phần mềm bán hàng thường tích hợp sẵn.'],
+   act:['Kiểm tra KiotViet đã bật tính năng HĐĐT từ máy tính tiền chưa','Đăng ký/gia hạn chữ ký số và mẫu 01/ĐKTĐ-HĐĐT'],law:''},
+  {id:'cp14',t:'Sổ sách kế toán theo Thông tư 88/2021',risk:'med',
+   why:['Hộ kê khai phải lập 5 loại sổ theo TT88 — khá đơn giản, tự làm được.'],
+   act:['Lập đủ 5 loại sổ cho từng hộ','Đối chiếu doanh thu sổ sách với sao kê ngân hàng hằng tháng'],law:'Thông tư 88/2021'},
+  {id:'cp15',t:'Hai hộ cùng địa điểm, cùng ngành — rủi ro bị gộp doanh thu',risk:'high',
+   why:['Mỗi cá nhân chỉ được đứng tên 1 hộ kinh doanh trên toàn quốc.','Hai HKD cùng địa điểm, cùng ngành, cùng kho, cùng nhân viên bị xác định là chia tách nhân tạo → cơ quan thuế GỘP doanh thu lại để tính, cộng phạt.','Muốn tách thì phải tách thật: địa điểm riêng, hàng riêng, hợp đồng riêng, nhân viên riêng.'],
+   act:['Rà lại: hai hộ 114 và Đỗ Quang có tách thật về địa điểm, kho, hợp đồng thuê, nhân viên chưa','Chỗ nào còn dùng chung thì tách hoặc ghi nhận rõ ràng'],law:''},
+  {id:'cp16',t:'Ngưỡng miễn thuế và lệ phí môn bài',risk:'info',
+   why:['Doanh thu ≤ 200 triệu/năm không phải nộp GTGT và TNCN (nâng từ 100 triệu, áp dụng từ 01/01/2026).','Lệ phí môn bài đã được bãi bỏ từ 01/01/2026 theo Nghị quyết 198/2025/QH15.'],
+   act:['Không phải làm gì — ghi nhớ để khỏi nộp nhầm'],law:'Nghị quyết 198/2025/QH15'},
+ ]},
+];
+const TAX_QUARTERS=[{q:1,r:'Q1 (tháng 1–3)',d:'30/04'},{q:2,r:'Q2 (tháng 4–6)',d:'31/07'},{q:3,r:'Q3 (tháng 7–9)',d:'31/10'},{q:4,r:'Q4 (tháng 10–12)',d:'31/01 năm sau'}];
+function Compliance({st,setSt}){
+  const [openG,setOpenG]=useState(0);
+  const [openI,setOpenI]=useState(null);
+  const set=(id,patch)=>setSt({...st,[id]:{...(st[id]||{}),...patch}});
+  const done=(id)=>(st[id]||{}).s==='done';
+  const all=COMPLIANCE.reduce((a,g)=>a.concat(g.items),[]);
+  const doneN=all.filter(i=>done(i.id)).length;
+  const highOpen=all.filter(i=>i.risk==='high'&&!done(i.id)).length;
+
+  /* Hạn nộp tờ khai gần nhất */
+  const now=new Date(today()+'T00:00:00'), y=now.getFullYear();
+  const deadlines=[new Date(y,3,30),new Date(y,6,31),new Date(y,9,31),new Date(y+1,0,31)];
+  const nextD=deadlines.find(d=>d>=now)||deadlines[0];
+  const daysLeft=Math.round((nextD-now)/86400000);
+  const nextQ=[1,2,3,4][deadlines.indexOf(nextD)];
+  const inp={width:'100%',background:'var(--bg)',border:'1.5px solid var(--border)',borderRadius:10,padding:'9px 11px',color:'var(--ink)',outline:'none',fontFamily:'inherit'};
+
+  return (
+    <div>
+      <div className="panel" style={{marginBottom:14}}>
+        <div className="panel-b" style={{padding:'16px 18px',display:'flex',alignItems:'center',gap:16,flexWrap:'wrap'}}>
+          <Ring pct={all.length?Math.round(doneN/all.length*100):0} size={54} color={highOpen?'#dc2626':'#16a34a'}/>
+          <div style={{flex:1,minWidth:200}}>
+            <b style={{fontFamily:'Baloo 2',fontSize:16}}>Đã xử lý {doneN}/{all.length} mục</b>
+            <div style={{fontSize:12.5,color:'var(--muted)'}}>{highOpen>0?<span style={{color:'var(--red)',fontWeight:600}}>Còn {highOpen} mục rủi ro cao chưa xử lý</span>:'Không còn mục rủi ro cao nào'}</div>
+          </div>
+          <div style={{padding:'11px 15px',borderRadius:12,background:daysLeft<=10?'var(--red-lt)':'var(--blue-lt)',color:daysLeft<=10?'var(--red)':'var(--blue)',textAlign:'center'}}>
+            <div style={{fontSize:11,fontWeight:700}}>HẠN NỘP TỜ KHAI Q{nextQ}</div>
+            <b style={{fontFamily:'Baloo 2',fontSize:19}}>{dstr(nextD).split('-').reverse().slice(0,2).join('/')}</b>
+            <div style={{fontSize:11.5,fontWeight:600}}>còn {daysLeft} ngày</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="panel" style={{marginBottom:14}}>
+        <div className="panel-h"><i className="ti ti-calendar-due lead"></i><b>Lịch khai thuế quý — tờ khai 01/CNKD</b></div>
+        <div className="panel-b" style={{padding:'6px 18px 14px'}}>
+          {TAX_QUARTERS.map(q=>(
+            <div className="row" key={q.q} style={{padding:'9px 0'}}>
+              <span className="tag" style={{background:'var(--blue-lt)',color:'var(--blue)'}}>Q{q.q}</span>
+              <div className="rt"><b>{q.r}</b></div>
+              <b style={{fontSize:13.5}}>hạn {q.d}</b>
+            </div>
+          ))}
+          <div style={{marginTop:12,padding:'11px 13px',background:'var(--o-lt)',color:'var(--o-dk)',borderRadius:11,fontSize:12.5,lineHeight:1.6}}>
+            <i className="ti ti-bulb"></i> Quy trình 9 bước làm báo cáo quý nằm ở <b>Sổ tay → Quy trình</b>. App tự tạo việc "Làm &amp; nộp tờ khai thuế quý" vào đầu mỗi tháng khai (1/4/7/10). Nhớ: <b>tồn đầu kỳ lấy từ số cuối kỳ của bảng quý trước</b>, không lấy cột tồn đầu kỳ của KiotViet.
+          </div>
+        </div>
+      </div>
+
+      {COMPLIANCE.map((g,gi)=>{
+        const dn=g.items.filter(i=>done(i.id)).length, open=openG===gi;
+        return (
+          <div className="panel" key={gi} style={{marginBottom:12}}>
+            <div className="panel-h" style={{cursor:'pointer'}} onClick={()=>setOpenG(open?-1:gi)}>
+              <span style={{fontSize:19}}>{g.ic}</span>
+              <div style={{flex:1}}>
+                <b style={{fontSize:14.5,fontFamily:'Baloo 2'}}>{g.g}</b>
+                <div style={{fontSize:12,color:'var(--muted)'}}>{dn}/{g.items.length} đã xử lý</div>
+              </div>
+              <i className={'ti '+(open?'ti-chevron-up':'ti-chevron-down')} style={{color:'var(--muted2)',fontSize:20}}></i>
+            </div>
+            {open && <div className="panel-b" style={{padding:'2px 16px 10px'}}>
+              {g.items.map(it=>{
+                const r=RISK[it.risk], isOpen=openI===it.id, my=st[it.id]||{};
+                return (
+                  <div key={it.id} style={{borderTop:'1px solid var(--border)'}}>
+                    <div className="row" style={{padding:'11px 4px',cursor:'pointer'}} onClick={()=>setOpenI(isOpen?null:it.id)}>
+                      <span className={'chk'+(done(it.id)?' done':'')} onClick={e=>{e.stopPropagation();set(it.id,{s:done(it.id)?'':'done'});}}>{done(it.id)&&<i className="ti ti-check"></i>}</span>
+                      <div className="rt">
+                        <b style={{fontWeight:600,fontSize:13.5,textDecoration:done(it.id)?'line-through':'none',color:done(it.id)?'var(--muted)':'var(--ink)'}}>{it.t}</b>
+                        <small>{it.law||'—'}</small>
+                      </div>
+                      <span className="tag" style={{background:r.bg,color:r.c}}>{r.n}</span>
+                      <i className={'ti '+(isOpen?'ti-chevron-up':'ti-chevron-down')} style={{color:'var(--muted2)'}}></i>
+                    </div>
+                    {isOpen &&
+                      <div style={{padding:'4px 6px 16px',animation:'fade .2s'}}>
+                        <ul style={{margin:'0 0 0 4px',paddingLeft:18,fontSize:13.5,lineHeight:1.7}}>
+                          {it.why.map((w,i)=><li key={i} style={{marginBottom:4}}>{w}</li>)}
+                        </ul>
+                        <div style={{marginTop:12,padding:'11px 13px',background:'var(--o-lt)',borderRadius:11,fontSize:13,color:'var(--o-dk)',lineHeight:1.6}}>
+                          <b>Việc cần làm:</b>
+                          <ul style={{margin:'6px 0 0',paddingLeft:18}}>{it.act.map((a,i)=><li key={i} style={{marginBottom:3}}>{a}</li>)}</ul>
+                        </div>
+                        <textarea placeholder="Ghi chú: đã xử lý đến đâu, ai làm, còn vướng gì…" value={my.note||''}
+                          onChange={e=>set(it.id,{note:e.target.value})} style={{...inp,minHeight:56,resize:'vertical',marginTop:10}}/>
+                      </div>}
+                  </div>
+                );
+              })}
+            </div>}
+          </div>
+        );
+      })}
+
+      <div style={{padding:'12px 14px',background:'var(--bg)',borderRadius:12,fontSize:12,color:'var(--muted)',lineHeight:1.6,marginTop:6}}>
+        Nội dung tổng hợp ngày 25/07/2026 từ đợt rà soát danh mục 826 sản phẩm và làm báo cáo thuế Q2/2026. Đây là bản ghi việc cần làm, không thay thế tư vấn của kế toán hay đại lý thuế — với các mục rủi ro cao nên hỏi thêm người có chuyên môn.
+      </div>
     </div>
   );
 }
