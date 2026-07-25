@@ -1325,9 +1325,7 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
               <i className={'ti '+g.icon}></i>{g.name}
             </button>
           ))}
-          <button className="tgl" onClick={()=>setBreath(true)}>
-            <i className="ti ti-lungs"></i>Meditation
-          </button>
+          {/* Meditation không để ở đây nữa — lối vào là thẻ mời trên Tổng quan */}
           <button className="tgl deep" onClick={startDeepMode} title="Phiên tập trung sâu, đi lần lượt qua các việc ưu tiên">
             <i className="ti ti-flame"></i>Chế độ Deep Work
           </button>
