@@ -1,5 +1,5 @@
 /* Hương Diện service worker — app shell offline + network-first cho trang chính */
-const CACHE = 'huongdien-v8';
+const CACHE = 'huongdien-v9';
 const CORE = ['./', './index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', (e) => {
@@ -45,5 +45,30 @@ self.addEventListener('fetch', (e) => {
         return r;
       }).catch(() => cached)
     )
+  );
+});
+
+// Push thật từ server (hdw-push-send, qua pg_cron hằng ngày) — hiện được kể cả khi app đã đóng.
+self.addEventListener('push', (e) => {
+  let data = {};
+  try { data = e.data ? e.data.json() : {}; } catch (err) {}
+  const title = data.title || 'Hương Diện · Quản lý công việc';
+  e.waitUntil(self.registration.showNotification(title, {
+    body: data.body || '',
+    icon: './icon.svg',
+    badge: './icon.svg',
+    tag: 'hdw-digest',
+    data: { url: data.url || './' },
+  }));
+});
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || './';
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const c of list) { if ('focus' in c) return c.focus(); }
+      if (clients.openWindow) return clients.openWindow(url);
+    })
   );
 });
