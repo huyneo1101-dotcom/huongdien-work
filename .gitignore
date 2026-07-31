@@ -9,3 +9,7 @@ KHOA-HUONGDIEN.txt
 # kinh doanh thật. Repo này PUBLIC (bắt buộc, vì phát hành qua GitHub Pages) nên
 # tài liệu vận hành giữ ở đĩa local, không đi theo mã nguồn (Huy chốt 31/07/2026).
 quy-trinh-chatbot-messenger.md
+
+# Edge Function chatbot Messenger: nội dung FAQ + logic vận hành của shop.
+# Repo PUBLIC nên giữ ở đĩa local, deploy thẳng bằng supabase CLI.
+supabase/
