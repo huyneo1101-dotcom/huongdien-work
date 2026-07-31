@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "huongdien-work",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "4197", "--directory", "/Users/Huy/Claude/App/HuongDienWork"],
+      "port": 4197
+    }
+  ]
+}
