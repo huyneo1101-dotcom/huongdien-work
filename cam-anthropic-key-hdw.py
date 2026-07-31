@@ -107,7 +107,24 @@ def main():
         if input(f"Đã có {KHOA} trong file — ghi đè? (g/K) ").strip().lower() != "g":
             return 0
 
-    api_key = getpass.getpass("Anthropic API key (gõ vào, màn hình sẽ KHÔNG hiện) → ").strip()
+    # Nhận qua CLIPBOARD trước, getpass chỉ là đường lùi. Key Anthropic hiện đúng
+    # MỘT LẦN lúc tạo rồi mất, mà trang có sẵn nút copy — bắt gõ lại vào ô ẩn là
+    # chỗ dễ hụt nhất. Hàm chờ nằm ở congcu/cho_clipboard.py, CẤM chép về đây
+    # (mục 17 CLAUDE.md: một hàm duy nhất, nơi khác GỌI).
+    sys.path.insert(0, "/Users/Huy/Claude/congcu")
+    try:
+        from cho_clipboard import boc_tien_to, cho
+    except ImportError as e:                                      # noqa: BLE001
+        print("⚠️  Không nạp được cho_clipboard (%s) — lùi về gõ tay." % e)
+        api_key = ""
+    else:
+        api_key, loi = cho(boc_tien_to("sk-ant-", 40), ten="Anthropic API key")
+        if loi:
+            print("⚠️  %s — lùi về gõ tay." % loi)
+            api_key = ""
+
+    if not api_key:
+        api_key = getpass.getpass("Anthropic API key (gõ vào, màn hình sẽ KHÔNG hiện) → ").strip()
     if not api_key:
         print("✗ Key trống.", file=sys.stderr)
         return 1
