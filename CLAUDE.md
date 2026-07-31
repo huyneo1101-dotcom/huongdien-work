@@ -54,5 +54,26 @@ Truy cập qua wrapper `store.get/set` (dòng ~256, có try/catch + fallback `me
 ## Deploy
 - Chưa có `.github/workflows/`, `netlify.toml`. Repo chỉ gồm `index.html` + `README.md` → serve tĩnh thủ công. Muốn nối CI/CD: skill `deploy-static`.
 
+## ⛔ SỔ CÔNG NỢ CỦA MẸ: NỐI BẰNG NÚT, CẤM NHÚNG VÀO ĐÂY
+
+Huy chốt 31/07/2026. Nút "Sổ Công Nợ" ở chân sidebar và "Sổ nợ" ở thanh dưới điện thoại,
+cả hai bọc `isAdmin` — nhân viên cửa hàng cũng dùng app này. Hằng số `SO_CONG_NO` và hàm
+`moSoCongNo` nằm ngay trên `GROUPS`.
+
+Vì sao không nhúng thành một tab, đo thật cùng ngày:
+- Repo này **PUBLIC** và phát hành qua GitHub Pages công khai; Sổ Công Nợ để repo **riêng
+  tư**, phát hành qua Cloudflare Pages.
+- Đồng bộ ở đây là **mã sync ai-biết-thì-vào**: gọi `hdw-sync` với một mã bịa trả
+  `{"data":null,"updated_at":null}` — không cần tài khoản. Mã do người tự gõ, app chỉ đòi
+  **tối thiểu 06 ký tự** và còn gợi ý mẫu `huongdien-bimsua-2026` ngay trên màn hình. Ai
+  đoán trúng mã kéo được toàn bộ blob `hdw.*`, gồm cả `hdw.users`.
+- Sổ Công Nợ thì đăng nhập bằng tài khoản Supabase thật, RLS bật + force, và tên người được
+  mã hoá bằng mật khẩu sổ (`App/CongNo/CLAUDE.md`). Nhúng vào đây là hạ mức bảo vệ đó xuống
+  bằng mức mã sync.
+
+Ca đối chứng đã chạy khi dựng nút: vai trò `owner` ⇒ 02 nút hiện; đổi vai trò sang `sale`
+rồi tải lại ⇒ **0 nút**. Sửa chỗ này thì chạy lại đúng cặp đo ấy, đừng chỉ nhìn màn hình
+tài khoản chủ.
+
 ## Skills dùng chung
 Repo có `.claude/skills/` (11 skill từ plugin vibe-pwa-kit): bigfile-nav, data-backup, deploy-static, doc-single-file-app, local-store, lock-static-app, pwa-healthcheck, scaffold-vibe-pwa, supabase-sync, theme-pack, web-push.
