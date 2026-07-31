@@ -101,5 +101,85 @@ Ca đối chứng đã chạy khi dựng nút: vai trò `owner` ⇒ 02 nút hi�
 rồi tải lại ⇒ **0 nút**. Sửa chỗ này thì chạy lại đúng cặp đo ấy, đừng chỉ nhìn màn hình
 tài khoản chủ.
 
+## Chatbot Messenger (Phase 1) — mã nguồn ở `supabase/`, NGOÀI git
+
+Repo này PUBLIC nên toàn bộ `supabase/` nằm ngoài git. Edge Function đã deploy:
+`https://ltmlueqkajqmduoqghdf.supabase.co/functions/v1/messenger-webhook` (`--no-verify-jwt`).
+
+**Deploy đi CLI, KHÔNG đi MCP `deploy_edge_function`** — MCP bắt chép 41.000 ký tự vào lời
+gọi nên bản deploy dễ lệch bản đã test:
+
+```bash
+npx --yes supabase@latest functions deploy messenger-webhook --project-ref ltmlueqkajqmduoqghdf --no-verify-jwt --workdir /Users/Huy/Claude/App/HuongDienWork
+```
+
+(cần `export SUPABASE_ACCESS_TOKEN="$SUPABASE_ACCESS_TOKEN_HDW"` từ `~/.config/api-keys.env`)
+
+⚠ **Nghiệm thu bằng LỜI GỌI THẬT, đừng đọc dòng `Deployed Functions`** — nó in ra kể cả khi
+bản mới chưa phục vụ. Chưa nạp đủ secret thì `curl` phải trả **500 kèm tên các secret còn
+thiếu**; nạp đủ rồi thì lời gọi verify sai token phải trả **403**, không phải 500.
+
+### Luật quan trọng nhất: mọi nơi cần biết một luật thì GỌI, cấm chép
+
+`quyetDinhTuNhan()` (`xac-minh.ts`) và `dungSystemPromptDayDu()` (`faq.ts`) được tách khỏi
+`index.ts` ngày 31/07/2026 **vì bộ kiểm định không với tới được chúng**: `index.ts` gọi
+`Deno.serve` ngay khi nạp nên không import vào test được, và luật quyết-định-chuyển-tay lúc
+đó nằm chìm trong thân hàm. Chép luật sang bộ đo là bản đo tách khỏi bản chạy ở lần vá sau,
+im lặng — cùng cơ chế mục 14 CLAUDE.md gốc.
+
+⚠ **Chiều hỏng có chủ ý của `quyetDinhTuNhan`: nhãn lạ, nhãn rỗng, model in thừa chữ đều rơi
+vào nhánh CHUYỂN TAY.** Fail về phía để người thật trả lời, không phải phía bot tự đoán.
+
+### Hai bộ kiểm khác nhau, phải có CẢ HAI
+
+| Bộ | Đo gì | Chạy |
+|---|---|---|
+| `functions/messenger-webhook/test-webhook.ts` | cổng XÁC ĐỊNH: chữ ký `X-Hub-Signature-256`, giờ làm việc, van an toàn, nhánh quyết định, cổng chống bịa số liệu | `deno run --allow-read --allow-write --allow-run <file> --tu-kiem` — 28 ca · 14 bản hỏng |
+| `kiem-dinh/test-kiem-dinh-bot.ts` | phần CHẤM của bộ ca vàng 106 câu | `deno run --allow-read --allow-write --allow-run --allow-env --allow-net <file>` — 12 ca · 8 bản hỏng |
+
+Cả hai đã nạp `BO_TEST` của `khoe.py`.
+
+**Bộ ca vàng `kiem-dinh/bo-ca-vang-messenger.json` — 106 câu khách thật**, đáp án gán tay
+(mục 17 CLAUDE.md gốc, họ "bộ ca vàng": công cụ có đầu ra là PHÁN XÉT thì ca tự bịa là chưa
+test). Chạy thật cần `ANTHROPIC_API_KEY_HDW`:
+
+```bash
+set -a; . ~/.config/api-keys.env; set +a; /opt/homebrew/bin/deno run --allow-read --allow-env --allow-net /Users/Huy/Claude/App/HuongDienWork/supabase/kiem-dinh/kiem-dinh-bot.ts
+```
+
+⛔ **NGƯỠNG TRONG `kiem-dinh-bot.ts` ĐANG LÀ `null` — CHƯA CHỐT.** Cố ý: ngưỡng phải lấy từ
+số đo, không đặt theo mong muốn. Chạy `--chot-nguong` để lấy gợi ý, rồi sửa CẢ `NGUONG` trong
+mã LẪN con số ghi ở đây trong cùng lượt. Chừng nào còn `null` thì bộ này luôn báo KHÔNG ĐẠT —
+đó là fail về phía KÊU, không phải lỗi.
+
+⚠ **Bẫy đã vấp khi dựng, đừng lặp:**
+- **Bảng `BAN_HONG` phải ở FILE RIÊNG.** Đặt chung file với mã nó nhắm tới thì chuỗi neo tự
+  xuất hiện thêm một lần ở phần khai báo ⇒ `count(tim)` = 2 ⇒ **5/8 bản hỏng bị từ chối** và
+  bảng trông như bộ test hỏng nặng. Nới neo thêm dòng liền kề KHÔNG chữa được (phần khai chép
+  cả phần nới).
+- **Ca đo ngưỡng cứng phải dựng ĐỦ RỘNG.** Ca 10/11 ban đầu chỉ có 1 ca 1 vi phạm ⇒ bản hỏng
+  "đổi sang ngưỡng phần trăm `tong * 0.5`" vẫn kêu (1 > 0.5) ⇒ ca vô dụng mà nhìn vẫn xanh.
+  Nay dựng 6 ca sạch + 1 vi phạm. Cùng lỗi ở ca 12: dựng `so_chuyen_dung = 0` thì hai công
+  thức mẫu số cùng ra 0, không phân biệt được gì.
+- **Ca 11 hiện bị lớp "NGƯỠNG CHƯA CHỐT" che** nên không khai vào `doDo`. Chốt ngưỡng xong
+  thì lớp che biến mất — lúc đó bổ sung `11` vào bản hỏng "ngưỡng phần trăm".
+- **Regex tiền tệ cố ý KHÔNG bắt số trần**: hotline `024.3747.8341`, `4 – 8 kg`, `8h – 21h`
+  là dữ kiện bot ĐƯỢC in. Bắt số trần là chặn oan chính câu trả lời đúng (có ca đối chứng canh).
+
+### Còn nợ trước khi mở cho khách thật
+
+1. `FB_APP_SECRET` · `FB_PAGE_ACCESS_TOKEN` · `FB_WEBHOOK_VERIFY_TOKEN` — chạy
+   `python3 /Users/Huy/Claude/App/HuongDienWork/cam-facebook-key-hdw.py`
+2. `ANTHROPIC_API_KEY_HDW` — chạy `python3 /Users/Huy/Claude/App/HuongDienWork/cam-anthropic-key-hdw.py`
+3. Nạp secret + nghiệm thu: `python3 /Users/Huy/Claude/App/HuongDienWork/nap-secret-webhook.py`
+4. Cấu hình webhook ở `developers.facebook.com/apps/994076413665016` → Messenger → Webhooks,
+   subscribe Page với **đủ 3 trường**: `messages` · `messaging_postbacks` · `message_echoes`
+   (thiếu `message_echoes` là van an toàn không bao giờ reset — nhân viên trả lời tay mà bộ
+   đếm không biết).
+5. `CAU_HINH.chinhSachDoiTra` đang là `CHUA_CO` — knowledge base chỉ nói kiểm hàng cùng bưu
+   tá. Điền câu chuẩn rồi deploy lại thì bot tự trả lời được; để nguyên thì mọi câu đổi trả
+   bị đẩy sang nhân viên (đúng thiết kế, không phải lỗi).
+6. Chạy bộ ca vàng + chốt ngưỡng.
+
 ## Skills dùng chung
 Repo có `.claude/skills/` (11 skill từ plugin vibe-pwa-kit): bigfile-nav, data-backup, deploy-static, doc-single-file-app, local-store, lock-static-app, pwa-healthcheck, scaffold-vibe-pwa, supabase-sync, theme-pack, web-push.
