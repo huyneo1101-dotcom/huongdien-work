@@ -4,3 +4,8 @@ huongdien-backup-*.json
 kich-ban-chatbot-theo-thang-tuoi.md
 *.bak.html
 KHOA-HUONGDIEN.txt
+
+# Tài liệu thiết kế chatbot: chứa MST cả 2 hộ, tên retailer KiotViet và số liệu
+# kinh doanh thật. Repo này PUBLIC (bắt buộc, vì phát hành qua GitHub Pages) nên
+# tài liệu vận hành giữ ở đĩa local, không đi theo mã nguồn (Huy chốt 31/07/2026).
+quy-trinh-chatbot-messenger.md
