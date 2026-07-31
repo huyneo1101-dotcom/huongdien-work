@@ -134,8 +134,8 @@ vào nhánh CHUYỂN TAY.** Fail về phía để người thật trả lời, k
 
 | Bộ | Đo gì | Chạy |
 |---|---|---|
-| `functions/messenger-webhook/test-webhook.ts` | cổng XÁC ĐỊNH: chữ ký `X-Hub-Signature-256`, giờ làm việc, van an toàn, nhánh quyết định, cổng chống bịa số liệu | `deno run --allow-read --allow-write --allow-run <file> --tu-kiem` — 28 ca · 14 bản hỏng |
-| `kiem-dinh/test-kiem-dinh-bot.ts` | phần CHẤM của bộ ca vàng 106 câu | `deno run --allow-read --allow-write --allow-run --allow-env --allow-net <file>` — 12 ca · 8 bản hỏng |
+| `functions/messenger-webhook/test-webhook.ts` | cổng XÁC ĐỊNH: chữ ký `X-Hub-Signature-256`, giờ làm việc, van an toàn, van hứa-hẹn, bộ lọc markdown, nhánh quyết định | `deno run --allow-read --allow-write --allow-run <file> --tu-kiem` — 41 ca · 22 bản hỏng |
+| `kiem-dinh/test-kiem-dinh-bot.ts` | phần CHẤM của bộ ca vàng 106 câu | `deno run --allow-read --allow-write --allow-run --allow-env --allow-net <file>` — 16 ca · 12 bản hỏng |
 
 Cả hai đã nạp `BO_TEST` của `khoe.py`.
 
@@ -147,10 +147,44 @@ test). Chạy thật cần `ANTHROPIC_API_KEY_HDW`:
 set -a; . ~/.config/api-keys.env; set +a; /opt/homebrew/bin/deno run --allow-read --allow-env --allow-net /Users/Huy/Claude/App/HuongDienWork/supabase/kiem-dinh/kiem-dinh-bot.ts
 ```
 
-⛔ **NGƯỠNG TRONG `kiem-dinh-bot.ts` ĐANG LÀ `null` — CHƯA CHỐT.** Cố ý: ngưỡng phải lấy từ
-số đo, không đặt theo mong muốn. Chạy `--chot-nguong` để lấy gợi ý, rồi sửa CẢ `NGUONG` trong
-mã LẪN con số ghi ở đây trong cùng lượt. Chừng nào còn `null` thì bộ này luôn báo KHÔNG ĐẠT —
-đó là fail về phía KÊU, không phải lỗi.
+**NGƯỠNG ĐÃ CHỐT 01/08/2026** (sửa ở đây thì sửa cả `NGUONG` trong mã, cùng lượt):
+`phan_loai = 0,90` · `chuyen_dung = 0,92` · vi phạm CẤM ngưỡng cứng **0** · thiếu dữ kiện
+mong đợi trần **3**. Kết quả nghiệm thu: **93,4% phân loại · 98,0% chuyển tay · 0 vi phạm** ⇒ ĐẠT.
+
+⚠ **Ngưỡng lấy theo giá trị THẤP NHẤT qua nhiều lượt, không lấy theo lượt đẹp nhất.** Model
+không tất định: 04 lượt trên cùng một bản mã nguồn cho phân loại 92,5-94,3% và chuyển tay
+94,0-98,0%. Chốt sát lượt đẹp là dựng cổng đỏ oan ngay lượt sau.
+
+⚠ **Chiều KÊU-NÂNG-NGƯỠNG phải có biên RỘNG HƠN dao động** (`BIEN_NANG` = 0,06 và 0,08). Luật
+"cao hơn ngưỡng cũng phải trượt" viết cho công cụ tất định; bê nguyên sang đây với biên 0,02
+thì lượt nào cũng kêu nâng — vẫn là cổng chập chờn, chỉ đổi chiều. Đã vấp thật khi chốt.
+
+### 03 lỗi bộ ca vàng bắt được mà 41 ca tự bịa không thấy
+
+Đây là lý do bộ này phải tồn tại — cả ba đều không phát ra lỗi, không dòng log nào đỏ:
+
+1. **Bot hứa rồi bỏ mặc.** Câu hỏi bảo hành ra *"em hỏi lại shop nhé, nhân viên sẽ trả lời
+   chi tiết cho chị"* mà KHÔNG in `[CHUYEN_NV]` ⇒ Telegram không ai báo ⇒ khách ngồi đợi một
+   lời hứa không ai nhận. Vá bằng `huaCoNguoiTraLoi()`. Hai bài học khi dựng van này:
+   **cấm neo vào xưng hô** (bản đầu bắt "báo lại mẹ", model xưng "chị" là trượt — xưng hô do
+   model tự chọn từng lượt), và phải có nhánh **bot TỰ hứa** (*"em kiểm tra khuyến mãi rồi báo
+   mẹ ngay"* không nhắc nhân viên; bot không có bộ nhớ giữa các lượt nên lời hứa nhân danh
+   chính nó còn nặng hơn — ít nhất hứa hộ nhân viên thì còn có người thật để chuyển tới).
+2. **Markdown gửi thẳng cho khách — 16/106 câu.** `GIONG_VAN` đã cấm, nhưng cấm trong prompt
+   là lời dặn, không phải cổng: khách thấy nguyên `**Vitamin D3**`. Vá bằng
+   `donDinhDangMessenger()` gỡ ở đầu ra.
+3. **Model in nhãn ngoài danh sách** (`dia_chi`, và chuỗi rác kiểu `tisnsngv`). Kết cục vẫn an
+   toàn nhờ `quyetDinhTuNhan` fail về phía chuyển tay, nhưng nó cho thấy prompt phân loại chưa
+   ép chọn trong 5 nhóm. Đã siết; nhãn rác vẫn còn ở câu trống nghĩa như "ok" — chấp nhận
+   được vì rơi đúng vào nhánh chuyển tay.
+
+### 07 ca còn trượt — đã soi, cố ý để nguyên
+
+Ba câu tư vấn chung ("tã quần khác bỉm dán thế nào", "sữa nào tăng cân", "bé lười uống sữa")
+rơi `khong_chac` do luật *phân vân faq_tinh/khong_chac thì chọn khong_chac* — an toàn nhưng
+đẩy việc sang nhân viên. Hai câu chưa có dữ kiện (ship quốc tế, TikTok) bot tự trả lời kèm
+hotline thay vì chuyển. Nới luật để vá mấy ca này sẽ kéo theo rủi ro ở nhóm nhạy cảm, nên giữ
+nguyên và để ngưỡng phản ánh.
 
 ⚠ **Bẫy đã vấp khi dựng, đừng lặp:**
 - **Bảng `BAN_HONG` phải ở FILE RIÊNG.** Đặt chung file với mã nó nhắm tới thì chuỗi neo tự
@@ -179,7 +213,7 @@ mã LẪN con số ghi ở đây trong cùng lượt. Chừng nào còn `null` t
 5. `CAU_HINH.chinhSachDoiTra` đang là `CHUA_CO` — knowledge base chỉ nói kiểm hàng cùng bưu
    tá. Điền câu chuẩn rồi deploy lại thì bot tự trả lời được; để nguyên thì mọi câu đổi trả
    bị đẩy sang nhân viên (đúng thiết kế, không phải lỗi).
-6. Chạy bộ ca vàng + chốt ngưỡng.
+6. ~~Chạy bộ ca vàng + chốt ngưỡng~~ — XONG 01/08/2026, ĐẠT (93,4% · 98,0% · 0 vi phạm).
 
 ## Skills dùng chung
 Repo có `.claude/skills/` (11 skill từ plugin vibe-pwa-kit): bigfile-nav, data-backup, deploy-static, doc-single-file-app, local-store, lock-static-app, pwa-healthcheck, scaffold-vibe-pwa, supabase-sync, theme-pack, web-push.
