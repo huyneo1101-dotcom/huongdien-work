@@ -168,10 +168,23 @@ mã LẪN con số ghi ở đây trong cùng lượt. Chừng nào còn `null` t
 
 ### Còn nợ trước khi mở cho khách thật
 
-1. `FB_APP_SECRET_HDW` — **CHƯA CÓ**, đo 31/07 16:0x bằng
-   `grep -c '^FB_APP_SECRET_HDW=' ~/.config/api-keys.env`. Lấy bằng
-   `python3 /Users/Huy/Claude/App/HuongDienWork/cam-app-secret-tu-clipboard.py`
-   (script tự đổi luôn Page token sang bản vĩnh viễn).
+1. ✅ **XONG 31/07/2026 23:5x — cả 3 khoá Facebook đã có.** `FB_APP_SECRET_HDW` (32 ký tự,
+   Huy lấy tay) · `FB_PAGE_ACCESS_TOKEN_HDW` (228 ký tự, **vĩnh viễn**: `debug_token` trả
+   `expires_at=0`, đủ 4 quyền `pages_show_list` · `pages_messaging` · `pages_read_engagement`
+   · `pages_manage_metadata`) · `FB_WEBHOOK_VERIFY_TOKEN_HDW` (43 ký tự, Zim tự sinh).
+   Lấy lại khi cần: `cam-app-secret-tu-clipboard.py` rồi
+   `doi-user-token-sang-page-vinh-vien.py`.
+   **Đường đã đo và chốt, đừng dò lại từ đầu:** Graph API Explorer với app đã cấp quyền sẵn
+   thì bấm *Generate Access Token* ra token NGAY, **không bung popup OAuth** — tức cái bẫy
+   "popup ngoài tầm điều khiển" ghi ở `quy-trinh-chatbot-messenger.md` chỉ đúng cho lần cấp
+   quyền ĐẦU. Nút copy của trang đẩy thẳng vào clipboard hệ thống, và **phiên Claude đọc
+   được clipboard đó** (đã đo bằng `pbcopy`/`pbpaste` rồi đối chứng bằng tiền tố `EAA`), nên
+   token không cần đi qua khung chat.
+   ⛔ **App Secret KHÔNG có đường vòng** — đã đo và loại **System User** của Business Manager:
+   nó cấp được token vĩnh viễn mà không cần secret, nhưng `index.ts:344` dùng `FB_APP_SECRET`
+   để xác minh chữ ký `X-Hub-Signature-256`, token không thay được secret cho phép đo đó.
+   Đường đó còn vướng hộp "chấp nhận chính sách **thay mặt** doanh nghiệp"; còn nút *Hiển thị*
+   ở App Settings thì đòi **mật khẩu tài khoản**. Cả hai đều là việc Huy phải tự làm.
    ⛔ **App Secret KHÔNG có đường vòng nào** — đã đo và loại **System User** của Business
    Manager ngày 31/07: nó cấp được token vĩnh viễn mà không cần secret, nhưng
    `index.ts:344` dùng `FB_APP_SECRET` để xác minh chữ ký `X-Hub-Signature-256`, và
@@ -179,13 +192,20 @@ mã LẪN con số ghi ở đây trong cùng lượt. Chừng nào còn `null` t
    hộp "chấp nhận chính sách **thay mặt** doanh nghiệp" mà Claude không được bấm hộ.
    Bấm "Hiển thị" ở trang App Settings thì Facebook đòi **mật khẩu tài khoản** — Claude
    cũng không nhập được. Tức bước này bắt buộc có Huy, đừng mất thì giờ tìm đường vòng.
-   - `FB_PAGE_ACCESS_TOKEN_HDW` ĐÃ CÓ nhưng là bản ngắn hạn từ Graph API Explorer
-     (bản lấy 31/07 hết hạn 17:00 cùng ngày). Hết hạn thì lấy lại ở Explorer rồi chạy
-     `cam-page-token-tu-clipboard.py` — không mất mát gì vì bot chưa mở cho khách.
-   - `FB_WEBHOOK_VERIFY_TOKEN_HDW` ✅ ĐÃ CÓ (43 ký tự, Zim tự sinh 31/07). Chuỗi này do
-     mình tự đặt, không xin ai — nhưng đổi nó thì phải khai lại ở ô Verify Token bên
-     Facebook, kẻo webhook trượt xác minh.
-2. `ANTHROPIC_API_KEY_HDW` — chạy `python3 /Users/Huy/Claude/App/HuongDienWork/cam-anthropic-key-hdw.py`
+   ⚠ **Page token xin bằng user token NGẮN hạn thì thừa hưởng đúng hạn ngắn đó** — nhìn
+   bề ngoài y hệt bản vĩnh viễn, chỉ khác `expires_at`. Phải đổi user token sang bản dài
+   hạn TRƯỚC (bước B1 của script), rồi mới xin page token, và nghiệm thu bằng `debug_token`.
+   Script cố ý **từ chối ghi đè** nếu page token còn hạn — fail về phía KÊU.
+   ⚠ `FB_WEBHOOK_VERIFY_TOKEN_HDW` do mình tự đặt, không xin ai — nhưng đổi nó thì phải
+   khai lại ở ô Verify Token bên Facebook, kẻo webhook trượt xác minh.
+2. `ANTHROPIC_API_KEY_HDW` — **KHOÁ DUY NHẤT CÒN THIẾU** (đo 31/07 23:5x: không có trong
+   `~/.config/api-keys.env`, không có biến môi trường, không có file env nào khác trên máy).
+   Chạy `python3 /Users/Huy/Claude/App/HuongDienWork/cam-anthropic-key-hdw.py`.
+   Claude **không tự lấy được**: `platform.claude.com/settings/keys` đòi đăng nhập, mà nhập
+   mật khẩu/OTP là ranh giới cứng.
+   ⚠ **Hỏi Huy tạo key ở tài khoản nào trước khi tạo** — `chidoanbusiness@gmail.com` là tài
+   khoản dùng chung với người thứ hai (memory `tk-claude-chidoanbusiness-dung-chung`), key
+   tạo ở đó thì hoá đơn và quyền thu hồi nằm chung với người kia.
 3. Nạp secret + nghiệm thu: `python3 /Users/Huy/Claude/App/HuongDienWork/nap-secret-webhook.py`
 4. Cấu hình webhook ở `developers.facebook.com/apps/994076413665016` → Messenger → Webhooks,
    subscribe Page với **đủ 3 trường**: `messages` · `messaging_postbacks` · `message_echoes`
