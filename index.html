@@ -2502,7 +2502,12 @@ const BIZF=[
 // ===== Bán hàng (KiotViet qua Supabase) =====
 const SUPA_URL='https://ltmlueqkajqmduoqghdf.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0bWx1ZXFrYWpxbWR1b3FnaGRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NTA2NjcsImV4cCI6MjA5NzQyNjY2N30.rvwZsQiaD8a7fFLwBFk5sgSe6o9t9NqbPfVh1hJvxa0';
-const supaGet=(path)=>fetch(`${SUPA_URL}/rest/v1/${path}`,{headers:{apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY}}).then(r=>r.ok?r.json():r.text().then(t=>{throw new Error(t);}));
+// Khoá Hương Diện: số liệu bán hàng (hoá đơn, giá, tồn kho) chỉ mở cho máy gửi kèm khoá.
+// Khoá nằm ở KHOA-HUONGDIEN.txt trên máy chủ, KHÔNG nằm trong file này. Không đồng bộ sang máy khác.
+const HD_KEY_STORE='hdwork.hdkey';
+const hdKey=()=>{ try{return localStorage.getItem(HD_KEY_STORE)||'';}catch(e){return '';} };
+const setHdKey=(k)=>{ try{localStorage.setItem(HD_KEY_STORE,(k||'').trim());}catch(e){} };
+const supaGet=(path)=>fetch(`${SUPA_URL}/rest/v1/${path}`,{headers:{apikey:SUPA_KEY,Authorization:'Bearer '+SUPA_KEY,'x-hd-key':hdKey()}}).then(r=>r.ok?r.json():r.text().then(t=>{throw new Error(t);}));
 const vnd=(n)=>(Math.round(+n||0)).toLocaleString('vi-VN');
 const mio=(n)=>((+n||0)/1e6);
 
@@ -2516,6 +2521,8 @@ function Sales(){
   const [err,setErr]=useState('');
   const [syncing,setSyncing]=useState(false);
   const [msg,setMsg]=useState('');
+  const [kNhap,setKNhap]=useState('');
+  const [coKhoa,setCoKhoa]=useState(!!hdKey());
 
   const load=async()=>{
     setLoading(true); setErr('');
@@ -2575,6 +2582,20 @@ function Sales(){
           <i className={'ti '+(syncing?'ti-loader-2':'ti-refresh')}></i>{syncing?'Đang đồng bộ…':'Đồng bộ ngay'}
         </button>
       </div>
+
+      {!coKhoa &&
+        <div style={{background:'var(--red-lt)',border:'1px solid var(--red)',borderRadius:12,padding:'12px 14px',marginBottom:16,fontSize:13}}>
+          <div style={{fontWeight:700,color:'var(--red)',marginBottom:4}}><i className="ti ti-lock"></i> Máy này chưa có khoá Hương Diện</div>
+          <div style={{color:'var(--muted)',marginBottom:8}}>
+            Số liệu bán hàng chỉ mở cho máy có khoá. Khoá nằm ở file <b>KHOA-HUONGDIEN.txt</b> trên máy chủ.
+          </div>
+          <div style={{display:'flex',gap:8}}>
+            <input className="inp" style={{flex:1}} type="password" placeholder="Dán khoá vào đây"
+              value={kNhap} onChange={e=>setKNhap(e.target.value)}
+              onKeyDown={e=>{if(e.key==='Enter'&&kNhap.trim()){setHdKey(kNhap);setCoKhoa(true);setKNhap('');load();}}}/>
+            <button className="btn" onClick={()=>{if(!kNhap.trim())return;setHdKey(kNhap);setCoKhoa(true);setKNhap('');load();}}>Lưu</button>
+          </div>
+        </div>}
 
       {secretMissing &&
         <div style={{display:'flex',alignItems:'flex-start',gap:10,background:'var(--red-lt)',border:'1px solid var(--red)',borderRadius:12,padding:'12px 14px',marginBottom:16,fontSize:13,color:'var(--red)'}}>
