@@ -52,7 +52,33 @@ Truy cập qua wrapper `store.get/set` (dòng ~256, có try/catch + fallback `me
 - `@tabler/icons-webfont@3.19.0` (icon `ti-*`) + Google Fonts.
 
 ## Deploy
-- Chưa có `.github/workflows/`, `netlify.toml`. Repo chỉ gồm `index.html` + `README.md` → serve tĩnh thủ công. Muốn nối CI/CD: skill `deploy-static`.
+
+Hiện phát hành qua **GitHub Pages** (`https://huyneo1101-dotcom.github.io/huongdien-work/`),
+và Pages miễn phí buộc repo phải PUBLIC.
+
+### ⏸ ĐANG HOÃN TỚI THỨ HAI 03/08/2026 — chuyển sang Cloudflare Pages + khoá repo private
+
+Huy chốt hoãn 31/07/2026 lúc 14:4x. Sổ đầy đủ, kèm trạng thái để lại và từng lệnh còn thiếu:
+`/Users/Huy/Claude/HeThong/SO-VIEC-HOAN-CUOI-TUAN.md`.
+
+Đã làm dở — **app vẫn chạy bình thường ở địa chỉ cũ, không có gì hỏng**: `dua-len-mang.sh`
+đã viết, project Pages `huongdien-work` đã tạo, đã đẩy 01 bản 4 file. Còn thiếu: nghiệm thu
+`https://huongdien-work.pages.dev/` trả 200 (đo bằng `curl`, **đừng đọc dòng "Deployment
+complete"** — nhánh không phải `production` rơi vào hàng Preview và địa chỉ chính trả 404
+trong khi lệnh vẫn báo thành công, đã vấp thật ở Sổ Công Nợ cùng ngày), rồi mới
+`gh repo edit huyneo1101-dotcom/huongdien-work --visibility private`, rồi mới báo địa chỉ
+mới cho mẹ cài lại PWA.
+
+⚠ **Tài liệu thiết kế chatbot đã gỡ khỏi repo công khai 31/07** (chứa MST cả hai hộ, tên
+retailer KiotViet, số liệu vận hành). Bản gốc vẫn ở `quy-trinh-chatbot-messenger.md` trên
+đĩa, nay nằm trong `.gitignore`. MST trong các commit CŨ vẫn còn trong lịch sử git — viết
+lại lịch sử cần Huy quyết riêng, vì nhiều phiên đang đọc cùng cây.
+
+⚠ **Bẫy khi gỡ file khỏi repo:** `git rm --cached <f>` rồi `git commit <f>` thì pathspec đọc
+lại từ cây làm việc và **đưa chính file đó trở vào repo**, kèm mọi thay đổi chưa commit —
+đã vấp thật cùng ngày, commit `e13fd8d` làm ngược ý định mà không lỗi nào phát ra. Đường
+đúng: kiểm `git diff --cached --stat` rỗng, rồi `git rm --cached <f> && git commit -m ...`
+**không pathspec**, nối bằng `&&` để khoảng hở dưới một giây.
 
 ## ⛔ SỔ CÔNG NỢ CỦA MẸ: NỐI BẰNG NÚT, CẤM NHÚNG VÀO ĐÂY
 
