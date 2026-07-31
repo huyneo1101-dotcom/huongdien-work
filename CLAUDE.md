@@ -168,8 +168,23 @@ mã LẪN con số ghi ở đây trong cùng lượt. Chừng nào còn `null` t
 
 ### Còn nợ trước khi mở cho khách thật
 
-1. `FB_APP_SECRET` · `FB_PAGE_ACCESS_TOKEN` · `FB_WEBHOOK_VERIFY_TOKEN` — chạy
-   `python3 /Users/Huy/Claude/App/HuongDienWork/cam-facebook-key-hdw.py`
+1. `FB_APP_SECRET_HDW` — **CHƯA CÓ**, đo 31/07 16:0x bằng
+   `grep -c '^FB_APP_SECRET_HDW=' ~/.config/api-keys.env`. Lấy bằng
+   `python3 /Users/Huy/Claude/App/HuongDienWork/cam-app-secret-tu-clipboard.py`
+   (script tự đổi luôn Page token sang bản vĩnh viễn).
+   ⛔ **App Secret KHÔNG có đường vòng nào** — đã đo và loại **System User** của Business
+   Manager ngày 31/07: nó cấp được token vĩnh viễn mà không cần secret, nhưng
+   `index.ts:344` dùng `FB_APP_SECRET` để xác minh chữ ký `X-Hub-Signature-256`, và
+   token không thay được secret cho phép đo đó. Đường System User còn vướng thêm một
+   hộp "chấp nhận chính sách **thay mặt** doanh nghiệp" mà Claude không được bấm hộ.
+   Bấm "Hiển thị" ở trang App Settings thì Facebook đòi **mật khẩu tài khoản** — Claude
+   cũng không nhập được. Tức bước này bắt buộc có Huy, đừng mất thì giờ tìm đường vòng.
+   - `FB_PAGE_ACCESS_TOKEN_HDW` ĐÃ CÓ nhưng là bản ngắn hạn từ Graph API Explorer
+     (bản lấy 31/07 hết hạn 17:00 cùng ngày). Hết hạn thì lấy lại ở Explorer rồi chạy
+     `cam-page-token-tu-clipboard.py` — không mất mát gì vì bot chưa mở cho khách.
+   - `FB_WEBHOOK_VERIFY_TOKEN_HDW` ✅ ĐÃ CÓ (43 ký tự, Zim tự sinh 31/07). Chuỗi này do
+     mình tự đặt, không xin ai — nhưng đổi nó thì phải khai lại ở ô Verify Token bên
+     Facebook, kẻo webhook trượt xác minh.
 2. `ANTHROPIC_API_KEY_HDW` — chạy `python3 /Users/Huy/Claude/App/HuongDienWork/cam-anthropic-key-hdw.py`
 3. Nạp secret + nghiệm thu: `python3 /Users/Huy/Claude/App/HuongDienWork/nap-secret-webhook.py`
 4. Cấu hình webhook ở `developers.facebook.com/apps/994076413665016` → Messenger → Webhooks,
