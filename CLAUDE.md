@@ -149,8 +149,8 @@ set -a; . ~/.config/api-keys.env; set +a; /opt/homebrew/bin/deno run --allow-rea
 
 **NGƯỠNG ĐÃ CHỐT 01/08/2026 TRÊN TẬP 178 CA** (sửa ở đây thì sửa cả `NGUONG` trong mã, cùng
 lượt): `phan_loai = 0,85` · `chuyen_dung = 0,92` · `BIEN_NANG` = 0,08 và 0,07 · vi phạm CẤM
-ngưỡng cứng **0** · thiếu dữ kiện mong đợi trần **3**. Dải nghiệm thu 06 lượt: phân loại
-**87,6-90,4%** · chuyển tay **94,4-98,1%** · 0 vi phạm CẤM ở cả 06 lượt.
+ngưỡng cứng **0** · thiếu dữ kiện mong đợi trần **3**. Dải nghiệm thu 07 lượt: phân loại
+**87,6-90,4%** · chuyển tay **93,5-98,1%** · **0 vi phạm CẤM ở cả 07 lượt**.
 
 ⛔ **NGƯỠNG LUÔN ĐI KÈM TẬP NÓ ĐƯỢC CHỐT TRÊN — hai con số cộng trên hai tập khác nhau không
 so được với nhau.** Tập cũ 106 ca cho `phan_loai = 0,90` (đo 93,4-94,3%); tập 178 ca cho
@@ -165,8 +165,9 @@ không tất định. Chốt sát lượt đẹp là dựng cổng đỏ oan nga
 
 ⚠ **05 LƯỢT CHƯA ĐỦ ĐỂ KHAI BIÊN ĐỘ — đã vấp thật ngay trong lượt chốt.** `BIEN_NANG.chuyen_dung`
 đặt 0,06 dựa trên 05 lượt (đều rơi 94,4-96,3%), rồi lượt thứ 06 ra **98,1%** vượt mốc 98% ⇒
-cổng kêu nâng ngưỡng oan. Mỗi lượt thêm vào vẫn còn nới được dải, nên biên phải chừa lề cho
-đuôi chưa quan sát được. Nay đặt 0,07 (mốc 99%).
+cổng kêu nâng ngưỡng oan; lượt thứ 07 lại ra **93,5%**, thấp hơn cả 05 lượt đầu. Tức dải thật
+là 93,5-98,1% (4,6 điểm), gấp **2,4 lần** dải mà 05 lượt đầu cho thấy. Mỗi lượt thêm vào vẫn
+còn nới được cả hai đuôi, nên biên phải chừa lề cho phần chưa quan sát. Nay đặt 0,07 (mốc 99%).
 
 ⚠ **Tỉ lệ chạm trần 100% thì chiều kêu-nâng bắt buộc phải chật — chọn ưu tiên, đừng giả vờ
 có cả hai.** Với `chuyen_dung`, lề dưới 2,4 điểm còn lề trên chỉ 0,9 điểm: ưu tiên lề DƯỚI vì
