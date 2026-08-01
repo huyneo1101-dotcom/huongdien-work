@@ -429,11 +429,35 @@ trước — nhưng cũng đừng nới đáp án chỉ để con số đẹp l�
    **nguyên văn** system prompt thật — cache khớp theo tiền tố, lệch một ký tự là hỏng mà
    không báo lỗi gì, chỉ hoá đơn biết.
 
-   ⚠ Còn một chỗ nghi ăn tiền, CHƯA đo được: `PROMPT_PHAN_LOAI` ~1.500 token nằm **dưới ngưỡng
-   cache tối thiểu của Haiku (2.048 token)**, nên 178 lời gọi phân loại có thể đang trả giá
-   vào đầy đủ ở mọi lượt dù đã khai `cache_control`. Nếu đúng thì **nới prompt qua 2.048 token
-   lại RẺ HƠN giữ nó ngắn** — nghe ngược đời nên càng phải đo bằng bảng token, đừng sửa theo
-   suy luận.
+   ⛔ **ĐÍNH CHÍNH 01/08/2026 — NGƯỠNG CACHE TỐI THIỂU CỦA HAIKU 4.5 LÀ 4.096 TOKEN, KHÔNG
+   PHẢI 2.048.** Bản ghi trước lấy nhầm con số của **Haiku 3.5**; tra tài liệu chính thức thì
+   ngưỡng **không đơn điệu theo đời máy** — Opus 5 / Fable 5 là 512 · Opus 4.8 và Sonnet 5 là
+   1.024 · Opus 4.7 và **Haiku 3.5** là 2.048 · Opus 4.6, Opus 4.5 và **Haiku 4.5** là 4.096.
+   Suy "đời mới hơn thì ngưỡng thấp hơn" là suy sai, và ở đây nó suýt dẫn tới việc nới prompt
+   lên 2.048 token — tốn thêm token vào ở **mọi** lời gọi mà **vẫn không cache được gì**, tức
+   vá một khoản phí bằng cách tăng chính khoản phí đó, im lặng.
+
+   Số đo cùng ngày (`deno eval` trên chính hai prompt): `PROMPT_PHAN_LOAI` **2.991 ký tự ≈
+   875-1.250 token** — dưới 4.096 rất xa, nên `cache_control` trên nó **chắc chắn không có tác
+   dụng** (API không báo lỗi, chỉ trả `cache_creation_input_tokens: 0`). System prompt trả lời
+   **18.906 ký tự ≈ 6.800-7.900 token** — trên ngưỡng, nên cache tầng 02 CÓ hiệu lực.
+
+   **Kết luận: KHÔNG nới `PROMPT_PHAN_LOAI`.** Nới cho đủ 4.096 nghĩa là nhồi thêm ~2.850 token,
+   gấp hơn 03 lần bản hiện tại, mà nội dung nhồi vào chính là thứ quyết định nhãn ⇒ prompt đổi
+   ⇒ **ngưỡng phải chốt lại từ đầu**, đúng vòng luẩn quẩn đang mắc. Khoản tiết kiệm về lý thuyết
+   chỉ khoảng 0,14 USD một lượt.
+
+   **Chỗ đáng ngờ hơn, nay ĐÃ CÓ PHÉP ĐO:** cache mặc định sống **05 phút**. Lượt nào chạy lâu
+   hơn thế thì cache system prompt trả lời hết hạn giữa chừng, 06 luồng cùng miss và cùng ghi
+   lại — bước mồi cache chỉ chặn được lần đầu, không chặn được các lần tái diễn. Bảng token in
+   TỔNG ghi cache nên một tổng lớn trông y hệt "prompt dài", không tự khai là "đã ghi lại N
+   lần". Nay script lấy `ghi + đọc` của **chính lời gọi mồi** làm cỡ system prompt (con số THẬT
+   do API khai, không ước từ ký tự), rồi cuối lượt in thời lượng và `tổng ghi ÷ cỡ = N lần`;
+   N > 1,5 thì kêu kèm cách vá (`ttl:"1h"`). Không chốt được cỡ ⇒ KÊU, không lặng lẽ bỏ phép đo.
+
+   ⚠ **Giá Sonnet 5 trong bảng `GIA` đang là 3/15 USD, nhưng có giá giới thiệu 2/10 USD tới
+   31/08/2026** — tức phần Sonnet đang bị tính cao hơn thực tế khoảng 1,5 lần. Hoá đơn mới là
+   nguồn sự thật; đừng đọc con số bảng in ra thành số tiền đã trả.
 
 ## Skills dùng chung
 Repo có `.claude/skills/` (11 skill từ plugin vibe-pwa-kit): bigfile-nav, data-backup, deploy-static, doc-single-file-app, local-store, lock-static-app, pwa-healthcheck, scaffold-vibe-pwa, supabase-sync, theme-pack, web-push.
