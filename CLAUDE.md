@@ -556,8 +556,45 @@ vàng (~2 USD)** rồi đọc `--luu` xem van kích bao nhiêu lần.
 Ngược lại, `PROMPT_PHAN_LOAI` **không đụng tới** khi đổi giọng — ngưỡng phân loại giữ nguyên,
 không phải chốt lại.
 
-**Trạng thái 01/08/2026:** đã trình Huy mẫu GenZ nhẹ và GenZ đậm, **Huy chốt CHƯA ĐỔI**, giữ
-giọng hiện tại. Đừng tự đổi; muốn đổi thì hỏi lại.
+### ✅ Giọng bot chốt lại theo SỐ ĐO người thật — đổi 01/08/2026
+
+Huy hỏi "giọng nào hợp mẹ bỉm 25-35". Thay vì đoán, đo kho chat thật
+`App/HuongDien/du-lieu-chat-fb/chat-fb-200-khach-gan-nhat.jsonl`: gộp các tin nhân viên liên
+tiếp thành MỘT lượt (không gộp thì "vâng"/"dạ" đếm thành lượt riêng và độ dài bị kéo xuống
+giả), bỏ lượt dưới 40 ký tự ⇒ **32.742 lượt thực chất**.
+
+| Nét | Người thật | Bot bản cũ |
+|---|---|---|
+| gọi khách | **"chị" 36,3%** · "mẹ" **1,2%** | "mẹ" ở mọi câu ⇒ **NGƯỢC HẲN, chênh 31 lần** |
+| độ dài | trung vị **103 ký tự · 02 câu** | cho phép 3–4 câu |
+| lễ phép | "ạ" **79,0%** · mở "Dạ" **16,8%** | — |
+| tiểu từ | "nhé" **30,0%** · "nha" **3,8%** | không quy định |
+| emoji | **84,1% lượt KHÔNG có** emoji nào | "0–1 mỗi tin" (đã đúng) |
+
+**Kết luận đo được: giọng hợp KHÔNG phải GenZ mà là nhân viên bán hàng lễ phép, trả lời cực
+ngắn, xưng em–chị.** Mẫu GenZ trình trước đó dùng "nha" — lệch ngay với số đo. Huy chốt qua
+bảng chọn: **đổi sang "chị" + siết còn 02 câu**. Đã deploy, function **version 8**, verify sai
+token trả 403.
+
+⚠ **PHÂN ĐỊNH BẮT BUỘC KHI ĐỔI XƯNG HÔ — 10 chỗ đổi, 05 chỗ CỐ Ý GIỮ:**
+- **Đổi**: mọi chỗ xưng hô với khách ở bước TRẢ LỜI — `GIONG_VAN`, `CAM`,
+  `TU_VAN_THEO_GIAI_DOAN`, nhánh ngoài giờ, `dungSystemPromptDayDu`, và **`cauGiuCho()`**
+  (câu bot gửi khi chuyển nhân viên — bỏ sót chỗ này là khách thấy hai xưng hô trong một
+  cuộc).
+- **GIỮ**: `"cửa hàng mẹ và bé"` (tên loại hình, 02 chỗ) và **03 chỗ trong `PROMPT_PHAN_LOAI`**
+  (`"mẹ đang cho con bú"`, `"mẹ hỏi cho uống gì"` — mô tả ĐỐI TƯỢNG, không phải xưng hô).
+  Đụng vào `PROMPT_PHAN_LOAI` là **phải chốt lại ngưỡng từ đầu**, mà ngưỡng đang chưa chốt.
+
+**Van KHÔNG neo xưng hô nên không phải vá** — đã kiểm: `xac-minh.ts` chỉ có chữ "mẹ" trong
+chú thích, bộ ca vàng có **0** mẫu `cam`/`can` neo xưng hô. Luật cũ *"CẤM neo van vào xưng
+hô"* (dựng 01/08 sau khi model xưng "chị" làm van trượt) chính là thứ cứu đợt đổi này, và
+`test-webhook.ts` có sẵn bản hỏng canh đúng chiều đó. Nghiệm thu: **57/57 ca · 29/29 bản
+hỏng**.
+
+⛔ **CÒN NỢ: chạy 01 lượt bộ ca vàng (~2 USD) sau khi có credit.** Bộ test xác định không đo
+được chiều này — van hứa-hẹn khớp theo CỤM TỪ, mà giọng mới có thể sinh ra lối hứa chưa nằm
+trong bảng. Đọc `--luu` xem van `hua` kích bao nhiêu lần so với mốc cũ (**8 rồi 6 lần** trên
+02 lượt của giọng cũ); tụt hẳn về 0 là dấu hiệu van trượt, không phải bot ngoan hơn.
 
 ## Skills dùng chung
 Repo có `.claude/skills/` (11 skill từ plugin vibe-pwa-kit): bigfile-nav, data-backup, deploy-static, doc-single-file-app, local-store, lock-static-app, pwa-healthcheck, scaffold-vibe-pwa, supabase-sync, theme-pack, web-push.
