@@ -13,3 +13,4 @@ quy-trinh-chatbot-messenger.md
 # Edge Function chatbot Messenger: nội dung FAQ + logic vận hành của shop.
 # Repo PUBLIC nên giữ ở đĩa local, deploy thẳng bằng supabase CLI.
 supabase/
+__pycache__/
