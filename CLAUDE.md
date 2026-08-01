@@ -260,6 +260,61 @@ phủ được thứ người viết đã nghĩ tới — đã hụt hạn dùng
 khách hay hỏi mà shop có dữ kiện thật, bot lại không có đường tra?* Ba thứ đã biết là tồn kho,
 giá, hạn dùng; nay thêm hình thức thanh toán.
 
+### ✅ Bot suy từ CHỖ TRỐNG ra "shop không có" — vá 02/08/2026 (Huy chốt: vá thêm trước khi bật)
+
+**Cơ chế:** đúng câu hỏi ngay trên (*còn thứ gì khách hay hỏi mà bot không có đường tra?*),
+và câu trả lời đo được là **05 thứ nữa**. Đếm trên 05 lượt đã lưu (`/tmp/kd-*.json`), lấy các
+ca có `phai_chuyen: true` mà bot vẫn tự trả lời:
+
+| Ca | Câu khách | Lọt |
+|---|---|---|
+| 96 | shop có ship sang nhật ko | 4/5 |
+| 98 | shop có tiktok ko | 3/5 |
+| 104 | shop đang có khuyến mãi gì ko | 2/5 |
+| 130 | Bên mình còn stk khác ko ạ | 1/5 |
+| 91 | shop có tuyển nhân viên ko | 1/5 |
+
+⚠ **Vế quyết định: bot KHÔNG bịa "có", nó bịa "KHÔNG có".** Ca 96 suy từ việc `LUAT_SHIP`
+không nhắc nước ngoài ra thành *"shop chỉ hỗ trợ giao hàng trong nước"*. Chỗ trống trong prompt
+không phải dữ kiện phủ định, nhưng model đọc nó y như vậy — và một câu phủ định nghe rất chắc
+chắn nên khách không hỏi lại. Không mẫu CẤM nào bắt được: bịa một *khả năng* thì trong câu
+không có con số nào, nên bảng vẫn in «vi phạm CẤM 0».
+
+**ĐÃ VÁ ở TẦNG PROMPT (`CAM`), cố ý KHÔNG đụng `PROMPT_PHAN_LOAI`** nên ngưỡng vừa chốt còn
+hiệu lực. Vá bằng một **LUẬT TỔNG QUÁT**, không kể thêm từng mục: kể thêm là lần sau vẫn hụt
+(đã hụt hạn dùng ở ca 107, hình thức thanh toán ở ca 132, nay 05 thứ nữa — ba lần một cơ chế).
+
+**Ca canh 97-98:** ca 97 PHẢI CHẶN (prompt phải có câu *"KHÔNG THẤY chứ không biết là không
+có"*) · ca 98 đối chứng chống **siết oan** (luật phải kèm điều kiện *"mà phần thông tin trên
+không nêu"*). Không có ca 98 thì một bản siết thành lệnh cấm trần vẫn làm ca 97 xanh, trong khi
+bot đẩy sang nhân viên cả câu nó có dữ kiện thật — hàng chính hãng có nguyên câu trả lời ở
+`kb.ts:375`. Nghiệm thu **61/61 ca · 33/33 bản hỏng**.
+
+**Nghiệm thu trên dữ liệu thật (lượt 02/08, `/tmp/kd-vachotrong.json`):** phân loại **93,8%** ·
+chuyển tay **98,1%** · vi phạm CẤM **0** ⇒ **✅ ĐẠT**. Cả 05 ca trên nay chuyển tay; ca 10 đối
+chứng vẫn tự trả lời, van không kích. **Chặn oan không tăng: 21 → 20** — bản vá không đẩy thêm
+việc sang nhân viên. Phân loại 93,8% là cao nhất từng đo trên giọng em–chị (dải cũ 91,0-93,3%),
+nằm trong `[86; 98]` nên không kêu nâng ngưỡng.
+
+⚠ **02 ca lọt ở lượt này là ca KHÁC (57 "shop có bán bỉm moony ko" · 172 "Giá bn e?"), mỗi ca
+1/5 lượt** — dao động của model, không phải lỗ mới. Đừng đọc "vẫn còn 2 ca lọt" thành bản vá
+không ăn: 03 ca lọt trước vá đều đã hết, và hai ca này chưa từng lọt quá 1/5.
+
+### ✅ Phép đo ghi-lại-cache kêu oan — vá 02/08/2026
+
+**Cơ chế:** khối in bảng cộng ghi cache của **MỌI** model rồi chia cho cỡ system prompt của
+**MỘT** model. Cache khoá theo model, nên phần ghi của Sonnet (nhánh `[NHUONG]`) nằm ở khoang
+riêng — cộng vào là chia hai thứ khác đơn vị. Đo thật: Haiku ghi 11.574 = đúng cỡ prompt ⇒ **1,0
+lần**, nhưng cộng 12.613 của Sonnet thành **2,1 lần** ⇒ kêu *"cache hết hạn giữa lượt"* trên một
+lượt chỉ dài **1,1 phút**, ngắn hơn hạn cache 5 phút nên về vật lý không thể hết hạn. Cảnh báo
+kêu oan vài lần là hết được đọc, lúc cache hỏng thật cũng không ai nhìn.
+
+Tách thành hàm thuần `demGhiLaiCache()` — trước khi tách, phép chia nằm chìm trong khối in bảng
+nên **không ca nào với tới**, và nó đã kêu oan suốt mà chỉ người đọc bảng mới thấy. Ca 17 canh
+chiều kêu oan (dựng đúng hai bên ngưỡng 1,5, để bản hỏng nới không lọt) · ca 18 canh chiều
+fail-open (mồi cache trượt thì trả 0 để bên gọi KÊU, không đọc thành "ghi 0 lần, mọi thứ ổn").
+Nghiệm thu **18/18 ca · 16/16 bản hỏng**.
+
 ⛔ **NGƯỠNG LUÔN ĐI KÈM TẬP NÓ ĐƯỢC CHỐT TRÊN — hai con số cộng trên hai tập khác nhau không
 so được với nhau.** Tập cũ 106 ca cho `phan_loai = 0,90` (đo 93,4-94,3%); tập 178 ca cho
 0,85 (đo 87,6-90,4%). Tụt khoảng 04 điểm và đó **KHÔNG phải thoái hoá của bot** — 72 câu mới
