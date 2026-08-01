@@ -196,7 +196,7 @@ trượt, đây là phép đo mà bộ test xác định không với tới đư
 trước, đúng thiết kế (tầng phân loại bắt gần hết) nhưng sức bắt của nó vẫn chưa được dữ liệu
 thật chứng minh.
 
-### ⛔ CÒN NỢ — ca 132 bịa hình thức thanh toán, tái diễn 04/04 lượt
+### ✅ Ca 132 bịa hình thức thanh toán — vá 01/08/2026 (Huy chốt: vá, CHƯA bật bot)
 
 **Cơ chế:** `CAM` liệt kê *bịa giá · tồn kho · khuyến mãi · phí ship · địa chỉ · giờ mở cửa* —
 **không có hình thức thanh toán**. Đúng cùng một lỗ với ca 107 đã vá (prompt liệt kê giá và
@@ -220,14 +220,45 @@ bịa:** ba câu cùng họ đều được xếp `nhay_cam` và chuyển tay đ
 mặt đc ko"*), ca 131 (*"đã cho thanh toán bằng thẻ chưa"*), ca 141 (*"qua cửa hàng nào cũng đc
 hả"*) — riêng ca 132 hỏi cùng loại việc lại rơi `faq_tinh`.
 
-**Chưa vá, và đây là việc phải quyết chứ không phải việc nhỏ:** vá ở `PROMPT_PHAN_LOAI` là
-**ngưỡng vừa chốt hết hiệu lực**, phải đo lại 03 lượt (~1,3 USD). Vá ở tầng đầu ra (thêm hình
-thức thanh toán vào `CAM`, thêm `sẽ gửi` vào bảng `hoan` của `huaCoNguoiTraLoi`) thì `phan_loai`
-giữ nguyên nhưng `chuyen_dung` nhích lên, nên vẫn nên đo lại 01 lượt (~0,42 USD).
+**ĐÃ VÁ — chỉ ở TẦNG PROMPT (`CAM`), cố ý KHÔNG đụng van và KHÔNG đụng `PROMPT_PHAN_LOAI`:**
+thêm một mục cấm tự nhận shop có/không có một hình thức thanh toán nào (quét mã QR, máy quẹt
+thẻ, ví điện tử, trả góp), nêu rõ phần dữ kiện chỉ có COD nội thành và chuyển khoản đơn tỉnh,
+và cấm hứa tự gửi mã QR hay số tài khoản. Giữ `PROMPT_PHAN_LOAI` nguyên vẹn nên **ngưỡng vừa
+chốt còn hiệu lực**, không phải đo lại 03 lượt.
+
+⛔ **CẤM thêm cụm `sẽ gửi` vào bảng `hoan` của `huaCoNguoiTraLoi` — ĐÃ ĐO VÀ LOẠI.** Đây là bản
+vá mà một phiên sau rất dễ viết, vì van đúng là đã hụt câu *"em sẽ gửi mã QR ngay"*. Đo thật
+trên 04 lượt đã lưu: cụm `sẽ gửi` khớp **05 chỗ, trong đó 04 là CHẶN OAN** — ca 10 (*"hàng shop
+có chính hãng ko"*, nhãn `faq_tinh`, **không** đòi chuyển) trả lời *"em sẽ gửi mã vạch và tem
+phụ sản phẩm để chị kiểm tra trước khi giao"* ở cả 04 lượt. Tỉ lệ chặn oan **80%**, đúng dấu
+hiệu của mẫu phải loại: **chỉ khác câu đúng ở NGỮ CẢNH, không khác ở hình dạng chuỗi** — cùng
+họ 09/11 mẫu bị loại khi dựng 72 ca mới.
+
+**Ca canh, dải bắt đầu từ 95 để chừa chỗ trống (mục 9b — số ca là ID):**
+- **ca 95 PHẢI CHẶN** — prompt phải chứa mục cấm hình thức thanh toán. Bản hỏng «bỏ mục hình
+  thức thanh toán khỏi CAM» mở lại lỗ y nguyên và bị bắt.
+- **ca 96 đối chứng chống chặn oan** — câu ca 10 KHÔNG được kích van. Bản hỏng «thêm cụm
+  `sẽ gửi` vào bảng hoãn» bị bắt, tức chiều nới tay có người canh.
+
+Nghiệm thu: **59/59 ca · 31/31 bản hỏng**. Đã phát hành (webhook vẫn tắt nên không có tin
+khách nào vào), lời gọi verify sai token trả **403**.
+
+**Nghiệm thu trên DỮ LIỆU THẬT sau khi vá (01/08/2026), có cặp đối chứng:**
+- **ca 132** ⇒ `chuyen = true`, van `hua` kích, bot không còn tự nhận có QR. Đáp án đòi
+  `phai_chuyen: true` nên ca đã đạt. (Nhãn vẫn là `faq_tinh` — cố ý không vá, vì sửa nhãn là
+  sửa `PROMPT_PHAN_LOAI` và ngưỡng phải chốt lại từ đầu. Kết cục đúng là đủ.)
+- **ca 10** ⇒ `chuyen = false`, van KHÔNG kích ⇒ **chặn oan = 0**, đúng chiều mà ca 96 canh.
+- Cả lượt: phân loại **92,7%** · chuyển tay **97,2%** · vi phạm CẤM **0** ⇒ **✅ ĐẠT**.
 
 ⚠ **Gần chắc là lỗ CŨ, không phải hồi quy của đợt đổi giọng** — cơ chế (danh sách `CAM` thiếu
 một mục) không liên quan gì tới xưng hô. Không khẳng định chắc được vì 02 lượt trước đợt đổi
 giọng chạy khi chưa có cờ `--luu` nên không còn dữ liệu để đối chiếu.
+
+⚠ **Bài học đúc ra, áp cho mọi danh sách cấm-đoán:** `CAM` là danh sách **kể ra**, nên nó chỉ
+phủ được thứ người viết đã nghĩ tới — đã hụt hạn dùng (ca 107), rồi hụt hình thức thanh toán
+(ca 132), cùng một cơ chế hai lần. Lần sau thêm một mục vào `CAM` thì hỏi luôn: *còn thứ gì
+khách hay hỏi mà shop có dữ kiện thật, bot lại không có đường tra?* Ba thứ đã biết là tồn kho,
+giá, hạn dùng; nay thêm hình thức thanh toán.
 
 ⛔ **NGƯỠNG LUÔN ĐI KÈM TẬP NÓ ĐƯỢC CHỐT TRÊN — hai con số cộng trên hai tập khác nhau không
 so được với nhau.** Tập cũ 106 ca cho `phan_loai = 0,90` (đo 93,4-94,3%); tập 178 ca cho
@@ -471,9 +502,12 @@ trước — nhưng cũng đừng nới đáp án chỉ để con số đẹp l�
    Vẫn giữ nguyên: subscribe Page phải **đủ 3 trường** `messages` · `messaging_postbacks` ·
    `message_echoes` — thiếu `message_echoes` là van an toàn không bao giờ reset, nhân viên
    trả lời tay mà bộ đếm không biết.
-5. `CAU_HINH.chinhSachDoiTra` đang là `CHUA_CO` — knowledge base chỉ nói kiểm hàng cùng bưu
-   tá. Điền câu chuẩn rồi deploy lại thì bot tự trả lời được; để nguyên thì mọi câu đổi trả
-   bị đẩy sang nhân viên (đúng thiết kế, không phải lỗi).
+5. ✅ **HUY CHỐT 01/08/2026: ĐỂ TRỐNG `CAU_HINH.chinhSachDoiTra`** — mọi câu đổi trả đẩy sang
+   nhân viên. Đây là **quyết định**, không phải việc còn nợ: knowledge base chỉ nói kiểm hàng
+   cùng bưu tá, nên điền một câu đoán ra là bot cam kết thay shop một chính sách shop chưa
+   có. Đánh đổi đã biết: nhân viên phải trả lời tay những câu đổi trả lặp lại. Muốn bot tự
+   trả lời thì cần Huy cho **nguyên văn chính sách shop đang áp** rồi điền và phát hành lại —
+   ⛔ tuyệt đối không tự soạn hộ.
 6. ~~Chạy bộ ca vàng + chốt ngưỡng~~ — XONG 01/08/2026. Bộ đã mở rộng **106 → 178 ca** bằng
    câu khách thật; ngưỡng chốt lại trên tập mới (`phan_loai` 0,85 · `chuyen_dung` 0,92),
    dải 06 lượt 87,6-90,4% · 94,4-98,1% · **0 vi phạm CẤM ở cả 06 lượt**.
