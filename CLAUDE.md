@@ -415,5 +415,25 @@ trước — nhưng cũng đừng nới đáp án chỉ để con số đẹp l�
    chặn — không có nó thì **không đo được chặn oan**, vì bảng in ra chỉ nêu ca không đạt mà
    một van chặn oan vẫn cho ca "đạt" (chuyển tay không bị chấm sai).
 
+   ⚠ **MỘT LƯỢT TỐN KHOẢNG 2 USD, KHÔNG PHẢI 0,5-1 USD.** Huy nạp 5 USD ngày 01/08 và hết
+   sạch sau ~2,5 lượt. Con số 0,5-1 USD là tao **ước từ cỡ prompt chứ không đo** — script khi
+   đó vứt đi trường `usage` mà API trả sẵn trong mỗi phản hồi. Cỡ thật: system prompt bước trả
+   lời **18.906 ký tự (~8.000 token)**, riêng `KB_NGOAI` chiếm **79%**, gửi lại 60 lần mỗi
+   lượt; `PROMPT_PHAN_LOAI` 2.991 ký tự gửi 178 lần; cộng nhánh `[NHUONG]` gọi lại **Sonnet**
+   với đúng system prompt ấy, Sonnet đắt gấp 3 lần Haiku cả vào lẫn ra.
+
+   Đã vá cùng lượt: (i) script đọc `usage` và in bảng **token vào / ghi cache / đọc cache / ra
+   tách theo model, kèm tiền lượt đó và ước 07 lượt** — model lạ thì KÊU chứ không lặng lẽ
+   tính giá 0; (ii) **mồi cache** một lời gọi trước khi bung 06 luồng, vì không mồi thì 06 lời
+   gọi đầu cùng MISS và cùng trả tiền ghi cache 1,25× cho đúng một nội dung. Mồi phải dùng
+   **nguyên văn** system prompt thật — cache khớp theo tiền tố, lệch một ký tự là hỏng mà
+   không báo lỗi gì, chỉ hoá đơn biết.
+
+   ⚠ Còn một chỗ nghi ăn tiền, CHƯA đo được: `PROMPT_PHAN_LOAI` ~1.500 token nằm **dưới ngưỡng
+   cache tối thiểu của Haiku (2.048 token)**, nên 178 lời gọi phân loại có thể đang trả giá
+   vào đầy đủ ở mọi lượt dù đã khai `cache_control`. Nếu đúng thì **nới prompt qua 2.048 token
+   lại RẺ HƠN giữ nó ngắn** — nghe ngược đời nên càng phải đo bằng bảng token, đừng sửa theo
+   suy luận.
+
 ## Skills dùng chung
 Repo có `.claude/skills/` (11 skill từ plugin vibe-pwa-kit): bigfile-nav, data-backup, deploy-static, doc-single-file-app, local-store, lock-static-app, pwa-healthcheck, scaffold-vibe-pwa, supabase-sync, theme-pack, web-push.
