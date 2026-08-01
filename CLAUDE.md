@@ -591,6 +591,28 @@ hô"* (dựng 01/08 sau khi model xưng "chị" làm van trượt) chính là th
 `test-webhook.ts` có sẵn bản hỏng canh đúng chiều đó. Nghiệm thu: **57/57 ca · 29/29 bản
 hỏng**.
 
+### Huy chốt 01/08/2026: chốt ngưỡng bằng **03 lượt, MỐC RỘNG** — không chạy đủ 07 lượt
+
+Huy hỏi thẳng *"chạy đủ 7 lần đảm bảo được điều gì"*, và câu trả lời trung thực là **không
+đảm bảo gì chắc chắn**: 07 lượt của giọng cũ cho dải 87,6-90,4% và 93,5-98,1%, trong đó
+**lượt 06 và 07 vẫn còn nới rộng cả hai đuôi** — tức 07 cũng chưa phải con số đủ, nó chỉ là
+mức rút ra sau khi 05 lượt đã hỏng chắc chắn. Đổi 14 USD lấy một mốc "ít khả năng báo động
+giả hơn" là không đáng, nhất là khi kiểu hỏng đáng lo thật (Anthropic đổi model · sửa prompt
+làm gãy nhánh) làm điểm rơi cả chục điểm chứ không trượt dần vài phần trăm.
+
+**Cách chốt mới, chạy khi có credit:**
+- Chạy **03 lượt** (~6 USD), lấy giá trị **THẤP NHẤT** rồi **trừ 5 điểm** làm `NGUONG`.
+- ⚠ **Hạ mốc thì PHẢI nới `BIEN_NANG` tương ứng, nếu không cổng kêu-nâng-ngưỡng sẽ kêu ở
+  MỌI lượt** — mốc thấp hơn 5 điểm mà biên giữ 0,07-0,08 thì mọi lượt bình thường đều nằm
+  trên `NGUONG + BIEN`, tức vá một chiều thì hỏng chiều kia, đúng lỗi cổng chập chờn. Biên
+  mới phải phủ: **5 điểm hạ mốc + dải quan sát được + lề cho phần chưa quan sát**; với 03
+  lượt thì dải quan sát HẸP GIẢ (chưa thấy đuôi) nên lề phải rộng hơn 07 lượt, không hẹp hơn.
+  Đặt `BIEN_NANG ≈ 0,12` rồi kiểm bằng chính 03 lượt vừa đo: **mọi lượt phải nằm trong
+  `[NGUONG, NGUONG + BIEN]`**, lượt nào rơi ra ngoài là biên còn hẹp.
+- **Khai rõ trong mã và ở đây là mốc ĐO TRÊN 03 LƯỢT** (ngưỡng luôn đi kèm tập và số lượt nó
+  được chốt trên). Mốc này **cố ý bỏ qua thoái hoá nhẹ** — đó là đánh đổi đã biết, không phải
+  thiếu sót; đừng có phiên sau đọc thấy mốc rộng rồi tự siết lại.
+
 ⛔ **CÒN NỢ: chạy 01 lượt bộ ca vàng (~2 USD) sau khi có credit.** Bộ test xác định không đo
 được chiều này — van hứa-hẹn khớp theo CỤM TỪ, mà giọng mới có thể sinh ra lối hứa chưa nằm
 trong bảng. Đọc `--luu` xem van `hua` kích bao nhiêu lần so với mốc cũ (**8 rồi 6 lần** trên
