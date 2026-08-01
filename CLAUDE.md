@@ -517,5 +517,47 @@ gửi lên, bằng lượng khách nhắn thật của 12 ngày.
   Và một bản hỏng gỡ thẳng phép so trong thân ca canh khuôn (ca 13) cũng không bắt được — **ca
   test không tự canh được chính mình**; phải tráo từ bên ngoài (hằng số `DUONG_TS`).
 
+### ✅ Lỗi gọi model tách khỏi vi phạm CẤM — vá 01/08/2026
+
+**Cơ chế gây vấp:** nhánh `catch` của vòng chạy thật xếp `LỖI GỌI MODEL` vào `vi_pham`, cùng
+cột với "bịa giá / markdown gửi khách". Đúng ý định fail-closed, nhưng **sai tên gọi**: lượt
+01/08 hết số dư API in ra `Vi phạm CẤM: 178 (ngưỡng cứng 0)` kèm lý do *"178 vi phạm CẤM (bịa
+giá / markdown gửi khách / lộ dữ kiện cấm)"* — tức bảng khai bot bịa giá 178 lần trong một
+lượt **bot chưa hề chạy**, và hai tỉ lệ in 0,0% trông y hệt thoái hoá toàn diện. Ba dòng ✗ mỗi
+ca cũng khai sai hành vi (*"PHẢI chuyển nhân viên mà bot tự trả lời"* cho ca không có câu trả
+lời nào). Vá lần trước là **một đoạn cảnh báo trong file này** — cảnh báo bằng tài liệu không
+phải cổng, người đọc bảng vẫn đọc con số sai; đúng lớp lỗi mục 17 CLAUDE.md gốc.
+
+- Cột riêng `Cham.loi_goi` (tuỳ chọn, chỉ nhánh `catch` đặt) + `TongHop.so_loi_goi`. **Vẫn
+  fail-closed y như cũ** — `dat = false`, mã thoát ≠ 0; chỉ đổi tên và tách cột.
+- Dòng lý do đặt **ĐẦU mảng `ly_do`**, trước mọi nhánh so ngưỡng, và bảng in cảnh báo **NGAY
+  TRÊN** hai dòng tỉ lệ: người đọc dừng ở dòng đầu tiên họ hiểu, để cuối bảng là quá muộn.
+- Ca có `loi_goi` thì phần "Ca KHÔNG đạt" **chỉ in nguyên nhân thật**, bỏ hai dòng hệ quả giả.
+- Bộ test: ca 11 viết lại thành 04 vế tách rời (vẫn KHÔNG ĐẠT · `so_loi_goi` đúng ·
+  `so_vi_pham` = 0 · lý do nói "CHƯA ĐO ĐƯỢC") — gộp thành một cờ thì bản hỏng nào cũng làm ca
+  đỏ và ca mất khả năng chỉ ra hỏng ở đâu. Thêm **02 bản hỏng canh hai chiều**: gỡ nhánh
+  `so_loi_goi > 0` (fail-open, hết tiền mà bảng im) và **nhập lại `loi_goi` vào `so_vi_pham`**
+  (khôi phục nguyên bug cũ khi ai đó "gộp cho gọn"). Nghiệm thu 01/08: **16/16 ca · 14/14 bản
+  hỏng đều bị bắt**.
+
+### ⚠ ĐỔI GIỌNG BOT: sửa chữ thì rẻ, nhưng PHẢI dạy lại van hứa-hẹn rồi chạy kiểm
+
+Giọng nằm ở `GIONG_VAN` (`faq.ts:131`, ~640 ký tự ≈ 3% system prompt bước trả lời). Sửa rồi
+deploy là xong — **không có bước training nào**, và chi phí token gần như không đổi (chỉ tốn
+một lần ghi lại bộ nhớ đệm, cỡ vài xu).
+
+⛔ **Chỗ tốn thật nằm ở van, không nằm ở prompt.** `huaCoNguoiTraLoi()` (`xac-minh.ts`) nhận
+diện lời hứa qua **cụm từ cố định** — *"sẽ báo"*, *"sẽ tư vấn"*, *"để nhân viên"*, *"sẽ vào"*.
+Giọng mới nói khác đi (*"em check rồi rep mẹ liền nha"*) là van trượt ⇒ bot hứa với khách rồi
+bỏ mặc, đúng lỗi số 1 mà bộ ca vàng bắt được. Nên mọi lần đổi giọng phải: (i) rà lại bảng cụm
+của `huaCoNguoiTraLoi` và `noiLieuDung` theo lối nói MỚI; (ii) chạy ít nhất **01 lượt bộ ca
+vàng (~2 USD)** rồi đọc `--luu` xem van kích bao nhiêu lần.
+
+Ngược lại, `PROMPT_PHAN_LOAI` **không đụng tới** khi đổi giọng — ngưỡng phân loại giữ nguyên,
+không phải chốt lại.
+
+**Trạng thái 01/08/2026:** đã trình Huy mẫu GenZ nhẹ và GenZ đậm, **Huy chốt CHƯA ĐỔI**, giữ
+giọng hiện tại. Đừng tự đổi; muốn đổi thì hỏi lại.
+
 ## Skills dùng chung
 Repo có `.claude/skills/` (11 skill từ plugin vibe-pwa-kit): bigfile-nav, data-backup, deploy-static, doc-single-file-app, local-store, lock-static-app, pwa-healthcheck, scaffold-vibe-pwa, supabase-sync, theme-pack, web-push.
