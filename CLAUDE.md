@@ -134,7 +134,7 @@ vào nhánh CHUYỂN TAY.** Fail về phía để người thật trả lời, k
 
 | Bộ | Đo gì | Chạy |
 |---|---|---|
-| `functions/messenger-webhook/test-webhook.ts` | cổng XÁC ĐỊNH: chữ ký `X-Hub-Signature-256`, giờ làm việc, van an toàn, van hứa-hẹn, bộ lọc markdown, nhánh quyết định | `deno run --allow-read --allow-write --allow-run <file> --tu-kiem` — 54 ca · 28 bản hỏng |
+| `functions/messenger-webhook/test-webhook.ts` | cổng XÁC ĐỊNH: chữ ký `X-Hub-Signature-256`, giờ làm việc, van an toàn, van hứa-hẹn, bộ lọc markdown, nhánh quyết định, **hạn cache system prompt** | `deno run --allow-read --allow-write --allow-run <file> --tu-kiem` — 57 ca · 29 bản hỏng |
 | `kiem-dinh/test-kiem-dinh-bot.ts` | phần CHẤM của bộ ca vàng 178 câu | `deno run --allow-read --allow-write --allow-run --allow-env --allow-net <file>` — 16 ca · 12 bản hỏng |
 
 Cả hai đã nạp `BO_TEST` của `khoe.py`.
@@ -458,6 +458,64 @@ trước — nhưng cũng đừng nới đáp án chỉ để con số đẹp l�
    ⚠ **Giá Sonnet 5 trong bảng `GIA` đang là 3/15 USD, nhưng có giá giới thiệu 2/10 USD tới
    31/08/2026** — tức phần Sonnet đang bị tính cao hơn thực tế khoảng 1,5 lần. Hoá đơn mới là
    nguồn sự thật; đừng đọc con số bảng in ra thành số tiền đã trả.
+
+### ✅ Hạn cache 1 giờ cho bước trả lời — vá 01/08/2026
+
+**Cơ chế gây tốn:** cache system prompt mặc định sống **05 phút**. Bài thi 178 câu dồn trong
+một phút thì hạn đó thừa sức, nên nhìn từ bộ kiểm định không thấy vấn đề gì. Nhưng khách thật
+nhắn **rải rác**: đo trên kho chat `App/HuongDien/du-lieu-chat-fb/chat-fb-200-khach-gan-nhat.jsonl`,
+tháng 7/2026 có 8.165 tin khách, trung bình 263 tin/ngày (ngày cao nhất 709), bot tự trả khoảng
+1/3 — tức khoảng cách giữa hai lượt bot trả lời trong giờ mở cửa vào khoảng 10 phút. Dài hơn
+hạn 05 phút, nên **gần như mọi lượt đều phải viết lại cache** cho cùng một system prompt 18.906
+ký tự (~7.900 token), thay vì đọc lại bản đã có. Không lỗi, không cảnh báo — chỉ hoá đơn biết.
+
+Ước theo bảng giá Haiku 4.5: **khoảng 40 USD/tháng ở hạn 5 phút, còn 21,6 USD/tháng ở hạn 1
+giờ** (tỷ giá 26.168 đ/USD ngày 01/08/2026). Tiền này ra từ **ví API riêng**
+`ANTHROPIC_API_KEY_HDW`, không phải gói Claude.
+
+- **Khai bằng `ttl: "1h"` trong `cache_control`. KHÔNG cần beta header** — `ttl` đã là tính
+  năng chính thức, đừng đi tìm cờ beta rồi tưởng chưa dùng được.
+- **Giá ghi cache hạn 1 giờ là 2× giá vào**, so với 1,25× của hạn 5 phút. Nên nó CHỈ lời khi
+  lượt kế tiếp cách lượt trước **quá 5 phút mà chưa quá 1 giờ** — đúng nhịp khách nhắn, SAI
+  nếu đem áp cho bài thi dồn dập.
+- ⛔ **CHỈ áp cho bước TRẢ LỜI, không áp cho bước phân loại.** `PROMPT_PHAN_LOAI` chỉ ~875-1.250
+  token, dưới ngưỡng cache tối thiểu 4.096 của Haiku 4.5 — cache ở đó không có tác dụng dù
+  khai gì (API không báo lỗi, chỉ trả `cache_creation_input_tokens: 0`), nên trả giá ghi 2×
+  cho nó là lỗ thuần. Ca 92 của `test-webhook.ts` canh đúng chiều nới tay này.
+- **Sonnet là cache RIÊNG** — cache khoá theo model, nên nhánh `[NHUONG]` phải khai hạn riêng.
+  Bỏ sót một nhánh thì nhánh đó vẫn đốt tiền y như cũ. Ca 91 đếm đúng 02 lời gọi.
+- ⚠ **KHÔNG nới `PROMPT_PHAN_LOAI` cho đủ 4.096 token để cache được.** Đo lại trên khách thật:
+  nới chỉ rẻ khi chạy bài thi 178 câu dồn trong 01 phút; với khách nhắn rải rác thì nó ĐẮT
+  HƠN, vì cứ 5 phút cache hết hạn là phải ghi lại một prompt dài hơn. Cộng thêm: nội dung nhồi
+  vào chính là thứ quyết định nhãn ⇒ prompt đổi ⇒ **ngưỡng phải chốt lại từ đầu**.
+
+### ✅ Sổ token chung trên đĩa — vá 01/08/2026
+
+**Cơ chế gây vấp:** bảng token in ra cuối mỗi lượt kiểm định chỉ nói về **lượt đang chạy**, và
+biến mất cùng cửa sổ terminal. Nguyên nhân gốc của vụ cháy 5 USD ngày 01/08 không phải một lượt
+quá đắt, mà là **ba phiên Claude chạy song song cùng đốt một khoá mà không phiên nào biết phiên
+kia đã chạy bao nhiêu lượt** — đo lại từ transcript: 17,6 lượt trong 02 ngày, khoảng 3.100 câu
+gửi lên, bằng lượng khách nhắn thật của 12 ngày.
+
+- Cuối mỗi lượt chạy thật, `kiem-dinh-bot.ts` ghi NỐI một dòng mỗi model vào
+  `~/Claude/HeThong/so-token-api.jsonl` (quyền 600 — mỗi dòng mang số tiền thật, mục 18 lớp 6).
+- Cộng dồn: `python3 /Users/Huy/Claude/HeThong/so-token-api.py` (cờ `--ngay N`, `--json`).
+  Ngưỡng cảnh báo **5,0 USD/ngày** — đúng bằng lần nạp thẻ đã cháy hôm 01/08. Đổi ngưỡng thì
+  sửa cả hằng số `NGUONG_USD_NGAY` lẫn con số ở đây trong CÙNG một lượt.
+- **Bên ghi là `HeThong/so_token_api.ts`, GỌI hàm chung — cấm chép.** Hai nơi cùng ghi một sổ
+  mà mỗi nơi một khuôn dòng thì phép cộng lặng lẽ sai, và đây là hai ngôn ngữ khác nhau nên
+  không trình biên dịch nào bắt được lệch khoá. Ca 13 của bộ test đọc thẳng khai báo kiểu
+  `DongSo` trong file TS rồi đối chiếu.
+- ⚠ **Lượt chạy thật nay cần `--allow-write`.** Thiếu quyền thì lượt vẫn chạy nhưng tiền của
+  nó không vào tổng — hàm ghi kêu ra stderr, cố ý không im.
+- ⚠ **Đừng trộn với `HeThong/lich-su-token.jsonl`** — file kia đo token của phiên Claude Code,
+  tiêu từ gói thuê bao. Lẫn hai ví là lẫn cả mức độ lo.
+- Bộ test `HeThong/test-so-token-api.py`: **13 ca · 12 bản hỏng**, đã nạp `khoe.py`.
+  ⚠ Bài học khi dựng, đừng lặp: 02 ca đầu tiên dựng dữ liệu thử bằng `NGUONG_USD_NGAY ± ε` —
+  **ca neo động theo hằng số**, nên bản hỏng nới ngưỡng lên 999999 làm dữ liệu trôi theo và ca
+  VẪN XANH trong khi cảnh báo đã chết hẳn. Phải ghim CỨNG con số ở ít nhất một ca mỗi chiều.
+  Và một bản hỏng gỡ thẳng phép so trong thân ca canh khuôn (ca 13) cũng không bắt được — **ca
+  test không tự canh được chính mình**; phải tráo từ bên ngoài (hằng số `DUONG_TS`).
 
 ## Skills dùng chung
 Repo có `.claude/skills/` (11 skill từ plugin vibe-pwa-kit): bigfile-nav, data-backup, deploy-static, doc-single-file-app, local-store, lock-static-app, pwa-healthcheck, scaffold-vibe-pwa, supabase-sync, theme-pack, web-push.
