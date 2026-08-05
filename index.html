@@ -1401,7 +1401,7 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
     {id:'g_team',name:'Đội ngũ',icon:'ti-users',admin:true,badge:teamOverdue,hint:'Việc quá hạn của người khác trong đội',views:[
       {id:'assign',n:'Phân công'},{id:'progress',n:'Tiến độ'},{id:'members',n:'Thành viên'}]},
     {id:'g_num',name:'Số liệu',icon:'ti-chart-histogram',admin:true,views:[
-      {id:'sales',n:'Bán hàng'},{id:'kd',n:'Sổ KD'},{id:'stats',n:'Thống kê'}]},
+      {id:'sales',n:'Bán hàng'},{id:'reorder',n:'Nhắc mua lại'},{id:'kd',n:'Sổ KD'},{id:'stats',n:'Thống kê'}]},
     {id:'g_shop',name:'Cửa hàng',icon:'ti-building-store',badge:riskOpen,hint:'Mục rủi ro cao chưa xử lý',views:[
       {id:'ncc',n:'Nguồn hàng'},{id:'law',n:'Tuân thủ & Thuế'}]},
     {id:'g_ref',name:'Cẩm nang',icon:'ti-book',views:[{id:'train',n:'Huấn luyện'},{id:'learn',n:'Kiến thức'},{id:'book',n:'Sổ tay'}]},
@@ -1441,6 +1441,7 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
     stats:{t:'Thống kê hiệu suất',s:'Tổng kết tuần, năng suất, đúng hạn và phân bổ'},
     kd:{t:'Sổ kinh doanh',s:'Bảng điều khiển 10 số mỗi tuần — buồng lái cửa hàng'},
     sales:{t:'Bán hàng (KiotViet)',s:'Doanh thu, đơn hàng, sản phẩm bán chạy & tồn kho — đồng bộ tự động từ KiotViet'},
+    reorder:{t:'Nhắc khách mua lại',s:'Khách nào sắp hết hàng → app nhắc bạn + soạn sẵn tin để gửi. Bỉm/sữa mua đều đặn hằng tháng là mỏ vàng giữ khách'},
     ncc:{t:'Nguồn hàng chính ngạch',s:'24 thương hiệu nhóm A · theo dõi chuyển nguồn sang nhà phân phối chính thức'},
     law:{t:'Tuân thủ & Thuế',s:'Rủi ro pháp lý đang có, hồ sơ chứng từ và lịch khai thuế theo quý'},
     train:{t:'Huấn luyện theo vai trò',s:'Giáo trình riêng cho từng vị trí — học xong tick lại để theo dõi tiến độ'},
@@ -1586,6 +1587,7 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
           {view==='members' && <Members users={users} setUsers={setUsers} roles={roles} setRoles={setRoles} me={me} isOwner={isOwner} tasks={tasks}/>}
           {view==='kd' && <BizBook metrics={bizmetrics} setMetrics={setBizmetrics} config={bizconfig} setConfig={setBizconfig}/>}
           {view==='sales' && <Sales/>}
+          {view==='reorder' && <Reorder/>}
           {view==='ncc' && <Sourcing st={sourcing} setSt={setSourcing}/>}
           {view==='law' && <Compliance st={compliance} setSt={setCompliance}/>}
           {view==='train' && <Training me={me} roles={roles} isAdmin={isAdmin} done={trained} setDone={setTrained}/>}
@@ -2720,6 +2722,149 @@ function Sales(){
           </div>
         </div>
       </>}
+    </div>
+  );
+}
+
+// ===== Nhắc khách mua lại (rebuy) =====
+// Nguồn dữ liệu: (1) bảng kv_customer_reorder từ KiotViet nếu backend đã dựng — chỉ đọc;
+// (2) danh sách nhập tay hdw.reorder — sửa được, đồng bộ nhiều máy như mọi khoá hdw.*.
+// App CHỈ nhắc chủ shop + soạn sẵn tin để copy, KHÔNG tự gửi cho khách (app tĩnh, không server nền).
+const addTo=(dateStr,n)=>{ const d=new Date(dateStr+'T00:00:00'); d.setDate(d.getDate()+n); return dstr(d); };
+function Reorder(){
+  const LEAD=3;    // báo trước 3 ngày so với ngày dự kiến hết hàng
+  const SNOOZE=7;  // đã bấm "đã nhắc" thì ẩn khỏi danh sách 7 ngày
+  const [manual,setManual]=useState(()=>store.get('hdw.reorder',[]));
+  const [pings,setPings]=useState(()=>store.get('hdw.reorderPing',{}));
+  const [kv,setKv]=useState([]);
+  const [kvState,setKvState]=useState('load'); // load | ok | empty | err
+  const [form,setForm]=useState(null);
+  const [draft,setDraft]=useState({});
+  const [copied,setCopied]=useState('');
+
+  useEffect(()=>store.set('hdw.reorder',manual),[manual]);
+  useEffect(()=>store.set('hdw.reorderPing',pings),[pings]);
+
+  // Đọc bảng KiotViet nếu backend đã dựng; chưa có/không có khoá thì lặng lẽ dùng danh sách tay.
+  useEffect(()=>{
+    let off=false;
+    supaGet('kv_customer_reorder?select=customer_name,phone,product_name,last_purchase_date,cycle_days&order=last_purchase_date.asc&limit=500')
+      .then(rows=>{ if(off)return;
+        const mapped=(rows||[]).map((r,i)=>({id:'kv'+i,src:'kiot',
+          name:r.customer_name||'Khách lẻ',phone:r.phone||'',product:r.product_name||'',
+          last:(r.last_purchase_date||'').slice(0,10),cycle:+r.cycle_days||30})).filter(x=>x.last);
+        setKv(mapped); setKvState(mapped.length?'ok':'empty');
+      })
+      .catch(()=>{ if(!off) setKvState('err'); });
+    return ()=>{off=true;};
+  },[]);
+
+  const items=[...manual.map(m=>({...m,src:'tay'})),...kv];
+  const keyOf=(it)=> it.src==='kiot' ? `k:${it.name}|${it.product}` : `m:${it.id}`;
+  const nextDueOf=(it)=> it.last ? addTo(it.last,it.cycle||30) : '';
+  const daysSincePing=(k)=>{ const p=pings[k]; if(!p)return 1e9; const info=dueInfo(p); return info?-info.diff:1e9; };
+
+  const enriched=items.map(it=>{ const k=keyOf(it); const nd=nextDueOf(it); const info=nd?dueInfo(nd):null;
+    return {it,k,nd,info,diff:info?info.diff:1e9,pingRecent:daysSincePing(k)<SNOOZE}; });
+  const due=enriched.filter(e=>e.info && e.diff<=LEAD && !e.pingRecent).sort((a,b)=>a.diff-b.diff);
+  const rest=enriched.filter(e=>!(e.info && e.diff<=LEAD && !e.pingRecent))
+    .sort((a,b)=>(a.nd||'￿').localeCompare(b.nd||'￿'));
+
+  const msgOf=(it)=>`Chị ${it.name&&it.name!=='Khách lẻ'?it.name+' ':''}ơi, Hương Diện nhắn nhẹ ạ 😊 Bé nhà mình chắc sắp dùng hết ${it.product||'hàng bên em'} rồi. Shop để phần và ưu tiên giao sớm cho mình nhé — chị cần đặt lại thì nhắn em nha 💛`;
+  const copy=(k,text)=>{ const t=draft[k]!==undefined?draft[k]:text;
+    const done=()=>{ setCopied(k); setTimeout(()=>setCopied(c=>c===k?'':c),1600); };
+    if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(done).catch(()=>fallbackCopy(t,done)); }
+    else fallbackCopy(t,done);
+  };
+  const fallbackCopy=(t,cb)=>{ try{ const ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); cb(); }catch(e){} };
+  const markPinged=(k)=>setPings(p=>({...p,[k]:today()}));
+  const markBought=(it)=>{ const k=keyOf(it); setManual(prev=>prev.map(m=>m.id===it.id?{...m,last:today()}:m)); setPings(p=>{const n={...p};delete n[k];return n;}); };
+  const removeItem=(id)=>setManual(prev=>prev.filter(m=>m.id!==id));
+  const saveForm=()=>{ const f=form; if(!f||!f.name||!f.last) return;
+    const rec={id:f.id||uid(),name:f.name.trim(),phone:(f.phone||'').trim(),product:(f.product||'').trim(),last:f.last,cycle:Math.max(1,+f.cycle||30)};
+    setManual(prev=> f.id? prev.map(m=>m.id===f.id?rec:m) : [...prev,rec]); setForm(null);
+  };
+
+  const Row=({e})=>{ const {it,k,nd,info}=e; const msg=draft[k]!==undefined?draft[k]:msgOf(it);
+    const overdue=info&&info.diff<0;
+    return (
+      <div style={{border:'1px solid var(--border)',borderRadius:12,padding:'12px 14px',marginBottom:10,background:'var(--card)'}}>
+        <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:8}}>
+          <b style={{fontSize:14}}>{it.name}</b>
+          {it.phone && <a href={'tel:'+it.phone} style={{fontSize:12,color:'var(--muted)',textDecoration:'none'}}><i className="ti ti-phone"></i> {it.phone}</a>}
+          <span style={{fontSize:11,fontWeight:700,padding:'2px 8px',borderRadius:20,background:it.src==='kiot'?'var(--o-lt,#fef3e2)':'var(--bg)',color:it.src==='kiot'?'var(--o)':'var(--muted)',border:'1px solid var(--border)'}}>{it.src==='kiot'?'KiotViet':'Nhập tay'}</span>
+          <span style={{flex:1}}></span>
+          {info && <span style={{fontSize:12,fontWeight:700,color:overdue?'var(--red)':'var(--o)'}}>{overdue?`Đã tới hạn ${-info.diff} ngày`:(info.diff===0?'Hết hôm nay':`Còn ~${info.diff} ngày`)}</span>}
+        </div>
+        <div style={{fontSize:12.5,color:'var(--muted)',marginBottom:8}}>
+          <i className="ti ti-package"></i> {it.product||'(chưa ghi món)'} · mua lần cuối {fmtDate(it.last)} · chu kỳ {it.cycle||30} ngày → dự kiến hết {fmtDate(nd)}
+        </div>
+        <textarea value={msg} onChange={ev=>setDraft(d=>({...d,[k]:ev.target.value}))} rows={3}
+          style={{width:'100%',background:'var(--bg)',border:'1.5px solid var(--border)',borderRadius:10,padding:'9px 11px',color:'var(--ink)',outline:'none',fontSize:13,resize:'vertical',fontFamily:'inherit'}}/>
+        <div style={{display:'flex',gap:8,marginTop:8,flexWrap:'wrap'}}>
+          <button className="btn" onClick={()=>copy(k,msgOf(it))}><i className={'ti '+(copied===k?'ti-check':'ti-copy')}></i>{copied===k?'Đã copy':'Copy tin nhắn'}</button>
+          <button className="btn" style={{background:'var(--bg)'}} onClick={()=>markPinged(k)}><i className="ti ti-bell-check"></i>Đã nhắc</button>
+          {it.src==='tay' && <>
+            <button className="btn" style={{background:'var(--bg)'}} onClick={()=>markBought(it)}><i className="ti ti-shopping-cart-check"></i>Khách đã mua lại</button>
+            <button className="btn" style={{background:'var(--bg)'}} onClick={()=>setForm({...it})}><i className="ti ti-pencil"></i></button>
+            <button className="btn" style={{background:'var(--bg)',color:'var(--red)'}} onClick={()=>removeItem(it.id)}><i className="ti ti-trash"></i></button>
+          </>}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div>
+      <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:12}}>
+        <span style={{fontSize:12.5,color:'var(--muted)'}}>
+          {kvState==='ok' && <><i className="ti ti-plug-connected" style={{color:'var(--grn)'}}></i> Đang đọc lịch sử mua từ KiotViet ({kv.length} khách)</>}
+          {kvState==='empty' && <><i className="ti ti-database" style={{color:'var(--muted)'}}></i> Đã nối KiotViet nhưng chưa có dữ liệu khách</>}
+          {(kvState==='err'||kvState==='load') && <><i className="ti ti-edit" style={{color:'var(--o)'}}></i> Chưa nối KiotViet — dùng danh sách nhập tay bên dưới</>}
+        </span>
+        <span style={{flex:1}}></span>
+        <button className="btn" onClick={()=>setForm({id:'',name:'',phone:'',product:'',last:today(),cycle:30})}><i className="ti ti-plus"></i>Thêm khách</button>
+      </div>
+
+      {form &&
+        <div className="panel" style={{marginBottom:16}}>
+          <div className="panel-h"><i className="ti ti-user-plus lead"></i><b>{form.id?'Sửa khách':'Thêm khách nhắc mua lại'}</b></div>
+          <div className="panel-b" style={{padding:'14px 16px',display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:12}}>
+            <label style={{fontSize:11.5,fontWeight:600,color:'var(--muted)'}}>Tên khách *
+              <input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="VD: chị Lan" style={{...selSt,width:'100%',marginTop:5,fontWeight:500}}/></label>
+            <label style={{fontSize:11.5,fontWeight:600,color:'var(--muted)'}}>Số điện thoại
+              <input value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} placeholder="tuỳ chọn" style={{...selSt,width:'100%',marginTop:5,fontWeight:500}}/></label>
+            <label style={{fontSize:11.5,fontWeight:600,color:'var(--muted)'}}>Món hay mua
+              <input value={form.product} onChange={e=>setForm({...form,product:e.target.value})} placeholder="VD: sữa Meiji số 1" style={{...selSt,width:'100%',marginTop:5,fontWeight:500}}/></label>
+            <label style={{fontSize:11.5,fontWeight:600,color:'var(--muted)'}}>Ngày mua gần nhất *
+              <input type="date" value={form.last} onChange={e=>setForm({...form,last:e.target.value})} style={{...selSt,width:'100%',marginTop:5,fontWeight:500}}/></label>
+            <label style={{fontSize:11.5,fontWeight:600,color:'var(--muted)'}}>Bao lâu hết (ngày)
+              <input type="number" value={form.cycle} onChange={e=>setForm({...form,cycle:e.target.value})} placeholder="30" style={{...selSt,width:'100%',marginTop:5,fontWeight:500}}/></label>
+          </div>
+          <div className="panel-b" style={{padding:'0 16px 14px',display:'flex',gap:8}}>
+            <button className="btn" onClick={saveForm} disabled={!form.name||!form.last}><i className="ti ti-check"></i>Lưu</button>
+            <button className="btn" style={{background:'var(--bg)'}} onClick={()=>setForm(null)}>Huỷ</button>
+          </div>
+        </div>}
+
+      <div className="panel" style={{marginBottom:16}}>
+        <div className="panel-h"><i className="ti ti-bell-ringing lead" style={{color:'var(--o)'}}></i><b>Cần nhắc hôm nay</b>
+          <span style={{marginLeft:'auto',fontSize:12.5,fontWeight:700,color:due.length?'var(--o)':'var(--muted)'}}>{due.length} khách</span></div>
+        <div className="panel-b" style={{padding:'14px 16px'}}>
+          {due.length===0
+            ? <div style={{textAlign:'center',color:'var(--muted)',fontSize:13,padding:'18px 0'}}><i className="ti ti-mood-smile" style={{fontSize:22}}></i><div style={{marginTop:6}}>Chưa có ai cần nhắc. Thêm khách hoặc chờ tới ngày dự kiến hết hàng.</div></div>
+            : due.map(e=><Row key={e.k} e={e}/>)}
+        </div>
+      </div>
+
+      {rest.length>0 &&
+        <div className="panel">
+          <div className="panel-h"><i className="ti ti-users lead"></i><b>Tất cả khách theo dõi</b>
+            <span style={{marginLeft:'auto',fontSize:12.5,color:'var(--muted)'}}>{rest.length} khách</span></div>
+          <div className="panel-b" style={{padding:'14px 16px'}}>
+            {rest.map(e=><Row key={e.k} e={e}/>)}
+          </div>
+        </div>}
     </div>
   );
 }
