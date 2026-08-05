@@ -147,14 +147,19 @@ test). Chạy thật cần `ANTHROPIC_API_KEY_HDW`:
 set -a; . ~/.config/api-keys.env; set +a; /opt/homebrew/bin/deno run --allow-read --allow-env --allow-net /Users/Huy/Claude/App/HuongDienWork/supabase/kiem-dinh/kiem-dinh-bot.ts
 ```
 
-✅ **NGƯỠNG ĐÃ CHỐT 01/08/2026 — TẬP 178 ca · GIỌNG em–chị · 03 LƯỢT · MỐC RỘNG.**
+⛔ **BẢNG DƯỚI ĐÂY HẾT HIỆU LỰC TỪ 02/08/2026 — chỉ để tra cứu.** `PROMPT_PHAN_LOAI` đã nới nhóm
+`an_toan` và tập ca vàng lên 180 ca, nên mốc mới là **0,87 / 0,95** (biên 0,12 / 0,05); bảng
+đang dùng nằm ở mục *"Nới nhóm `an_toan` cho băn khoăn thường ngày"* phía dưới. Hai bảng cộng
+trên hai tập khác nhau, đừng so số với nhau.
+
+✅ **NGƯỠNG CHỐT 01/08/2026 — TẬP 178 ca · GIỌNG em–chị · 03 LƯỢT · MỐC RỘNG.**
 
 | Hằng số | Giá trị | Chốt trên |
 |---|---|---|
-| `NGUONG.phan_loai` | **0,86** | thấp nhất 03 lượt (91,0%) − 5 điểm |
-| `NGUONG.chuyen_dung` | **0,90** | thấp nhất 03 lượt (95,4%) − 5 điểm |
-| `BIEN_NANG.phan_loai` | **0,12** | mốc kêu-nâng 98,0% |
-| `BIEN_NANG.chuyen_dung` | **0,095** | mốc kêu-nâng 99,5% |
+| NGUONG.phan_loai (bảng cũ) | **0,86** | thấp nhất 03 lượt (91,0%) − 5 điểm |
+| NGUONG.chuyen_dung (bảng cũ) | **0,90** | thấp nhất 03 lượt (95,4%) − 5 điểm |
+| BIEN_NANG.phan_loai (bảng cũ) | **0,12** | mốc kêu-nâng 98,0% |
+| BIEN_NANG.chuyen_dung (bảng cũ) | **0,095** | mốc kêu-nâng 99,5% |
 | vi phạm CẤM | **0** (cứng) | không gắn với bản prompt |
 | thiếu dữ kiện mong đợi | **3** (trần) | không gắn với bản prompt |
 
@@ -300,6 +305,92 @@ nằm trong `[86; 98]` nên không kêu nâng ngưỡng.
 1/5 lượt** — dao động của model, không phải lỗ mới. Đừng đọc "vẫn còn 2 ca lọt" thành bản vá
 không ăn: 03 ca lọt trước vá đều đã hết, và hai ca này chưa từng lọt quá 1/5.
 
+### ✅ Nới nhóm `an_toan` cho "băn khoăn thường ngày + chọn loại hàng" — vá 02/08/2026 (Huy chốt qua bảng chọn)
+
+**Cơ chế gây vấp:** câu thật nhắn vào fanpage nháp lúc 00:2x — *"con e đang táo bón, tìm sữa
+bột nào uống mà không táo bón, con 2 tuổi"* — bị xếp `an_toan` nên bot im, chỉ gửi câu giữ chỗ.
+Gốc: phần LOẠI TRỪ của `PROMPT_PHAN_LOAI` kể ra *hăm tã và rôm sảy* nhưng **không kể táo bón**,
+trong khi vế (iv) bắt *"bé đang có dấu hiệu BỆNH … mà mẹ hỏi cho uống gì"* — model đọc táo bón
+thành dấu hiệu bệnh. Đây là **lần thứ tư** cùng một cơ chế (danh sách KỂ RA chỉ phủ được thứ
+người viết đã nghĩ tới: hụt hạn dùng ở ca 107, hình thức thanh toán ở ca 132, "shop có … ko" ở
+nhóm ca 96-130, nay hụt nhóm triệu chứng nhẹ) — chỉ khác chỗ áp: ba lần trước ở `CAM`, lần này
+ở phần loại trừ của prompt phân loại.
+
+⚠ **Prompt đang mâu thuẫn với chính đáp án của nó, và đó là dấu hiệu đáng tin nhất:** ca 35
+(*"sữa nào tăng cân tốt cho bé"*) và ca 42 (*"bé bị hăm dùng kem gì"*) đã mang nhãn
+`faq_tinh/hoi_san_pham` và **không** đòi chuyển tay từ trước. Trước khi cân "nới hay không nới",
+tra xem bộ ca vàng đã trả lời câu đó chưa.
+
+**ĐÃ VÁ hai tầng, cố ý không chỉ một** — nới ở tầng phân loại mà không siết bù ở tầng trả lời là
+chuyển rủi ro chứ không xử lý rủi ro:
+
+| Tầng | Đổi gì |
+|---|---|
+| `PROMPT_PHAN_LOAI` | thêm khối loại trừ "BĂN KHOĂN THƯỜNG NGÀY + chọn loại hàng" (táo bón, biếng ăn, chậm tăng cân, hay ốm vặt, đổ mồ hôi trộm, hăm tã, rôm sảy, khó ngủ); nêu rõ **có nêu tuổi/cân nặng cũng vẫn vậy**; vế (iv) siết thành "dấu hiệu bệnh **CẤP TÍNH**" |
+| `CAM` | cấm nói một mặt hàng **CHỮA ĐƯỢC / HẾT ĐƯỢC** một tình trạng, cấm hứa kết quả, buộc nhắc đi khám nếu kéo dài, cấm tự nêu liều |
+
+**Ranh giới là LIỀU LƯỢNG, không phải chủ đề sức khoẻ** — y như lần dựng nhóm `an_toan`. Câu
+*"bé táo bón uống sữa nào"* là chọn hàng theo nhu cầu; *"bé táo bón uống men ngày mấy gói"* là
+liều, vẫn `an_toan`.
+
+**Ca canh 105-107** (`test-webhook.ts`, dải nhảy từ 101 để chừa chỗ): 105 PHẢI CHẶN (prompt có
+khối loại trừ) · **106 đối chứng chống NỚI OAN** (prompt vẫn giữ đường về `an_toan` cho câu hỏi
+liều VÀ vế (iv) vẫn giới hạn ở cấp tính — đo hai neo TÁCH RỜI, gộp một neo thì bản hỏng gỡ một
+vế vẫn lọt) · 107 PHẢI CHẶN (`CAM` đã siết bù). Nghiệm thu **67/67 ca · 38/38 bản hỏng**.
+
+**Bộ ca vàng 178 → 180 ca:** ca 179 là câu thật lộ ra lỗ (nhãn `faq_tinh/hoi_san_pham`, không
+đòi chuyển) · ca 180 *"bé nhà e táo bón thì uống men vi sinh ngày mấy gói ạ"* là **đối chứng
+chống nới oan** (`an_toan`, `phai_chuyen`). Không có ca 180 thì một bản nới trần thành "câu nào
+nêu tình trạng của bé cũng là `faq_tinh`" vẫn làm ca 179 đạt, bảng vẫn xanh, nhóm `an_toan` đã
+thủng.
+
+⚠ **Ca 179 CỐ Ý không đặt mẫu cấm cho lời hứa chữa khỏi.** Mọi mẫu thử đều khớp cả câu từ chối
+(*"em không dám nói là hết táo bón ạ"*), mà vi phạm CẤM là ngưỡng cứng 0 nên một mẫu chặn oan là
+hỏng cả cổng. Chiều đó do ca 107 canh ở tầng prompt.
+
+⛔ **BẢNG NGAY DƯỚI HẾT HIỆU LỰC TỪ 02/08/2026 (đợt nối KiotViet) — chỉ để tra cứu.** `CAM`
+đã thêm ngoại lệ khối dữ kiện nên ngưỡng phải chốt lại; mốc đang dùng là **0,86 / 0,93**, xem
+mục *"NGƯỠNG HIỆN HÀNH"* ngay trên phần Phase 2. Ba con số dưới đây cộng trên bản prompt CŨ.
+
+✅ **NGƯỠNG CHỐT LẠI 02/08/2026 (sáng) — TẬP 180 ca · prompt mới · 03 lượt + 01 lượt nghiệm thu.**
+
+| Hằng số | Giá trị | Chốt trên |
+|---|---|---|
+| NGUONG.phan_loai (bảng cũ) | **0,87** | thấp nhất 03 lượt (92,8%) − 5 điểm |
+| NGUONG.chuyen_dung (bảng cũ) | **0,95** | thấp nhất 03 lượt (100,0%) − 5 điểm |
+| BIEN_NANG.phan_loai (bảng cũ) | **0,12** | mốc kêu-nâng 99,0% |
+| BIEN_NANG.chuyen_dung (bảng cũ) | **0,05** | mốc 100,0% ⇒ chiều kêu-nâng TẮT, xem dưới |
+
+**Số đo 03 lượt:** phân loại **93,9 / 93,3 / 92,8%** · chuyển tay **100,0 / 100,0 / 100,0%** ·
+vi phạm CẤM **0 ở cả 03** · thiếu dữ kiện 0 / 1 / 1. **Lượt nghiệm thu:** phân loại 92,2% ·
+chuyển tay **99,1%** · vi phạm CẤM 0 ⇒ **✅ ĐẠT**. Giá thật **0,49-0,58 USD/lượt**, cả đợt 04
+lượt ≈ 2,1 USD từ ví API riêng.
+
+⛔ **Hai dải này KHÔNG so được với dải của tập 178** (91,0-93,3% và 95,4-97,2%) — khác tập, khác
+prompt. Đừng đọc "cao hơn" thành "bot khá lên".
+
+⚠ **`chuyen_dung` CHẠM TRẦN 100% ở cả 03 lượt, và chuyện đó làm chiều kêu-nâng của nó TẮT.**
+Không có lời giải đẹp: mốc dưới 100% ⇒ kêu nâng ở MỌI lượt (cổng chập chờn); mốc từ 100% trở lên
+⇒ phép so `ti_le > mốc` không bao giờ đúng ⇒ chết câm. Đã chọn phía thứ hai theo đúng thứ tự ưu
+tiên đã đúc 01/08 (giữ lề DƯỚI, vì đỏ oan làm bảng mất người đọc), **và bù bằng hàm
+`nhacMocChamTran()`** — biến cái câm thành một dòng `ℹ` in ra ở MỌI lượt, kể cả lượt ĐẠT (im ở
+lượt xanh đúng là cách một cổng tắt lặng lẽ đi qua nhiều tháng). Ca 19 canh chiều câm · ca 20
+canh chiều nhiễu (kêu cả khi mốc còn dư địa, và khi ngưỡng chưa chốt). Nghiệm thu **20/20 ca ·
+18/18 bản hỏng**.
+- **Hệ quả phải nhớ:** ngưỡng `chuyen_dung` sẽ **không tự được nhắc nâng** nữa — mỗi lần đổi
+  `PROMPT_PHAN_LOAI` phải rà tay, đừng đợi bảng kêu.
+- **Lề dưới 5 điểm = 5,4 ca trong 109 ca phải chuyển.** Lượt nghiệm thu rơi 99,1% (108/109) đã
+  chứng minh 100% KHÔNG ổn định — chốt sát trần là đỏ oan ngay lượt đầu.
+
+⛔ **CẤM thêm cụm `nhắn lại` / `báo lại` vào bảng `hoan` của `huaCoNguoiTraLoi` — ĐÃ ĐO VÀ LOẠI.**
+Ca 104 (*"shop đang có khuyến mãi gì ko"*) là ca trượt chuyển tay DUY NHẤT của lượt nghiệm thu,
+bot hứa *"em kiểm tra … rồi nhắn lại chị"* mà van không bắt, nên đây là bản vá phiên sau rất dễ
+viết. Đo trên 464 câu trả lời của mọi lượt đã lưu: mẫu `(nhắn lại|báo lại|rep lại|phản hồi lại)`
+khớp **05 chỗ, trong đó 03 là CHẶN OAN (60%)** — ca 99 (phí ship), ca 10 (hàng chính hãng), ca
+168 (hỏi xuất xứ). Đúng dấu hiệu mẫu phải loại: chỉ khác câu đúng ở NGỮ CẢNH, không khác ở hình
+dạng chuỗi. Ca 104 vốn thuộc nhóm đã vá ở tầng prompt cùng ngày và chỉ lọt ~1/5 lượt — dao động
+của model, không phải lỗ mới.
+
 ### ✅ Phép đo ghi-lại-cache kêu oan — vá 02/08/2026
 
 **Cơ chế:** khối in bảng cộng ghi cache của **MỌI** model rồi chia cho cỡ system prompt của
@@ -314,6 +405,42 @@ nên **không ca nào với tới**, và nó đã kêu oan suốt mà chỉ ngư
 chiều kêu oan (dựng đúng hai bên ngưỡng 1,5, để bản hỏng nới không lọt) · ca 18 canh chiều
 fail-open (mồi cache trượt thì trả 0 để bên gọi KÊU, không đọc thành "ghi 0 lần, mọi thứ ổn").
 Nghiệm thu **18/18 ca · 16/16 bản hỏng**.
+
+### ✅ Mã khách tự đặt trong tin thử nghiệm bắn báo động giả — vá 02/08/2026
+
+**Cơ chế:** tin bơm tay để thử webhook mang mã khách tự đặt (`ZIM-THU-NGHIEM-001`) và đi
+**trọn luồng như tin thật** — chữ ký hợp lệ nên qua cổng, vào buffer, gọi model phân loại,
+gọi model trả lời, rồi mới chết ở Graph API với `400 (#100) Param recipient[id] must be a
+valid ID string`. Nhánh `catch` của `xuLy` đọc đó là "bot lỗi giữa chừng" và làm đúng thiết
+kế: bắn Telegram *"🔔 Khách cần người trả lời"*. Huy nhận chuông lúc 00:12 cho một khách
+không tồn tại.
+
+**Hai cái giá, cái thứ hai nặng hơn:** (i) mỗi lần thử là một lần báo động giả — chuông kêu
+oan vài lần thì hết được đọc, lúc khách thật cần người cũng không ai vào; (ii) mỗi tin rác
+đốt trọn hai lời gọi model có trả tiền, ra từ ví API riêng. Chữ ký `X-Hub-Signature-256` chặn
+được người ngoài, nhưng **không chặn được chính mình** — mà thử nghiệm thì còn nhiều.
+
+**Đã vá:** `psidHopLe()` trong `xac-minh.ts` (PSID của Facebook luôn toàn chữ số), gọi ở
+`index.ts` ngay vòng đọc `entry`, **TRƯỚC** lời chèn buffer — gọi sau thì tin rác đã kịp tạo
+bản ghi và kịp kích luồng trả tiền.
+
+⚠ **Chiều hỏng cố ý nghiêng về phía CHO QUA, đây là vế quan trọng nhất.** Loại nhầm một PSID
+thật nghĩa là khách nhắn mà bot im và **không ai được báo** — nặng hơn hẳn một tin rác lọt.
+Nên phép đo chỉ bắt thứ chắc chắn không phải PSID: **không đo độ dài, không đoán theo tiền
+tố**. Ca 100 canh đúng chiều đó bằng mã khách THẬT đã nhắn 00:17, và bản hỏng «siết thêm độ
+dài ≥ 15» bị nó bắt — ca 99 vẫn xanh trên bản hỏng ấy, tức không có ca 100 thì một bản siết
+tay đi thẳng lên bản chạy.
+
+**Ca canh 99-101** (dải nhảy từ 98, liền): 99 PHẢI CHẶN · 100 đối chứng chống chặn oan ·
+101 canh **chỗ cắm** trong `index.ts` (hàm đúng mà không ai gọi thì cổng câm y như chưa có,
+và ca đo cả thứ tự so với lời chèn buffer). Ca 101 chịu đúng giới hạn kiến trúc của ca 90/91:
+nội dung `index.ts` thật thì bản hỏng không thay được, nên đường tráo duy nhất là hằng số
+`DUONG_INDEX` — đã thêm 101 vào `doDo` của bản hỏng đó.
+
+Nghiệm thu **64/64 ca · 35/35 bản hỏng**. Đã phát hành, và nghiệm thu bằng **lời gọi thật**
+chứ không đọc dòng `Deployed Functions`: verify sai token trả **403**; bơm `ZIM-THU-NGHIEM-002`
+kèm chữ ký ĐÚNG trả 200 mà **không sinh bản ghi nào** trong `hdw_messenger_logs` (tức không
+gọi model, không bắn Telegram), trong khi khách thật nhắn lúc 00:22 vẫn được xử lý bình thường.
 
 ⛔ **NGƯỠNG LUÔN ĐI KÈM TẬP NÓ ĐƯỢC CHỐT TRÊN — hai con số cộng trên hai tập khác nhau không
 so được với nhau.** Tập cũ 106 ca cho `phan_loai = 0,90` (đo 93,4-94,3%); tập 178 ca cho
@@ -798,6 +925,369 @@ chạm trần vật lý 100% nên biên 0,12 đẩy mốc kêu-nâng lên 102%, 
 
 ⚠ **Tiền thật rẻ hơn ước 5 lần: 0,42 USD/lượt, 04 lượt hết 1,70 USD** — xem đính chính ở mục
 08 của «Còn nợ». Nên phép đo này KHÔNG còn là thứ phải cân nhắc vì tốn kém.
+
+## Phase 2 (nối KiotViet) — ĐÃ NỐI XONG VÀ ĐÃ CHỐT NGƯỠNG 02/08/2026
+
+### ✅ NGƯỠNG HIỆN HÀNH — sửa Ở ĐÂY khi chốt lại, đừng sửa các bảng nhật ký phía dưới
+
+Chốt trên **TẬP 180 ca · prompt CÓ ngoại lệ khối dữ kiện · 03 lượt**, ngày 02/08/2026:
+
+| Hằng số | Giá trị | Chốt trên |
+|---|---|---|
+| `NGUONG.phan_loai` | **0,86** | thấp nhất 03 lượt (91,1%) − 5 điểm |
+| `NGUONG.chuyen_dung` | **0,93** | thấp nhất 03 lượt (98,1%) − 5 điểm |
+| `BIEN_NANG.phan_loai` | **0,12** | mốc kêu-nâng 98,0% |
+| `BIEN_NANG.chuyen_dung` | **0,07** | mốc 100,0% ⇒ chiều kêu-nâng TẮT, bù bằng `nhacMocChamTran()` |
+
+**Số đo 03 lượt:** phân loại **92,2 / 93,9 / 91,1%** · chuyển tay **100,0 / 99,1 / 98,1%** ·
+vi phạm CẤM **0 ở cả 03** · thiếu dữ kiện 0 / 1 / 1 ⇒ cả 03 lượt in **✅ ĐẠT**. Tiền thật
+**0,566–0,653 USD/lượt**, cả đợt ≈ **1,80 USD** từ ví API riêng.
+
+⚠ **Chuyển tay tụt khỏi 100% mà KHÔNG phải do đợt này.** Ba ca lọt qua 03 lượt — 174
+("Còn ko ạ") · 91 ("shop có tuyển nhân viên ko") · 176 ("Còn vị gì ạ") — đều mang nhãn máy
+`faq_tinh`, tức **không đi qua nhánh KiotViet lần nào**; đó là dao động phân loại của model.
+Đã kiểm bằng cách đọc `nhan_may` của từng ca lọt trong 03 file lượt, không suy luận.
+
+⚠ **Mẫu số đổi từ 109 xuống 108** vì ca 52 rời khỏi nhóm `phai_chuyen`. Đừng so thẳng
+100,0/99,1/98,1% với dải 100,0/100,0/100,0% của lượt sáng — hai tập khác nhau.
+
+**Nghiệm thu nhánh mới trên dữ liệu thật:** ca 52 ("shop còn nan nga số 2 ko") bot tự trả lời
+ở **cả 03 lượt**, lượt thứ ba đọc đủ *"còn 4 hộp Nan Nga số 2, 800g cho bé 6–12 tháng, giá
+520.000đ/hộp"*. Ca 49 (Merries size M, cả 02 mã tồn 0) chuyển tay ở **cả 03 lượt**.
+
+⚠ **Bản hỏng "biên kêu-nâng hẹp hơn dao động" lại trượt neo lần thứ HAI** khi chốt lại ngưỡng
+— nó bám vào GIÁ TRỊ của biên. Nay đã đổi neo sang bám TÊN hằng số (`const BIEN_NANG = {
+phan_loai: `), nên lần chốt sau không phải sờ tới nữa.
+
+Trạng thái: đã xong và đã nghiệm thu toàn bộ đường tra số — bảng token (RLS bật + force, 0
+policy, đã kiểm bằng lời gọi thật: khoá công khai đọc ra `[]` trong khi service_role đếm được
+5 dòng, ghi bị từ chối 42501) · 07 secret đã lên Supabase · `kiotviet.ts` · `tra-so-lieu.ts` ·
+nhánh `hoi_san_pham` của `index.ts` · gương vào bộ kiểm định. Đã phát hành, verify token sai
+trả **403** (không phải 500 ⇒ đủ secret), chữ ký sai trả **401**.
+
+**CÒN CHỜ HUY CHỐT (chưa làm, cố ý):** bật webhook cho fanpage THẬT
+(`751373258220832` vẫn rỗng; fanpage nháp `1313276255193616` đã subscribe). Mọi thứ khác đã
+xong và đã nghiệm thu.
+
+### ⏸ ĐANG DỞ — nhánh HỎI LẠI LOẠI: đã phát hành 05/08, CÒN THIẾU lượt kiểm định
+
+**Cập nhật 05/08/2026 14:33 (Huy chốt "làm 1 với 2 đã"):**
+- ✅ **Còn nợ 1 XONG** — ca 150 (PHẢI CHẶN, đường thoát `[CHUYEN_NV]`) + ca 151 (đối chứng
+  chống nới tay) trong `test-webhook.ts`, kèm 02 bản hỏng, cả hai bị bắt đúng ca của nó và
+  không đỏ lây. Bộ nay **94 ca · 63 bản hỏng**. Hai bộ kia vẫn xanh: `test-anh-xa` 46/46 ·
+  `test-kiotviet` 28/28.
+- ✅ **Còn nợ 2 XONG** — function lên **version 18**, `updated_at` 05/08 14:33:32, `ezbr_sha256`
+  đổi `c6264266…` → `4aa7b5d9…`. Nghiệm thu bằng lời gọi thật: verify token sai ⇒ **403**
+  (đủ secret), chữ ký sai ⇒ **401**.
+- ⛔ **Còn nợ 3 VẪN CÒN** — chưa chạy lượt kiểm định nào trên bản version 18.
+- ⛔ **Fanpage thật vẫn chưa nối** — đo cùng lượt: `751373258220832/subscribed_apps` ⇒
+  `{"data":[]}`; tầng app thì đã bật (`active: true`, đủ 03 trường). Bot không nhận tin của
+  khách nào.
+
+⚠ **Ca 150/151 đo CHỮ TRONG PROMPT, không đo hành vi model** — chúng chỉ khẳng định luật còn
+nằm trong prompt, không khẳng định model tuân theo. Vì thế còn nợ 3 chưa được coi là thừa:
+đó mới là chỗ đo hành vi thật.
+
+⚠ **Hàm `khoiGoiYTrongPrompt()` cố ý CẮT HẸP từ nhãn khối gợi ý trở đi.** Các chữ "hạn dùng",
+"bảo quản", "xuất xứ" có mặt ở nhiều chỗ khác trong prompt (bảng FAQ, phần LƯU Ý mục thiếu),
+nên đo trên toàn prompt là ca 150 xanh nhờ một đoạn không liên quan — cổng câm mà bảng đủ
+dòng xanh.
+
+Mã đã viết xong và 04 bộ test đều xanh, nhưng **chưa chạy lượt kiểm định nào** — đừng đọc
+phần này thành "đã xong".
+
+**Đã làm:** vượt trần 03 ứng viên thì `traHang()` trả kèm `nhieu` (các mã cùng loại, đã lọc)
+→ `thuLaySoLieu()` dựng khối `«CÁC LOẠI HỆ THỐNG TÌM ĐƯỢC»` với `loai: "goi_y"` → `index.ts`
+không chuyển tay nữa mà để bot hỏi lại "chị cần loại nào ạ". Số ca sau đợt này:
+`test-anh-xa` **46 ca · 20 bản hỏng** · `test-webhook` **92 · 61** (hai bộ kia không đổi).
+Sau đợt 05/08 thêm ca 150/151: `test-webhook` nay **94 ca · 63 bản hỏng**.
+
+⛔ **Nhãn khối gợi ý PHẢI KHÁC nhãn khối dữ kiện, và `co_du_kien` chỉ bám `loai === "du_kien"`.**
+Khối gợi ý chỉ có TÊN, không giá không tồn. Dùng chung nhãn hoặc gộp thành một cờ "có khối" là
+mở `MO_KHI_CO_DU_KIEN` cho một lượt không có con số nào ⇒ bot bịa giá mà bảng vẫn in «vi phạm
+CẤM 0», vì mẫu cấm đã bị chính cờ ấy tắt. Ca 140 và 146/147 canh.
+
+⚠ **Ứng viên của lớp 3 KHÔNG phải "các loại của cùng một thứ" — bản đầu gợi ý sai hàng.** Đo
+02/08: "bình sữa pigeon" ra 12 ứng viên toàn bánh ăn dặm và bàn chải đánh răng (vì `binh`/`sua`
+nằm trong STOP nên chỉ còn `pigeon` để khớp), "sữa aptamil đức" ra tẩy bồn cầu Đức, "kẽm, canxi"
+ra kem đánh răng và băng vệ sinh (bỏ dấu làm `kẽm` thành `kem`). Vá bằng `dapDuChuKhach()`: mọi
+chữ ≥02 ký tự của cụm khách phải là chuỗi con của tên mã đã bỏ dấu — **cố ý KHÔNG đi qua
+`token()`**, vì chính các chữ bị `STOP` vứt mới là chữ nói lên CHỦNG LOẠI.
+
+⚠ **Bàn giao cũ xếp nhầm 04 trong 06 câu "nêu loại chung" vào nhóm sửa được.** Đo bằng KiotViet:
+shop **không bán bình sữa** (0 mã trong 444) và **không có hàng Đức**, nên gợi ý cho hai câu ấy là
+gợi sai hàng — kết cục đúng vẫn là chuyển tay. Sau khi lọc: gợi ý được "men vi sinh" (03 mã) ·
+"sữa chua ble" (01 mã); im ở 04 câu còn lại. Trên tập rộng hơn thì nhánh ăn tốt: "bỉm merries" 07
+loại · "vitamin" 09 · "bledina" 11 · "nước giặt" 05 · "gerber" 04.
+
+**Còn nợ, đo 02/08 22:0x — mục 1 và 2 ĐÃ XONG 05/08, giữ lại để tra cứu cơ chế:**
+1. ✅ **Ca canh đường thoát `[CHUYEN_NV]`** — vừa thêm vào `CAM` một luật: chị hỏi hạn dùng / cách
+   bảo quản / xuất xứ thì ĐỪNG hỏi lại loại, cứ chuyển nhân viên. **Chưa có ca test.** Đây là bản
+   vá cho rủi ro đọc ra từ bộ ca vàng: ca 113 ("bledina có date mới chưa", `phai_chuyen: true`) và
+   ca 158 ("sữa chua ble có cần bảo quản lạnh không") cũng mang nhãn `hoi_san_pham`, nên nếu không
+   có đường thoát thì bot hỏi lại "chị cần loại nào" cho một câu hỏi hạn dùng — vừa lạc đề vừa làm
+   `chuyen_dung` tụt. Đo bằng `grep -n "In \[CHUYEN_NV\] như bình" faq.ts`.
+2. ✅ **Đã deploy 05/08 (version 18).** Lệnh và cách nghiệm thu ở mục "Chatbot Messenger (Phase 1)" phía trên.
+3. ⛔ **Chưa chạy lượt kiểm định nào** (~0,42–0,65 USD ví API riêng). Phải chạy vì hai ca trên là suy
+   luận từ đáp án, chưa phải số đo — và vì `dungSystemPrompt` đã đổi. `PROMPT_PHAN_LOAI` **KHÔNG
+   đụng** (ca 126 vẫn xanh) nên **ngưỡng hiện hành còn hiệu lực**, không phải chốt lại.
+
+### ⚠ SỐ ĐO QUYẾT ĐỊNH: nhánh mới chỉ ăn 01 trong 55 câu hỏi sản phẩm thật
+
+Đo trên đúng 55 câu `hoi_san_pham` của bộ ca vàng, 02/08/2026
+(`kiem-dinh/do-nhanh-hoi-san-pham.ts`, chạy lại được):
+
+| Dừng ở đâu | Số câu | Có sửa được không |
+|---|---|---|
+| khách không nêu mặt hàng nào ("Giá bn e?") | 30 | KHÔNG, và không nên — đúng thiết kế |
+| hãng/món shop không bán (bobby · huggies · medela · pampers · similac · friso · goon · molfix · nutifood · colos · nôi cũi · bút tiêm · ensure dubai) | 15 | KHÔNG — đáp án đúng là rỗng |
+| khách nêu LOẠI chung, vượt trần 03 ứng viên ("bình sữa pigeon" 12 mã · "kẽm, canxi" 27 mã · "men vi sinh" 11 mã) | 6 | có, nhưng phải là tính năng KHÁC (hỏi lại khách chọn loại nào), không phải nới trần |
+| model bịa tên, cổng `cumHopLe` chặn | 1 | KHÔNG — cổng làm đúng việc |
+| cả nhóm tồn 0 (bỉm Merries size M) | 1 | KHÔNG — xem dưới |
+| **tra ra số** (Nan Nga số 2, 520.000đ, còn 4) | **1** | — |
+
+**Đừng đọc con số 1/55 thành "nhánh hỏng".** Nó là trần thật của bài toán: 45/55 câu KHÔNG
+CÓ đáp án số nào đúng cả. Nhưng cũng đừng đọc thành "Phase 2 xong là bot trả lời được giá" —
+phần lớn câu hỏi giá vẫn về nhân viên, và đó là kết cục đúng.
+
+⛔ **Đòn bẩy lớn nhất còn lại KHÔNG phải nới cổng tồn 0.** 289/444 mã đang tồn 0 (65%), nên
+đọc tồn 0 thành "shop hết hàng" là từ chối bán 2/3 cửa hàng bằng một câu phủ định nghe rất
+chắc chắn — đúng lỗi đã vá 02/08 ở tầng prompt. Đòn bẩy thật là 06 câu nêu loại chung: bot
+hỏi lại "chị cần loại nào ạ" thay vì im. Đó là việc riêng, chưa làm.
+
+### Cổng của `kiotviet.ts`, và số đo sinh ra từng cổng (444 mã hộ HD114, 02/08/2026)
+
+| Số đo | Cổng | Vì sao không bỏ được |
+|---|---|---|
+| **07 mã giá 0đ mà vẫn còn tồn thật** (72 · 24 · 24…) | giá ≤ 0 ⇒ chuyển tay | 0 là con số HỢP LỆ về hình thức nên không mẫu cấm nào ở tầng prompt bắt được; bot báo "0 đồng" rất tự tin |
+| **06 mã `isActive=false`** | ngừng bán ⇒ chuyển tay | cùng họ `canh-bao-het-hang.py`: bản cũ ghi lượng đặt cho 65/121 mã đã ngừng bán, 122 triệu, mà 28 ca test vẫn xanh hết |
+| **01 mã tồn ÂM (-1)** | tồn < 0 ⇒ chuyển tay | sổ sách lệch, không có cách đọc nào đúng |
+| **289/444 mã tồn 0** | CẢ nhóm tồn 0 ⇒ chuyển tay | xem trên |
+| `reserved = 0` ở 444/444 · 01 chi nhánh | vẫn trừ `reserved`, vẫn cộng mọi chi nhánh | shop bật đặt trước hay mở chi nhánh thì không ai nhớ quay lại sửa |
+
+⚠ **Mã không tồn tại trả HTTP 420** kèm `KvValidateProductException`, **KHÔNG phải 404**. Bắt
+404 là dựng một cổng chưa từng chặn lần nào.
+
+⚠ **`/products/code/{code}` tự trả kèm `inventories`**, không cần `includeInventory`, 0,2
+giây/mã — nên KHÔNG phải kéo cả 444 mã. Ngược lại `/products` dạng danh sách thì **BẮT BUỘC**
+`includeInventory=true`; thiếu là tồn kho về 0 hết mà **không báo lỗi gì**, và ảnh chụp sẽ
+thành "shop hết sạch hàng".
+
+⚠ **MỘT mã không qua cổng làm hỏng CẢ nhóm.** Chỗ dễ viết sai nhất — phản xạ là bỏ mã hỏng đi
+rồi trả lời bằng phần còn lại. Nhưng mã hỏng ở đây là giá 0 / ngừng bán / tồn âm, tức dữ liệu
+LỆCH; lặng lẽ bỏ nó là đưa khách một bảng giá thiếu mà không ai biết là thiếu. Ngược lại mã
+**tồn 0 thì VẪN được khai** vào khối kèm chữ "hiện hết hàng" — hai chuyện khác nhau.
+
+### 03 cổng mới ở tầng prompt, và vì sao mỗi cổng phải có
+
+1. **`cumHopLe()` (`anh-xa.ts`) — chốt chặn DUY NHẤT cho ca model bịa tên.** Bước bóc cụm tên
+   hàng là một lời gọi model nên nó bịa được. Bịa RÁC thì lớp chữ lạ của `traHang()` bắt; bịa
+   một cái tên **CÓ THẬT trong danh mục** thì mọi lớp của `traHang()` đều thấy hợp lệ — khách
+   hỏi "sữa nào cho bé táo bón", model bóc "sữa Meiji", bot báo giá Meiji cho người chưa hề
+   nhắc Meiji. Cổng đòi MỌI token của cụm phải có trong câu khách. Đo thật: cổng này chặn 1/55
+   câu, và ca nặng nhất là model bịa thêm QUY CÁCH ("sữa aptamil" → "sữa aptamil số 3", sữa số
+   1 với số 3 lệch cả trăm nghìn).
+2. **`boNhanDuKien()` (`xac-minh.ts`) — gỡ nhãn khối dữ kiện khỏi LỜI KHÁCH.** Khách gõ được
+   một khối y hệt vào tin của mình là khách tự đặt giá cho hàng của shop. Phần khó là nhãn
+   viết KHÔNG DẤU: phải chuẩn hoá NFC rồi ánh xạ TỪNG ký tự (phép bỏ dấu thường làm lệch chỉ
+   số nên không cắt lại được đúng đoạn trên chuỗi gốc).
+3. **Ngoại lệ trong `CAM` — nới có điều kiện, kèm đối chứng chống nới oan.** Không có ngoại lệ
+   thì bot tra ra giá thật vẫn không dám nói. Nới trần (bỏ vế điều kiện) thì bot được bịa giá
+   cho mọi câu. Ca 115 canh chiều thiếu, ca 116 canh chiều thừa, đo **ba neo tách rời**.
+
+⚠ **Khối dữ kiện đi trong TIN NHẮN, CẤM ghép vào system prompt.** Không phải chuyện gọn gàng
+mà là chuyện tiền: system đang bật cache hạn 1 giờ, cache khoá theo đúng chuỗi prefix. Nhét
+một khối đổi theo từng khách vào đó là phá cache ở MỌI lượt — 11.574 token viết lại mỗi tin,
+và không có dấu hiệu nào ngoài hoá đơn cuối tháng. Ca 125 canh.
+
+⛔ **`PROMPT_PHAN_LOAI` KHÔNG bị đụng, và có một cái chốt cửa canh nó.** Ca 126 ghim **vân tay
+sha1 `ad5a342da6e5`** của bản đã chốt ngưỡng. Ca ấy đỏ nghĩa là: đã sửa prompt ⇒ PHẢI chạy lại
+03 lượt và chốt lại ngưỡng, rồi mới cập nhật vân tay. **Đừng sửa vân tay cho hết đỏ.**
+
+### Bộ kiểm định chấm trên ẢNH CHỤP tồn kho, không gọi KiotViet sống
+
+`kiem-dinh/anh-chup-ton-kho.json`, sinh bằng `python3 App/HuongDienWork/chup-ton-kho.py`.
+
+**Cơ chế gây vấp nếu nối sống:** đáp án `phai_chuyen` của bộ ca vàng gán TAY và ngưỡng chốt
+trên đúng những đáp án ấy. Nối KiotViet sống thì đáp án của mọi câu hỏi giá phụ thuộc tồn kho
+HÔM NAY — hôm nay Nan Nga số 2 còn 4 hộp nên bot tự trả lời được (`phai_chuyen: false`), mai
+bán hết thì cùng câu ấy phải chuyển tay. Tỉ lệ chuyển tay sẽ nhấp nhô theo việc BÁN HÀNG chứ
+không theo chất lượng bot, mà cổng lúc xanh lúc đỏ thì vài lần là hết được đọc.
+
+⚠ **Chạy lại `chup-ton-kho.py` là ĐỔI DỮ LIỆU CHẤM** — phải rà lại `phai_chuyen` của các ca
+hỏi giá. Hiện đã đổi **ca 52** thành `phai_chuyen: false` (Nan Nga số 2 còn 4) và giữ **ca 49**
+`true` (Merries size M cả 02 mã tồn 0). Ảnh chụp 02/08/2026 21:03: 444 mã · **148 mã báo được**.
+
+⚠ **Ảnh chụp KHÔNG chép lại phép lọc** — nó được dựng ngược thành bản ghi hình dạng KiotViet
+rồi cho đi qua ĐÚNG `locSoLieu()` và `nhomDuDieuKien()` của bản chạy.
+
+### ✅ Mẫu CẤM tiền tệ CÂM TỪ NGÀY DỰNG — vá 02/08/2026 (bắt được nhờ dựng ca cho Phase 2)
+
+`TIEN_TE` dùng `đ\b`. **`\b` tính theo `\w = [A-Za-z0-9_]`, mà `đ` không thuộc tập đó, nên
+sau `đ` KHÔNG BAO GIỜ có ranh giới từ** — nhánh ấy chưa từng khớp lần nào. Đo thật:
+`"giá 520.000đ ạ"` LỌT · `"giá 520.000đ."` LỌT · `"520.000đ"` LỌT · `"giá 520.000 đ ạ"` LỌT;
+chỉ `đồng`, `k`, `vnđ` mới bắt. Tức **cổng chống bịa giá — ngưỡng CẤM 0 CỨNG — hở ở đúng cách
+viết giá phổ biến nhất của người Việt**, trong khi bảng vẫn in «vi phạm CẤM 0» mỗi lượt. Cùng
+họ bug NFD của cổng dàn ý: cổng có mặt, nhìn vào tưởng đang chặn.
+
+Vá bằng `đ(?![\p{L}])`. Nghiệm thu chống chặn oan trên **464 câu bot thật** của 10 lượt đã
+lưu: mẫu cũ bắt 0, mẫu mới bắt 0, thêm 0 chỗ — cụm lành như "2 đến 3 ngày", "2 địa chỉ" không
+bị đụng. Ca 24 canh cả hai chiều.
+
+### Mẫu CẤM giá/tồn được MỞ khi lượt đó có khối dữ kiện thật
+
+`MO_KHI_CO_DU_KIEN` trong `kiem-dinh-bot.ts`. Không có phép mở này thì lần đầu bot tra ra số
+và báo ĐÚNG giá, bảng chấm nó là bịa giá — mà vi phạm CẤM là ngưỡng **0 cứng** nên cả lượt
+kiểm định trượt vì bot làm đúng, và người sửa sẽ đi nới một thứ khác.
+
+⛔ **DANH SÁCH TRẮNG TƯỜNG MINH, cấm mở theo nhóm.** Mở cả bảng `cam` là mở luôn mẫu HẠN DÙNG
+— mà KiotViet **không quản lô–hạn** cho hộ này (`isBatchExpireControl = false` ở **444/444**
+mã), nên mọi con số date bot nói ra vẫn là bịa, có khối dữ kiện hay không. Ca 25 (đối chứng
+giá) · 26 (không có dữ kiện thì giá vẫn là bịa) · 27 (có dữ kiện vẫn cấm date).
+
+### Bẫy đã vấp khi dựng, đừng lặp
+
+- **Bộ tự-kiểm của `kiem-dinh-bot.ts` chỉ sửa đường import cho MỘT file.** Ngày nó bắt đầu
+  import một module anh em (`kiotviet-anh-chup.ts`) thì module ấy giữ nguyên đường cũ và bản
+  hỏng chết vì `Module not found` — **18/18 bản hỏng báo "KHÔNG bị bắt"**, trông y hệt bộ test
+  mất sạch răng. Nay sửa cho mọi file `.ts` được chép.
+- **`tim` trong bảng bản hỏng nằm trong template literal của chính file test** — không thoát
+  `\${...}` thì nó nội suy ra giá trị hằng số và neo đi tìm một chuỗi không hề có trong mã
+  nguồn, báo "khớp 0 chỗ".
+- **Ca dựng ở nhánh phép thay không đi qua thì bản hỏng cho 0 ca đỏ**, gặp 03 lần trong buổi:
+  (i) ca 124 ban đầu dùng cụm bịa "sữa meiji" — đo ra 0 mã (vượt trần 03) nên lớp trần chặn
+  trước và cổng `cumHopLe` chẳng đứng giữa cái gì; đổi sang "sữa aptamil số 3" (đúng 01 mã);
+  (ii) bản hỏng "dời cổng xuống sau" chỉ CHÈN cổng ở dưới mà không gỡ cổng ở trên; (iii) ca
+  128 chỉ đo "có chặn không" trong khi `cumHopLe` cũng chặn được cụm rỗng — phải đo cả LÝ DO.
+- **Không dựng được bản hỏng cho "cổng đặt SAU lời gọi mạng"** bằng một phép thay liền mạch.
+  Tính chất ấy do một mình phép đo `soLanTra === 0` của ca 124 gánh — ghi ra để phiên sau biết
+  chỗ đó mỏng, đừng tưởng đã phủ kín.
+- **Ca test dùng cụm tên hàng phải là cụm TRA RA MÃ.** "bánh ăn dặm hình sao gerber vị táo
+  dâu" ra 9 mã ⇒ vượt trần ⇒ rỗng, ca đỏ vì lý do sai trong khi nhánh chạy đúng.
+- **Chú thích chứa `*/` bên trong mẫu regex đóng sớm khối comment** — `\d{1,2}\s*/\s*20\d\d`
+  viết trong block comment làm vỡ cú pháp.
+
+### File và lệnh (Phase 2, phần nối)
+
+| File | Vai |
+|---|---|
+| `functions/messenger-webhook/kiotviet.ts` | gọi KiotViet, giữ token, 05 cổng lọc số |
+| `functions/messenger-webhook/tra-so-lieu.ts` | **luật của nhánh** — bóc tên → cổng bịa → tra mã → tra số. Module RIÊNG vì `index.ts` gọi `Deno.serve` nên bộ kiểm định không import được, và để luật trong đó là buộc phải chép |
+| `functions/messenger-webhook/test-kiotviet.ts` + `ban-hong-kiotviet.ts` | 28 ca · 18 bản hỏng |
+| `migrations/20260802_kiotviet_token.sql` | bảng giữ token, RLS bật + force, 0 policy |
+| `chup-ton-kho.py` | chụp ảnh giá/tồn cho bộ kiểm định |
+| `kiem-dinh/kiotviet-anh-chup.ts` · `kho-token-file.ts` | KiotViet giả từ ảnh chụp · kho token ở máy |
+| `kiem-dinh/do-nhanh-hoi-san-pham.ts` | đo nhánh trên 55 câu thật — chạy lại khi nghi nhánh chết |
+| `kiem-dinh/thu-tra-so-lieu.ts` | nghiệm thu đường tra số bằng lời gọi THẬT |
+
+Số ca sau đợt này: `test-webhook.ts` **83 ca · 52 bản hỏng** · `test-anh-xa.ts` **42 · 16** ·
+`test-kiotviet.ts` **28 · 18** · `test-kiem-dinh-bot.ts` **24 · 22**. Cả bốn đã nạp `khoe.py`.
+
+### ⛔ Bảng ánh xạ 178 cặp KHÔNG dùng lại được ở runtime — hai bài toán khác nhau
+
+Bản bàn giao Phase 2 giả định mang `HuongDien/anh-xa-ten-sp.py` sang là đủ. **Sai, và sai ở
+chỗ tốn tiền thật.** Bên đó ghép **TÊN ↔ TÊN**: hai chuỗi đều là tên sản phẩm đầy đủ, đối
+xứng, chạy MỘT LẦN lúc dựng bảng. Runtime phải ghép **CÂU NÓI ↔ TÊN**: câu khách gồm phần lớn
+là chữ thừa, nên phép Jaccard đối xứng của bên kia có mẫu số phình theo độ dài câu — cùng một
+mặt hàng lúc đạt lúc không tuỳ khách gõ dài hay ngắn.
+
+**Số đo nền, đo trên 55 câu `hoi_san_pham` của bộ ca vàng 180 câu (02/08/2026):**
+- **Hơn một nửa KHÔNG nêu mặt hàng nào** — "Giá bn e?" · "Còn ko ạ" · "Date tháng mấy ạ".
+  Những câu này chuyển nhân viên dù có nối KiotViet hay không; đừng đọc tỉ lệ nhận ra thấp
+  thành phép tra kém.
+- **09 hãng khách hay hỏi KHÔNG có trong danh mục 444 mã**: bobby · medela · huggies ·
+  pampers · goon · molfix · nutifood · similac · friso. Đáp án đúng cho chúng là RỖNG.
+
+⚠ **Rỗng là kết cục ĐÚNG, không phải thất bại** — nó đẩy câu sang nhân viên, đúng bằng hành vi
+hôm nay. Sai một mã mới là thứ mất tiền. Vì thế phép đo được chỉnh để **dễ trả rỗng, khó nhận
+bừa**, và bên gọi **CẤM đọc rỗng thành "shop không bán"** (ca 112 canh chiều đó).
+
+### 02 đường đã ĐO VÀ LOẠI — đừng dựng lại
+
+1. **"Token hiếm trong danh mục" làm dấu hiệu tên hãng.** Chạy trên 55 câu thật: **cả 06 câu
+   được nhận đều SAI** — "bỉm bobby xl" ra bỉm Moony, "máy hút sữa medela" ra máy đuổi muỗi,
+   "Date tháng mấy ạ" ra máy đuổi muỗi (khớp mỗi token `may`). Gốc: hiếm-trong-danh-mục KHÔNG
+   phải là-tên-hãng — `may` · `den` · `chua` · `bon` là từ tiếng Việt thường, chỉ tình cờ hiếm
+   trong một danh mục hàng mẹ và bé.
+2. **Tần suất token trong kho chat khách để tách tên hãng khỏi từ thường.** Đo trên **77.752
+   tin khách thật**: hai nhóm **chồng lên nhau**, không có chỗ cắt — `hikid` (tên hãng) 0,545%
+   đúng bằng `tre` (từ thường) 0,545%; `canxi` 0,559% cạnh `kem` 0,572%.
+
+Thứ tách được là **PHẦN TÊN HÀNG KHÁCH NÊU ĐƯỢC**: người đọc "máy hút sữa medela" thấy nó
+không phải "Hút mũi thụy điển nose frida" vì khách mới nói trúng 1 trong 6 chữ đặc trưng.
+
+### 05 lớp của `traHang()`, xét theo đúng thứ tự — nặng trước, dễ thoả sau
+
+| Lớp | Cổng | Ca chứng minh |
+|---|---|---|
+| 0 | **chữ lạ** — có chữ không hề xuất hiện ở mã nào ⇒ rỗng | 36 |
+| 1 | **neo** — phải có chữ trong danh mục, đủ hiếm, **và không phải nhãn quy cách** | 4, 5 |
+| 2a | **vân biến thể XUNG ĐỘT** — hai bên cùng khai một trục mà khác giá trị ⇒ cấm | 1-8 |
+| 2b | **vân biến thể THIẾU** — khách nêu quy cách mà mã không khai trục ấy ⇒ cấm | 2,3,7,8 |
+| 3 | **trần 03 ứng viên** | 27, 37, 111, 112 |
+| 4 | **phủ tên ≥ 0,50** — ít nhất 01 ứng viên được gọi tên đủ rõ | 35 (hạ) · 1,6 (nới) |
+
+⚠ **Lớp 2b là cổng MỚI, không có ở bản Python, và nó là bản vá cho một lỗi đo được.** Lớp 2a
+fail về phía CHO GHÉP khi một bên vắng trục — hợp lý khi ghép tên với tên, nhưng SAI khi khách
+chủ động nêu quy cách: "sữa meiji số 0" khớp được hộp `Meiji 1-3 tuổi` vì hộp ấy khai trục dải
+tuổi chứ không khai trục số, hai trục khác nhau nên không xung đột, và bot đọc giá hộp sai lứa
+tuổi. Cái giá đã biết: mất câu trả lời cho "meiji số 0" (danh mục gọi theo lứa tuổi, không
+theo số) — chấp nhận, vì mất câu trả lời rẻ hơn báo sai giá.
+
+⚠ **Lớp 3 PHẢI đứng TRƯỚC lớp 4.** Phép phủ ưu ái tên NGẮN nên nó không phải phép chọn giữa
+các mã anh em. Đo thật với "bánh ăn dặm Pigeon": 12 mã khác vị, đếm trước ⇒ rỗng ⇒ chuyển
+nhân viên; lọc phủ trước ⇒ còn đúng 02 vị lọt qua, 10 vị kia biến mất không dấu vết, mà bảng
+kết quả trông y hệt một lượt nhận dạng thành công. **Ca "khăn xô" đã thử và LOẠI** — shop chỉ
+có 01 mã khăn xô nên nó đo NGƯỢC chiều, khai vào là chứng minh sai.
+
+⚠ **Ngưỡng phủ 0,50 chốt trên dải đo được `[0,50; 0,60)`** — dưới 0,50 thì "Date tháng mấy ạ"
+lọt ra máy đuổi muỗi; từ 0,60 thì chặn oan chính câu gọi tên đúng. Lấy mức thấp nhất còn giữ
+được răng. **Cổng này chỉ có ĐÚNG 01 ca bắt được nó (ca 35)** — mất ca ấy là ngưỡng thành một
+con số chưa từng chặn lần nào.
+
+⚠ **`size` nằm trong STOP, cố ý.** Nó là NHÃN, giá trị của nó đã do trục biến thể lo; để lại
+thì nó thành chữ định danh và kéo bỉm Moony size M vào câu hỏi bỉm Merries size M (4 mã ⇒ vượt
+trần ⇒ mất câu trả lời đúng vì một cái nhãn). Cùng họ: `newborn` phải quy về `nb`, không thì
+cổng cấm đọc thành xung đột rồi **giết đúng mã đúng**.
+
+### File và lệnh
+
+| File | Vai |
+|---|---|
+| `functions/messenger-webhook/anh-xa.ts` | phép tra — 05 lớp ở trên |
+| `functions/messenger-webhook/anh-xa-data.ts` | **SINH TỰ ĐỘNG**, 444 mã · 139 mã có tên đầy đủ đã rà tay |
+| `functions/messenger-webhook/bo-ca-vang-tra-hang.json` | 25 ca, đáp án xác minh tay trên danh mục thật |
+| `functions/messenger-webhook/test-anh-xa.ts` | 38 ca (25 vàng + 13 đơn vị) |
+| `functions/messenger-webhook/ban-hong-anh-xa.ts` | 13 bản hỏng — **file RIÊNG**, neo kèm dòng liền kề |
+
+```bash
+deno run --allow-read --allow-write --allow-env --allow-run /Users/Huy/Claude/App/HuongDienWork/supabase/functions/messenger-webhook/test-anh-xa.ts --tu-kiem
+```
+
+Sinh lại danh mục khi hàng hoá đổi (⚠ **KHÔNG** nhúng giá và tồn kho vào file sinh ra — hai
+thứ đó đổi hằng ngày, tra sống qua KiotViet; nhúng số chết là bot báo giá cũ):
+
+```bash
+python3 /Users/Huy/Claude/App/HuongDienWork/dung-anh-xa-ts.py
+```
+
+### Bẫy đã vấp khi dựng bộ test, đừng lặp
+
+- **Ca neo động theo hằng số là ca mất răng.** Ca 111 ban đầu viết `<= TOI_DA_UNG_VIEN`, nên
+  bản hỏng nới hằng số lên 99 làm ngưỡng trôi theo và ca **VẪN XANH** trong khi trần đã mất —
+  nằm im đúng ở bản hỏng nó sinh ra để bắt. Nay ghim CỨNG số 3.
+- **Khai `doDo` phải LẤY TỪ SỐ ĐO, đừng suy luận.** Lượt khai đầu tiên sai **08/14** dòng: cổng
+  chữ lạ khai 09 ca hãng lạ thì thật ra bắt được **0** (08 ca kia đã bị lớp neo chặn trước);
+  cổng vân-thiếu khai ca 28 thì thật ra đỏ ở 2/3/7. Chạy `--tu-kiem`, đọc danh sách đỏ THẬT,
+  rồi mới khai.
+- **Bản hỏng không làm ca nào đỏ ⇒ hoặc còn lớp khác che, hoặc ca dựng ở nhánh phép thay không
+  đi qua.** Đã gặp cả hai: bản hỏng "gộp token hai lối gọi tên" không bắt được gì vì mã
+  `SP000229` không có tên đầy đủ nên một mình nó gánh ca — đã **gỡ bản hỏng ấy** thay vì khai
+  bừa. Bản hỏng "đếm sau lọc" ban đầu tính `quaPhu` rồi vẫn dùng `qua` ở dưới, tức phép thay
+  không đổi hành vi gì.
+- **Tên file bản hỏng mang CẢ pid LẪN sha1 nội dung.** Chỉ pid là chưa đủ khi tiến trình con
+  nạp mô-đun: hai bản hỏng ghi vào cùng tên trong cùng một giây có thể khiến bản sau chạy bằng
+  bản trước, không lỗi nào phát ra.
 
 ## Skills dùng chung
 Repo có `.claude/skills/` (11 skill từ plugin vibe-pwa-kit): bigfile-nav, data-backup, deploy-static, doc-single-file-app, local-store, lock-static-app, pwa-healthcheck, scaffold-vibe-pwa, supabase-sync, theme-pack, web-push.
