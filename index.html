@@ -1404,6 +1404,9 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
       {id:'sales',n:'Bán hàng'},{id:'kd',n:'Sổ KD'},{id:'stats',n:'Thống kê'}]},
     {id:'g_shop',name:'Cửa hàng',icon:'ti-building-store',badge:riskOpen,hint:'Mục rủi ro cao chưa xử lý',views:[
       {id:'ncc',n:'Nguồn hàng'},{id:'law',n:'Tuân thủ & Thuế'}]},
+    /* Nhóm RIÊNG chứ không nhét vào Cẩm nang: `admin` lọc theo NHÓM, không lọc theo tab,
+       nên muốn bản tin chỉ dành cho chủ và quản lý thì nó phải đứng thành một nhóm. */
+    {id:'g_tin',name:'Tin tức',icon:'ti-news',admin:true,views:[{id:'tinkd',n:'Tin kinh doanh'}]},
     {id:'g_ref',name:'Cẩm nang',icon:'ti-book',views:[{id:'train',n:'Huấn luyện'},{id:'learn',n:'Kiến thức'},{id:'book',n:'Sổ tay'}]},
     /* foot: nằm ở chân sidebar cùng nhóm "chăm mình" (Meditation, Deep Work), không đứng chung
        với các mục công việc phía trên. Trên điện thoại vẫn giữ trong thanh dưới cho dễ với. */
@@ -1589,6 +1592,7 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
           {view==='ncc' && <Sourcing st={sourcing} setSt={setSourcing}/>}
           {view==='law' && <Compliance st={compliance} setSt={setCompliance}/>}
           {view==='train' && <Training me={me} roles={roles} isAdmin={isAdmin} done={trained} setDone={setTrained}/>}
+          {view==='tinkd' && <TinKD/>}
           {view==='learn' && <Knowledge learned={learned} setLearned={setLearned}/>}
           {view==='book' && <Notebook nb={notebook} setNb={setNotebook} onExport={exportData} onImport={importData}/>}
           {view==='daily' && <Daily daily={daily} setDaily={setDaily} st={dailyState} toggle={toggleDaily} recurring={recurring} setRecurring={setRecurring}/>}
@@ -3359,6 +3363,120 @@ const KNOWLEDGE=[
    {id:'ai7',t:'Lưu ý khi dùng AI',min:2,body:['AI chỉ tốt khi DỮ LIỆU SẠCH & TẬP TRUNG → gom đơn vào 1 phần mềm trước.','Luôn kiểm chứng nội dung AI, nhất là thông tin sản phẩm mẹ&bé nhạy cảm.','AI thay đổi rất nhanh — định kỳ cập nhật công cụ mới.'],a:'Đừng để AI tự đăng thông tin y tế/giá chưa kiểm. Người vẫn là người quyết định cuối.'},
  ]},
 ];
+/* ── Tin kinh doanh ─────────────────────────────────────────────────────────────────────
+   Bản tin hằng ngày do routine trên máy chủ nhà quét báo Việt Nam rồi phân tích, đẩy lên
+   qua Edge Function `hdw-tin`. CHỈ chứa phần liên quan cửa hàng — phần cơ hội kiếm tiền và
+   khuyến nghị riêng cho chủ KHÔNG bao giờ vào đây (Huy chốt 06/08/2026), và script đẩy có
+   danh sách trắng chặn ở phía máy chủ chứ không trông vào app.
+
+   Đọc được khi máy đã bật ĐỒNG BỘ, hoặc đã nhập MÃ ĐỌC TIN riêng. Hai đường vì đo 06/08:
+   bảng mã đồng bộ đang rỗng, nên một đường duy nhất theo mã đồng bộ là không ai đọc được
+   trong khi routine vẫn đẩy tin lên mỗi sáng. Không cache vào localStorage: nội dung đổi
+   hằng ngày và luôn có mạng khi mở app. */
+function TinKD(){
+  const [ds,setDs]=useState(null);
+  const [err,setErr]=useState('');
+  const [dangTai,setDangTai]=useState(true);
+  const [mo,setMo]=useState({});
+  const [oMa,setOMa]=useState('');
+  const layMa=()=>{ try{ return localStorage.getItem('hdw.synccode')||localStorage.getItem('hdw.tincode')||''; }catch(e){ return ''; } };
+  const tai=async(maDung)=>{
+    setDangTai(true); setErr('');
+    if(!maDung){ setErr('chua-co-ma'); setDangTai(false); return; }
+    try{
+      const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('hdw:'+maDung));
+      const id=Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+      const r=await fetch(SB_URL+'/functions/v1/hdw-tin',{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY},body:JSON.stringify({viec:'doc',sync_id:id,so_ngay:14})});
+      const j=await r.json();
+      if(!r.ok){ setErr(j.loi||('Không tải được bản tin (mã '+r.status+')')); setDangTai(false); return; }
+      setDs(j.ban_tin||[]); setDangTai(false);
+    }catch(e){ setErr('Không kết nối được. Kiểm tra mạng rồi thử lại.'); setDangTai(false); }
+  };
+  useEffect(()=>{ tai(layMa()); },[]);
+  const luuMa=()=>{ const m=oMa.trim(); if(m.length<6){alert('Mã đọc tin phải từ 6 ký tự.');return;} try{localStorage.setItem('hdw.tincode',m);}catch(e){} tai(m); };
+  const MAU={cao:{n:'Cần làm sớm',bg:'#fee2e2',ch:'#991b1b'},vua:{n:'Nên chuẩn bị',bg:'#fef3c7',ch:'#92400e'},thap:{n:'Biết để đó',bg:'var(--bg)',ch:'var(--muted)'}};
+  const O=({nhan,noi})=> noi?(
+    <div style={{marginTop:9}}>
+      <div style={{fontSize:11.5,fontWeight:700,color:'var(--muted)',textTransform:'uppercase',letterSpacing:.3}}>{nhan}</div>
+      <div style={{fontSize:13.5,lineHeight:1.6,color:'var(--ink)',marginTop:2}}>{noi}</div>
+    </div>
+  ):null;
+
+  if(dangTai) return <div style={{padding:'26px 4px',color:'var(--muted)',fontSize:13.5}}>Đang tải bản tin…</div>;
+
+  if(err==='chua-co-ma'||(err&&err.indexOf('chưa được cấp quyền')>=0)) return (
+    <div style={{padding:'18px 4px',maxWidth:520}}>
+      <b style={{fontSize:15}}>Nhập mã đọc tin</b>
+      <p style={{fontSize:13.5,color:'var(--muted)',lineHeight:1.6,marginTop:6}}>
+        Máy này chưa có mã để đọc bản tin kinh doanh. Hỏi chủ cửa hàng lấy <b>mã đọc tin</b> rồi nhập vào đây — chỉ cần nhập một lần trên mỗi máy.
+      </p>
+      <div className="row" style={{gap:8,marginTop:10}}>
+        <input value={oMa} onChange={e=>setOMa(e.target.value)} placeholder="ví dụ: hd-tin-…" style={{flex:1,padding:'9px 11px',border:'1px solid var(--border)',borderRadius:9,fontSize:14,background:'var(--card,#fff)',color:'var(--ink)'}}/>
+        <button className="btn sm" onClick={luuMa}><i className="ti ti-check"></i>Lưu</button>
+      </div>
+      {err&&err!=='chua-co-ma'&&<div style={{marginTop:9,fontSize:13,color:'#991b1b'}}>{err}</div>}
+    </div>
+  );
+
+  if(err) return (
+    <div style={{padding:'22px 4px'}}>
+      <div style={{fontSize:13.5,color:'#991b1b'}}>{err}</div>
+      <button className="btn sm ghost" style={{marginTop:10}} onClick={()=>tai(layMa())}><i className="ti ti-rotate"></i>Thử lại</button>
+    </div>
+  );
+
+  if(!ds||!ds.length) return (
+    <div style={{padding:'26px 4px',color:'var(--muted)',fontSize:13.5,lineHeight:1.6}}>
+      Chưa có bản tin nào. Bản tin được cập nhật vào khoảng <b>6h30 sáng</b> mỗi ngày.
+    </div>
+  );
+
+  return (
+    <div>
+      <div style={{fontSize:13,color:'var(--muted)',lineHeight:1.6,marginBottom:12}}>
+        Tin kinh doanh trên báo Việt Nam có ảnh hưởng tới cửa hàng, cập nhật khoảng 6h30 sáng hằng ngày.
+      </div>
+      {ds.map(ngay=>{
+        const muc=ngay.muc_hd||[];
+        return (
+          <div key={ngay.ngay} style={{marginBottom:20}}>
+            <div className="row" style={{gap:8,marginBottom:7}}>
+              <b style={{fontSize:14.5}}>{(ngay.ngay||'').split('-').reverse().join('/')}</b>
+              <small style={{color:'var(--muted2)'}}>{muc.length} mục · đã lọc {ngay.so_tin_da_doc||0} tin</small>
+            </div>
+            {!muc.length&&<div style={{fontSize:13,color:'var(--muted)',padding:'6px 2px'}}>Hôm nay không có tin nào đáng chú ý cho cửa hàng.{ngay.ghi_chu?' '+ngay.ghi_chu:''}</div>}
+            {muc.map((m,i)=>{
+              const k=ngay.ngay+'#'+i, dang=!!mo[k], mau=MAU[m.muc_do]||MAU.thap;
+              return (
+                <div key={k} style={{border:'1px solid var(--border)',borderRadius:12,padding:'12px 14px',marginBottom:9,background:'var(--card,transparent)'}}>
+                  <div className="row" style={{gap:8,alignItems:'flex-start',cursor:'pointer'}} onClick={()=>setMo({...mo,[k]:!dang})}>
+                    <div className="rt" style={{flex:1}}>
+                      <b style={{fontWeight:650,fontSize:14,lineHeight:1.45,display:'block',color:'var(--ink)'}}>{m.tieu_de}</b>
+                      <small style={{color:'var(--muted2)'}}>{m.bao}</small>
+                    </div>
+                    <span style={{fontSize:11,fontWeight:700,padding:'3px 8px',borderRadius:99,background:mau.bg,color:mau.ch,whiteSpace:'nowrap'}}>{mau.n}</span>
+                    <i className={'ti '+(dang?'ti-chevron-up':'ti-chevron-down')} style={{color:'var(--muted2)'}}></i>
+                  </div>
+                  <div style={{fontSize:13.5,lineHeight:1.6,color:'var(--muted)',marginTop:6}}>{m.tom_tat}</div>
+                  {dang&&
+                    <div style={{marginTop:6,animation:'fade .2s'}}>
+                      <O nhan="Liên quan gì tới cửa hàng" noi={m.lien_quan_gi}/>
+                      <O nhan="Cần thích nghi thế nào" noi={m.thich_nghi}/>
+                      <O nhan="Học được gì" noi={m.hoc_hoi}/>
+                      <O nhan="Cần chuẩn bị" noi={m.chuan_bi}/>
+                      <O nhan="Cần thay đổi" noi={m.thay_doi}/>
+                      {m.url&&<a href={m.url} target="_blank" rel="noopener" style={{display:'inline-block',marginTop:11,fontSize:13,color:'var(--o-dk,#92400e)',fontWeight:600}}>Đọc bài gốc →</a>}
+                    </div>}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function Knowledge({learned,setLearned}){
   const all=KNOWLEDGE.flatMap(t=>t.lessons);
   const doneN=all.filter(l=>learned[l.id]).length;
