@@ -43,6 +43,25 @@ Truy cập qua wrapper `store.get/set` (dòng ~256, có try/catch + fallback `me
   - Não khỏe `brain` → `BrainEnergy` (đang ẩn)
 - Pomodoro/tập trung: `FocusModal`, `DeepWork`, `Ring`, `SoundBar`/`Noise` (tiếng ồn nền). `BreathMode` (thở), `SyncPanel` (mã sync), `TaskModal`.
 
+## Tab Tin kinh doanh (thêm 06/08/2026)
+
+Nhóm menu **Tin tức** (`admin:true`, tức chỉ chủ và quản lý) → component `TinKD`. Bản tin do
+routine trên máy Huy quét báo Việt Nam rồi phân tích, đẩy lên qua Edge Function `hdw-tin`.
+
+**Luật, cơ chế và bẫy đã vấp nằm ở `/Users/Huy/Claude/TinKinhDoanh/CLAUDE.md` — đọc file đó
+trước khi sửa gì liên quan.** Ở đây chỉ ghi phần thuộc app:
+
+- Nhóm **RIÊNG**, cố ý không nhét vào Cẩm nang: `admin` lọc theo NHÓM chứ không theo tab, nên
+  muốn bản tin chỉ dành cho chủ và quản lý thì nó phải đứng thành một nhóm.
+- Đọc được khi máy đã bật đồng bộ (`hdw.synccode`) **hoặc** đã nhập mã đọc tin riêng
+  (`hdw.tincode`). Hai đường vì bảng `hdw_sync` đang RỖNG — một đường duy nhất theo mã đồng bộ
+  là không ai đọc được trong khi routine vẫn đẩy tin lên mỗi sáng.
+- ⛔ **App chỉ nhận phần liên quan cửa hàng.** Phần cơ hội kiếm tiền và khuyến nghị cho chủ
+  không bao giờ vào đây (Huy chốt 06/08) — app dùng chung với người làm thuê, và mã đồng bộ ở
+  mức ai-biết-thì-vào. Chốt chặn là danh sách TRẮNG trong `day-len-app.py`, phía máy chủ.
+- Bảng `hdw_tin_kd` và `hdw_tin_quyen`: RLS bật + force, **0 policy** — nghiệm thu bằng lời gọi
+  thật, khoá công khai đọc ra `[]` trong khi bảng có dòng.
+
 ## Backend Supabase (dùng chung project `ltmlueqkajqmduoqghdf`)
 - **Sync dữ liệu app**: Edge Function `hdw-sync` với `SB_KEY` publishable (dòng ~261).
 - **Kinh doanh (`Sales`)**: REST + Edge Function `kiotviet-sync` với `SUPA_KEY` anon JWT (dòng ~1910) — kéo số liệu bán hàng (KiotViet).
