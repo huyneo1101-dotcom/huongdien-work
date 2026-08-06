@@ -1396,13 +1396,21 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
     .reduce((n,p)=>n+kho.muc(p).filter(m=>!kho.daDoc()[m._k]).length,0):0;
   /* Biến một mục đang đọc thành một việc trong Bảng việc. Đây là chỗ mục Đọc thôi là chỗ để
      đọc: tin nào phải làm gì đó thì việc ấy nằm luôn trong hàng đợi, khỏi phải nhớ. */
+  /* Hạn chót của một mục chính sách là thứ đáng giá nhất trong mục đó, nên nó phải đi theo
+     việc. Không lấy thì người dùng đọc được "hạn 31/08" rồi tạo ra một việc KHÔNG hạn — tức
+     vừa mất đúng dữ kiện vừa đọc, và cái lịch của app không biết gì về nó. Nhận cả 'dd/mm/yyyy'
+     lẫn 'yyyy-mm-dd'; không đọc được thì để trống, KHÔNG đoán. */
+  const hanThanhNgay=(v)=>{ const t=String(v||'').trim();
+    let m=t.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
+    if(m) return m[3]+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[1]).padStart(2,'0');
+    m=t.match(/(\d{4})-(\d{2})-(\d{2})/); return m?m[0]:''; };
   const taoViecTuTin=(m)=>{
     const t={id:uid(),title:String(m.tieu_de||'').slice(0,120),proj:(myRole.projs&&myRole.projs[0])||'nhap',
-      status:'todo',pri:m.muc_do==='cao'?'high':'med',progress:0,due:'',
+      status:'todo',pri:m.muc_do==='cao'?'high':'med',progress:0,due:hanThanhNgay(m.han_chot)||hanThanhNgay(m.hieu_luc_tu),
       note:[m.tom_tat,m.viec_phai_lam,m.hanh_dong,m.chuan_bi,m.url].filter(Boolean).join('\n'),
       checklist:[],created:today(),assignee:me.id};
     setTasks([t,...tasks]);
-    alert('Đã thêm vào Bảng việc: '+t.title);
+    alert('Đã thêm vào Bảng việc: '+t.title+(t.due?'\nHạn: '+t.due.split('-').reverse().join('/'):''));
   };
   /* Sổ Công Nợ là app RIÊNG, cố ý không nhúng vào đây — chỉ nối bằng một nút mở sang.
      Lý do (Huy chốt 31/07/2026): repo này PUBLIC và đồng bộ bằng "mã sync" ai-biết-thì-vào
