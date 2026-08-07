@@ -350,6 +350,32 @@ const Sync={
 };
 _syncHook=()=>Sync.schedule();
 
+/* ---------- Chuyển nhà: địa chỉ github.io cũ → Cloudflare ----------
+   Tài khoản và dữ liệu nằm trong bộ nhớ CỦA TỪNG ĐỊA CHỈ WEB, nên mở địa chỉ mới là
+   thấy máy trắng và app mời tạo tài khoản chủ (Huy vấp đúng chỗ này 07/08/2026).
+   Đường mang dữ liệu sang duy nhất là mã đồng bộ; ở đây tự đẩy lên rồi gắn mã vào
+   phần sau dấu # của địa chỉ mới để bên kia tự kéo về — phần sau dấu # KHÔNG được
+   gửi lên máy chủ nào, và bên nhận xoá nó khỏi thanh địa chỉ ngay sau khi đọc. */
+const DIA_CHI_MOI='https://huongdien-work.pages.dev/';
+const laBanCu=()=>{ try{ return location.hostname.indexOf('github.io')>=0; }catch(e){ return false; } };
+/* Nhận mã từ địa chỉ — chạy TRƯỚC khi React dựng, để Root thấy đồng bộ đã bật và tự kéo về. */
+function nhanMaTuDiaChi(){
+  try{
+    const m=(location.hash||'').match(/dongbo=([^&]+)/);
+    if(!m)return false;
+    const c=decodeURIComponent(m[1]).trim();
+    if(c.length<4)return false;
+    localStorage.setItem('hdw.synccode',c);
+    history.replaceState(null,'',location.pathname+location.search);
+    return true;
+  }catch(e){ return false; }
+}
+nhanMaTuDiaChi();
+/* Dán địa chỉ vào tab ĐANG MỞ chỉ đổi phần sau dấu #, trình duyệt KHÔNG tải lại trang,
+   nên không có gì xảy ra và người dán không hiểu vì sao — hỏng mà không để lại dấu hiệu.
+   Bắt sự kiện đổi # rồi tải lại để đi đúng đường trên. */
+window.addEventListener('hashchange',()=>{ if(nhanMaTuDiaChi()) location.reload(); });
+
 /* ---------- Nhắc việc qua push thật (server gửi kể cả khi app đã đóng) ---------- */
 const VAPID_PUBLIC='BNQW_kNZZL-rP10dgaCnNp26iSOVubHS8Qpxm80fVQex6DGlhRNs9wtHGRr4u7x4b5DVxmlH5yyww9Y2EffASxo';
 function urlB64ToUint8Array(b64){
@@ -1055,6 +1081,65 @@ function SetPassword({user,onDone,onBack}){
   );
 }
 /* Cổng vào: chưa đăng nhập thì KHÔNG dựng app, chỉ thấy màn khoá */
+/* Dải nhắc chuyển nhà — CHỈ hiện ở địa chỉ github.io cũ, mọi màn hình kể cả màn khoá.
+   Cố ý KHÔNG tự chuyển hướng: chuyển thẳng là cắt luôn đường vào bộ nhớ của địa chỉ cũ,
+   mà dữ liệu đang nằm chính trong đó và chỉ mã đồng bộ mới mang sang được. */
+function BangChuyenNha(){
+  const [mo,setMo]=useState(false);
+  const [ma,setMa]=useState(()=>{ try{ return localStorage.getItem('hdw.synccode')||''; }catch(e){ return ''; } });
+  const [buoc,setBuoc]=useState('');  /* '' | 'dang' | 'xong' | 'loi' */
+  if(!laBanCu()) return null;
+  const mangSang=async()=>{
+    setBuoc('dang');
+    let c=ma.trim();
+    if(c.length<6) c='huongdien-'+randHex(5);
+    try{
+      localStorage.setItem('hdw.synccode',c);
+      await Sync.push();
+      /* Nghiệm thu bằng lời gọi thật — Sync.push nuốt lỗi vào trạng thái, không ném ra. */
+      const kiem=await Sync.call('pull',{});
+      if(kiem&&kiem.data&&Object.keys(kiem.data).length){ setMa(c); setBuoc('xong'); }
+      else { setBuoc('loi'); }
+    }catch(e){ setBuoc('loi'); }
+  };
+  const oMa={width:'100%',padding:'11px 12px',border:'1.5px dashed var(--o)',borderRadius:11,fontSize:15,fontWeight:700,textAlign:'center',letterSpacing:.4,background:'var(--o-lt)',color:'var(--tx)',userSelect:'all',wordBreak:'break-all'};
+  return (
+    <React.Fragment>
+      <div onClick={()=>setMo(true)} style={{position:'fixed',top:0,left:0,right:0,zIndex:9998,cursor:'pointer',background:'var(--o)',color:'#fff',padding:'8px 14px',fontSize:12.5,lineHeight:1.45,display:'flex',alignItems:'center',gap:9,boxShadow:'0 2px 10px rgba(0,0,0,.13)'}}>
+        <i className="ti ti-truck-delivery" style={{fontSize:17,flexShrink:0}}></i>
+        <span style={{flex:1}}><b>App đã chuyển sang địa chỉ mới.</b> Bấm vào đây để mang việc và tài khoản sang.</span>
+        <i className="ti ti-chevron-right" style={{fontSize:16,flexShrink:0}}></i>
+      </div>
+      <div style={{height:38}}></div>
+      {mo&&(
+        <div onClick={e=>{ if(e.target===e.currentTarget) setMo(false); }} style={{position:'fixed',inset:0,zIndex:9999,background:'rgba(0,0,0,.45)',display:'flex',alignItems:'center',justifyContent:'center',padding:18}}>
+          <div style={{width:'100%',maxWidth:400,background:'var(--card)',borderRadius:17,padding:20,boxShadow:'0 18px 50px rgba(0,0,0,.3)',maxHeight:'88vh',overflowY:'auto'}}>
+            <b style={{fontFamily:'Baloo 2',fontSize:18,display:'block',marginBottom:8}}>Mang dữ liệu sang địa chỉ mới</b>
+            {buoc!=='xong'&&(
+              <p style={{fontSize:13,color:'var(--muted)',lineHeight:1.65,margin:'0 0 15px'}}>Việc, tài khoản và ghi chép đang nằm trong bộ nhớ của <b>riêng địa chỉ này</b>, nên mở địa chỉ mới sẽ thấy trống trơn. Bấm nút dưới: máy sẽ gửi toàn bộ dữ liệu lên đám mây rồi mở địa chỉ mới và tự kéo về.</p>
+            )}
+            {buoc==='xong'?(
+              <React.Fragment>
+                <p style={{fontSize:13,color:'var(--muted)',lineHeight:1.65,margin:'0 0 12px'}}>Dữ liệu đã lên đám mây. Bấm nút dưới để sang địa chỉ mới — bên đó tự kéo về, không phải gõ gì.</p>
+                <a className="btn" href={DIA_CHI_MOI+'#dongbo='+encodeURIComponent(ma)} style={{width:'100%',justifyContent:'center',marginBottom:13,textDecoration:'none'}}><i className="ti ti-arrow-right"></i>Sang địa chỉ mới ngay</a>
+                <div style={{fontSize:12,color:'var(--muted2)',marginBottom:6}}>Máy khác thì mở <b>{DIA_CHI_MOI.replace('https://','')}</b> rồi chọn <b>Nhập mã đồng bộ</b> và gõ mã này:</div>
+                <div style={oMa}>{ma}</div>
+                <div style={{fontSize:11.5,color:'var(--muted2)',marginTop:9,lineHeight:1.55}}>Mã này là chìa khoá vào toàn bộ dữ liệu cửa hàng — chỉ đưa cho người trong đội.</div>
+              </React.Fragment>
+            ):(
+              <button className="btn" disabled={buoc==='dang'} style={{width:'100%',justifyContent:'center'}} onClick={mangSang}>
+                <i className="ti ti-cloud-upload"></i>{buoc==='dang'?'Đang gửi dữ liệu lên…':'Mang dữ liệu sang'}
+              </button>
+            )}
+            {buoc==='loi'&&<div style={{marginTop:12,padding:'10px 12px',background:'var(--red-lt)',color:'var(--red)',borderRadius:11,fontSize:12.5,lineHeight:1.5}}>Chưa gửi được. Kiểm tra mạng rồi bấm lại — dữ liệu trên máy này vẫn còn nguyên.</div>}
+            <button className="btn ghost sm" style={{width:'100%',justifyContent:'center',marginTop:9}} onClick={()=>setMo(false)}>Để lúc khác</button>
+          </div>
+        </div>
+      )}
+    </React.Fragment>
+  );
+}
+
 function Root(){
   const [users,setUsersState]=useState(()=>Auth.users());
   const [roles,setRolesState]=useState(()=>Auth.roles());
@@ -1069,13 +1154,18 @@ function Root(){
       .catch(()=>setPulled(true));
   },[]);
   const me=users.find(u=>u.id===curId&&u.active!==false)||null;
-  if(!pulled) return <AuthShell sub="Đang tải dữ liệu…"><div style={{...authCard,textAlign:'center',color:'var(--muted)',fontSize:13}}>Đang đồng bộ với đám mây…</div></AuthShell>;
-  /* onIn đọc lại từ kho: màn khoá có thể vừa tạo tài khoản chủ đầu tiên */
-  if(!me) return <Login users={users} roles={roles} onIn={(id)=>{ Auth.open(id); setUsersState(Auth.users()); setCurId(id); }}/>;
-  if(me.mustChange) return <SetPassword user={me} onBack={()=>{ Auth.close(); setCurId(null); }}
-    onDone={(hash,salt)=>setUsers(users.map(u=>u.id===me.id?{...u,hash,salt,mustChange:false}:u))}/>;
-  return <App key={me.id} me={me} roles={roles} setRoles={setRoles} users={users} setUsers={setUsers}
-    onLock={()=>{ Auth.close(); setCurId(null); }}/>;
+  /* Dải chuyển nhà phải nằm ngoài mọi nhánh: ở địa chỉ cũ thì màn hay gặp nhất chính là
+     màn khoá đòi tạo tài khoản chủ, tức nhánh mà người cần dải này nhất lại rơi vào. */
+  const than=(()=>{
+    if(!pulled) return <AuthShell sub="Đang tải dữ liệu…"><div style={{...authCard,textAlign:'center',color:'var(--muted)',fontSize:13}}>Đang đồng bộ với đám mây…</div></AuthShell>;
+    /* onIn đọc lại từ kho: màn khoá có thể vừa tạo tài khoản chủ đầu tiên */
+    if(!me) return <Login users={users} roles={roles} onIn={(id)=>{ Auth.open(id); setUsersState(Auth.users()); setCurId(id); }}/>;
+    if(me.mustChange) return <SetPassword user={me} onBack={()=>{ Auth.close(); setCurId(null); }}
+      onDone={(hash,salt)=>setUsers(users.map(u=>u.id===me.id?{...u,hash,salt,mustChange:false}:u))}/>;
+    return <App key={me.id} me={me} roles={roles} setRoles={setRoles} users={users} setUsers={setUsers}
+      onLock={()=>{ Auth.close(); setCurId(null); }}/>;
+  })();
+  return <React.Fragment><BangChuyenNha/>{than}</React.Fragment>;
 }
 
 /* ===================================================================== */
