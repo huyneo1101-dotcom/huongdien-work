@@ -70,10 +70,68 @@ trước khi sửa gì liên quan.** Ở đây chỉ ghi phần thuộc app:
 - `react@18`, `react-dom@18` (umd production), `@babel/standalone@7`.
 - `@tabler/icons-webfont@3.19.0` (icon `ti-*`) + Google Fonts.
 
+## ⛔ HAI ĐỊA CHỈ = HAI KHO DỮ LIỆU TÁCH RỜI — Huy chốt 07/08/2026 chuyển hẳn sang Cloudflare
+
+Huy mở `huongdien-work.pages.dev` và bị app mời **tạo tài khoản chủ** dù đã tạo từ lâu.
+Không lỗi nào phát ra, vì về mặt kỹ thuật app làm đúng: `localStorage` khoá theo **origin**,
+mà `huyneo1101-dotcom.github.io` và `huongdien-work.pages.dev` là hai origin khác nhau.
+
+⚠ **Cơ chế đáng sợ ở chỗ nó trông y hệt mất dữ liệu.** Màn hình hiện ra là màn của một máy
+hoàn toàn mới, nên phản xạ của người dùng là bấm "Tạo tài khoản chủ" — và nếu bấm thì kho cũ
+vẫn còn nguyên nhưng từ đó có **hai danh sách tài khoản khác nhau**, sau này đồng bộ vào cùng
+một mã là một bên đè bên kia (xem bẫy trộn 3 chiều ngay dưới).
+
+⛔ **BẪY TRỘN 3 CHIỀU KHI HAI MÁY CÙNG ĐẨY LẦN ĐẦU — máy đẩy SAU thắng.** `Sync.merge` xử
+khoá nào cả hai bên cùng khác `base` là xung đột, và nhánh xung đột lấy **local**. Lần đầu
+`hdw.syncbase` rỗng nên MỌI khoá đều rơi vào nhánh đó ⇒ `hdw.users` của máy đẩy trước bị ghi
+đè, và lần `pull` kế tiếp của máy ấy sẽ nuốt bản thua về local. Vì thế quy trình chuyển nhà
+bắt buộc là: **một máy gốc đẩy lên trước, mọi máy còn lại CHỈ nhập mã để kéo về** — kéo về
+xong `setBaseline` khớp remote nên các lần push sau không còn xung đột giả.
+
+### Đường chuyển nhà đã dựng (`BangChuyenNha`, ngay trên `Root`)
+
+- Dải nhắc **chỉ hiện khi `location.hostname` chứa `github.io`** (`laBanCu()`), nằm ngoài mọi
+  nhánh của `Root` — vì màn hay gặp nhất ở địa chỉ cũ chính là màn khoá, tức nhánh mà người
+  cần dải này nhất lại rơi vào.
+- Bấm một nút: tự sinh mã nếu chưa có → `Sync.push()` → **nghiệm thu bằng lời gọi `pull` thật**
+  (`Sync.push` nuốt lỗi vào trạng thái, không ném ra, nên đọc `_status` là tin lời khai của
+  chính nó) → hiện mã + nút sang địa chỉ mới kèm `#dongbo=<mã>`.
+- Bên nhận: `nhanMaTuDiaChi()` chạy **trước khi React dựng**, đặt `hdw.synccode` rồi
+  `history.replaceState` xoá mã khỏi thanh địa chỉ. `Root` thấy `Sync.enabled()` nên tự kéo về.
+- ⚠ **Dùng phần sau dấu `#`, KHÔNG dùng query string** — phần sau `#` không được gửi lên máy
+  chủ nào. Mã vẫn là chìa khoá vào toàn bộ dữ liệu nên link đó chỉ dùng trên chính máy đó.
+- ⚠ **Chiều hỏng câm đã vá:** dán link vào tab **đang mở sẵn** chỉ đổi phần sau `#`, trình
+  duyệt KHÔNG tải lại trang ⇒ không có gì xảy ra và người dán không hiểu vì sao. Bắt bằng
+  `hashchange` rồi `location.reload()`. Đo thật cả hai đường trước và sau khi vá.
+- ⛔ **CỐ Ý KHÔNG tự chuyển hướng địa chỉ cũ sang địa chỉ mới.** Chuyển thẳng là cắt luôn
+  đường vào `localStorage` của origin cũ, mà dữ liệu đang nằm chính trong đó và **chỉ mã đồng
+  bộ mới mang sang được**. Chỉ được bật chuyển hướng sau khi mọi máy đã kéo xong.
+
+**Nghiệm thu 07/08/2026, đo đầu-cuối trên địa chỉ THẬT chứ không phải localhost:** tạo tài
+khoản giả ở `github.io` → bấm dải → mã sinh ra `huongdien-d77175d162` → bấm sang địa chỉ mới
+⇒ `pages.dev` hiện đúng tài khoản và việc, thanh địa chỉ sạch mã. Đối chứng chống hiện oan:
+`pages.dev` **không** hiện dải; `localhost` **không** hiện dải.
+
+⚠ **Còn 02 dòng rác thử nghiệm trong bảng `hdw_sync`** (`23b79c9c…`, `87316f5e…` — nội dung
+là tài khoản "ZIM THU NGHIEM" và một bộ seed rỗng). Vô hại vì bảng khoá theo mã ngẫu nhiên,
+nhưng nên xoá. Lệnh xoá bị classifier chặn nên phải Huy chạy tay.
+
+⚠ **`hdw_sync.id` KHÔNG phải sha256 trần của mã** — đã thử đối chiếu và trượt. Muốn xoá đúng
+dòng thì đọc `left(data::text, 260)` ra xem trước, đừng suy id từ mã.
+
 ## Deploy
 
-Hiện phát hành qua **GitHub Pages** (`https://huyneo1101-dotcom.github.io/huongdien-work/`),
-và Pages miễn phí buộc repo phải PUBLIC.
+Hiện phát hành **song song hai nơi**, và Huy đã chốt 07/08/2026 đích đến là **Cloudflare
+Pages** (`https://huongdien-work.pages.dev/`): GitHub Pages
+(`https://huyneo1101-dotcom.github.io/huongdien-work/`) chỉ còn giữ để người cũ chuyển sang.
+Pages miễn phí buộc repo phải PUBLIC — khoá repo lại thành riêng tư chỉ làm được sau khi mọi
+máy đã chuyển xong.
+
+⚠ **GitHub Pages ở repo này chạy kiểu cũ (dựng thẳng từ nhánh `main`), và hàng đợi workflow
+của GitHub có lúc treo hàng giờ** — 07/08 một run nằm `queued` 8 giờ 15 phút, lần trước đó
+chết vì *"The job was not acquired by Runner of type hosted"*. Đừng chờ và đừng rerun: gọi
+thẳng `gh api -X POST repos/huyneo1101-dotcom/huongdien-work/pages/builds`, build xong dưới
+20 giây. Nghiệm thu bằng **sha1 nội dung** lấy từ địa chỉ thật so với file trên đĩa.
 
 ### ⏸ ĐANG HOÃN TỚI THỨ HAI 03/08/2026 — chuyển sang Cloudflare Pages + khoá repo private
 
