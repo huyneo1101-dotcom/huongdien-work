@@ -59,6 +59,14 @@ trước khi sửa gì liên quan.** Ở đây chỉ ghi phần thuộc app:
 - ⛔ **App chỉ nhận phần liên quan cửa hàng.** Phần cơ hội kiếm tiền và khuyến nghị cho chủ
   không bao giờ vào đây (Huy chốt 06/08) — app dùng chung với người làm thuê, và mã đồng bộ ở
   mức ai-biết-thì-vào. Chốt chặn là danh sách TRẮNG trong `day-len-app.py`, phía máy chủ.
+- **Ô `rui_ro` (thêm 07/08/2026)** hiện ở cả 03 tab tin, có hình dạng riêng trong `MucDoc`
+  (viền trái đỏ + nền cảnh báo) vì 05 ô còn lại đều trả lời *nên làm gì*, riêng ô này trả lời
+  *mất gì nếu không làm*. Nút "Tạo việc" mang luôn ô này vào ghi chú việc — người nhận việc
+  không mở lại tab Đọc để tra lý do.
+  ⚠ **Thêm ô mới cho mục Đọc mà quên khai vào `DOC_PHAN` là hỏng CÂM**: máy chủ vẫn đẩy, lời
+  gọi vẫn trả "đã ghi", không màn hình nào hiện. Nay có cổng canh phía máy chủ
+  (`TinKinhDoanh/day-len-app.py::o_app_khong_hien()`) đọc thẳng file này để đối chiếu — **đổi
+  tên hằng `DOC_PHAN` hay đổi khoá `phan:` là làm cổng đó mất khả năng đo**, và nó sẽ kêu.
 - Bảng `hdw_tin_kd` và `hdw_tin_quyen`: RLS bật + force, **0 policy** — nghiệm thu bằng lời gọi
   thật, khoá công khai đọc ra `[]` trong khi bảng có dòng.
 
@@ -120,6 +128,13 @@ nhưng nên xoá. Lệnh xoá bị classifier chặn nên phải Huy chạy tay.
 dòng thì đọc `left(data::text, 260)` ra xem trước, đừng suy id từ mã.
 
 ## Deploy
+
+⚠ **SỬA XONG `index.html` MÀ HUY VẪN THẤY BẢN CŨ SAU KHI LOAD LẠI — luôn kiểm `git status`
+trước khi khai "đã xong".** Đã vấp thật 07/08/2026: gộp nút Cài đặt vào sidebar, sửa xong tại
+chỗ trên đĩa, báo Huy "đã xong" — nhưng chưa `git commit` + push + build lại Pages nên bản
+Huy đang mở (`huongdien-work.pages.dev` hoặc `github.io`) vẫn là code cũ. Đường đúng: sửa →
+`git -C /Users/Huy/Claude/App/HuongDienWork commit index.html sw.js -m "..."` → push → build
+Pages (lệnh `gh api` ở dưới) → nghiệm thu bằng sha1 nội dung từ địa chỉ THẬT, rồi mới báo xong.
 
 Hiện phát hành **song song hai nơi**, và Huy đã chốt 07/08/2026 đích đến là **Cloudflare
 Pages** (`https://huongdien-work.pages.dev/`): GitHub Pages

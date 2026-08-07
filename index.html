@@ -1498,7 +1498,10 @@ function App({me,roles,setRoles,users,setUsers,onLock}){
   const taoViecTuTin=(m)=>{
     const t={id:uid(),title:String(m.tieu_de||'').slice(0,120),proj:(myRole.projs&&myRole.projs[0])||'nhap',
       status:'todo',pri:m.muc_do==='cao'?'high':'med',progress:0,due:hanThanhNgay(m.han_chot)||hanThanhNgay(m.hieu_luc_tu),
-      note:[m.tom_tat,m.viec_phai_lam,m.hanh_dong,m.chuan_bi,m.url].filter(Boolean).join('\n'),
+      /* Ô rủi ro đi kèm vào ghi chú việc (thêm 07/08/2026): nó chính là LÝ DO việc này được
+         tạo, mà người nhận việc thì không mở lại tab Đọc để tra. Đặt ngay sau tóm tắt, có
+         nhãn để không lẫn với phần mô tả. */
+      note:[m.tom_tat,m.rui_ro?'⚠ Rủi ro: '+m.rui_ro:'',m.viec_phai_lam,m.hanh_dong,m.chuan_bi,m.url].filter(Boolean).join('\n'),
       checklist:[],created:today(),assignee:me.id};
     setTasks([t,...tasks]);
     alert('Đã thêm vào Bảng việc: '+t.title+(t.due?'\nHạn: '+t.due.split('-').reverse().join('/'):''));
@@ -3517,18 +3520,19 @@ const KNOWLEDGE=[
 const DOC_PHAN={
   tinkd:{phan:'hd', ten:'Tin kinh doanh', icon:'ti-news',
     mo_ta:'Tin trên báo Việt Nam có ảnh hưởng tới việc kinh doanh của cửa hàng.',
-    o:[['Liên quan gì tới cửa hàng','lien_quan_gi'],['Cần thích nghi thế nào','thich_nghi'],
+    o:[['Liên quan gì tới cửa hàng','lien_quan_gi'],['Rủi ro với Hương Diện','rui_ro'],
+       ['Cần thích nghi thế nào','thich_nghi'],
        ['Học được gì','hoc_hoi'],['Cần chuẩn bị','chuan_bi'],['Cần thay đổi','thay_doi']]},
   tinthitruong:{phan:'thi_truong', ten:'Thị trường Mẹ & Bé', icon:'ti-chart-arrows',
     mo_ta:'Ngành hàng mẹ và bé đang đi về đâu: giá, nguồn hàng, các chuỗi lớn, nhu cầu của khách.',
     o:[['Ngành hàng nào','nganh_hang'],['Đang diễn ra gì','dien_bien'],
        ['Bên bán khác đang làm gì','doi_thu'],['Chạm tới cửa hàng ở đâu','tac_dong_cua_hang'],
-       ['Nên làm gì','hanh_dong']]},
+       ['Rủi ro với Hương Diện','rui_ro'],['Nên làm gì','hanh_dong']]},
   tinchinhsach:{phan:'chinh_sach', ten:'Chính sách & Thuế', icon:'ti-gavel',
     mo_ta:'Quy định mới, thuế, an toàn thực phẩm — kèm ngày bắt đầu áp dụng và việc phải làm.',
     o:[['Nội dung chính','noi_dung_chinh'],['Bắt đầu áp dụng','hieu_luc_tu'],
-       ['Ai phải theo','ai_chiu_tac_dong'],['Việc phải làm','viec_phai_lam'],
-       ['Hạn cuối','han_chot']]},
+       ['Ai phải theo','ai_chiu_tac_dong'],['Rủi ro với Hương Diện','rui_ro'],
+       ['Việc phải làm','viec_phai_lam'],['Hạn cuối','han_chot']]},
 };
 const DOC_TAB=['tinkd','tinthitruong','tinchinhsach','tintuan','tinluu'];
 
@@ -3610,11 +3614,23 @@ function MucDoc({m,cot,mo,doiMo,daDoc,luu,doiLuu,onTaoViec}){
       {m.tom_tat&&<div style={{fontSize:13.5,lineHeight:1.6,color:'var(--muted)',marginTop:6}}>{m.tom_tat}</div>}
       {dang&&
         <div style={{marginTop:6,animation:'fade .2s'}}>
+          {/* Ô RỦI RO có hình dạng riêng (thêm 07/08/2026): nền cảnh báo + viền trái đỏ. Để nó
+              nằm lẫn giữa các ô khác thì nó chỉ là một nhãn nữa, mà cả 05 ô còn lại đều trả
+              lời "nên làm gì" — riêng ô này trả lời "mất gì nếu không làm", tức thứ người
+              quản lý cần thấy trước khi đọc hết mục. Ô rỗng vẫn không hiện, y như mọi ô khác:
+              agent được phép để trống khi tin không mang rủi ro nào. */}
           {cot.map(([nhan,khoa])=> m[khoa]?(
-            <div key={khoa} style={{marginTop:9}}>
-              <div style={{fontSize:11.5,fontWeight:700,color:'var(--muted)',textTransform:'uppercase',letterSpacing:.3}}>{nhan}</div>
-              <div style={{fontSize:13.5,lineHeight:1.6,color:'var(--ink)',marginTop:2}}>{m[khoa]}</div>
-            </div>
+            khoa==='rui_ro'?(
+              <div key={khoa} style={{marginTop:10,padding:'9px 12px',borderLeft:'3px solid var(--red)',background:'var(--red-lt)',borderRadius:'0 9px 9px 0'}}>
+                <div style={{fontSize:11.5,fontWeight:700,color:'var(--red)',textTransform:'uppercase',letterSpacing:.3}}><i className="ti ti-alert-triangle" style={{marginRight:4,verticalAlign:'-1px'}}></i>{nhan}</div>
+                <div style={{fontSize:13.5,lineHeight:1.6,color:'var(--ink)',marginTop:2}}>{m[khoa]}</div>
+              </div>
+            ):(
+              <div key={khoa} style={{marginTop:9}}>
+                <div style={{fontSize:11.5,fontWeight:700,color:'var(--muted)',textTransform:'uppercase',letterSpacing:.3}}>{nhan}</div>
+                <div style={{fontSize:13.5,lineHeight:1.6,color:'var(--ink)',marginTop:2}}>{m[khoa]}</div>
+              </div>
+            )
           ):null)}
           <div className="row" style={{gap:8,marginTop:12,flexWrap:'wrap'}}>
             {m.url&&<a href={m.url} target="_blank" rel="noopener" className="btn sm ghost"><i className="ti ti-external-link"></i>Bài gốc</a>}
