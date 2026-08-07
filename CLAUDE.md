@@ -127,6 +127,30 @@ nhưng nên xoá. Lệnh xoá bị classifier chặn nên phải Huy chạy tay.
 ⚠ **`hdw_sync.id` KHÔNG phải sha256 trần của mã** — đã thử đối chiếu và trượt. Muốn xoá đúng
 dòng thì đọc `left(data::text, 260)` ra xem trước, đừng suy id từ mã.
 
+## ⛔ TRÙNG ID GIỮA HAI VIỆC KHÁC NHAU TRONG `INBOX_TASKS` — đã vá 07/08/2026
+
+Sáu id (`hd-2026-07-25-2` tới `-7`) bị dùng lại cho hai việc khác hẳn nhau, nên cả 12 việc đã
+gộp vào `hdw.tasks` với chỉ 06 id. Không lỗi nào phát ra: `mergeInbox` lọc `add` trên toàn mảng
+một lượt nên cả hai bản trùng đều lọt, rồi cả hai id được ghi vào `hdw.inboxSeen`.
+
+⚠ **Hậu quả là ghi đè không để lại dấu hiệu**: mọi đường ghi việc đều dùng khuôn
+`prev.map(x=>x.id===t.id?t:x)` (dòng ~1292 `saveTask`, ~1327 `addSpent`, ~1336 `assignTask`),
+nên sửa hoặc giao MỘT việc là việc song sinh bị thay nội dung theo — người dùng thấy một việc
+tự nhiên biến thành việc khác.
+
+- **Vá bằng `fixDupIds` chạy phía client**, cắm ngay sau `mergeInbox` ở chỗ dựng `tasks`: bản
+  gặp trước giữ nguyên id, bản sau nhận hậu tố `-b`, `-c`. Bảng đã sạch thì trả **đúng mảng
+  cũ** (so bằng `===`), nên chạy lại không đổi gì.
+- ⛔ **CẤM sửa id trong `INBOX_TASKS` để chữa** — id cũ đã nằm trong `hdw.inboxSeen`, đổi id là
+  app coi đó là việc mới và bơm lại một bản trùng vào bảng của mọi người.
+- **Thêm việc mới thì đếm trùng trước khi tin**, đừng suy từ số thứ tự lớn nhất đang thấy:
+  `python3 -c "import re,collections,sys; s=open('index.html',encoding='utf-8').read(); i=s.index('const INBOX_TASKS=['); j=s.index('__INBOX_INSERT__',i); print([k for k,v in collections.Counter(re.findall(r\"\{id:'([^']+)'\", s[i:j])).items() if v>1])"`
+- Bộ ca đã chạy (12/12 đạt), gồm ca **phải tách** (bảng có trùng) và ca **đối chứng** (bảng
+  sạch phải trả nguyên mảng cũ, không sinh mảng mới):
+  `node /Users/Huy/Claude/App/HuongDienWork/kiem-inbox-tasks.js` — bộ này bóc thẳng
+  `INBOX_TASKS` và `fixDupIds` ra khỏi `index.html` rồi chạy, nên thêm việc mới vào hộp thư là
+  phải sửa số việc kỳ vọng trong đó.
+
 ## Deploy
 
 ⚠ **SỬA XONG `index.html` MÀ HUY VẪN THẤY BẢN CŨ SAU KHI LOAD LẠI — luôn kiểm `git status`
